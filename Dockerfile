@@ -8,6 +8,5 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 COPY . .
 RUN mkdir -p /data
-VOLUME ["/data"]
 EXPOSE 3030
 CMD ["npm", "start"]
