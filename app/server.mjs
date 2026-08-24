@@ -396,8 +396,9 @@ if (!localBranchFound && data.branches[0]) {
   branchDataChanged = true;
 }
 
-// V20.1: múltiples líneas de WhatsApp por sucursal. Se crea una línea principal compatible
-// con las sesiones históricas de V20 para que la actualización no obligue a volver a vincular.
+// V23.1: las conexiones de WhatsApp son recursos globales y se asignan a usuarios.
+// `branchId` se conserva únicamente como sucursal de enrutamiento inicial para no mover
+// sesiones históricas ni alterar negociaciones ya existentes.
 for (const branch of data.branches) {
   let line = data.whatsappLines.find((entry) => entry.legacyBranchSession === true && entry.branchId === branch.id);
   if (!line) {
@@ -410,8 +411,8 @@ for (const branch of data.branches) {
       active: true,
       isDefault: true,
       legacyBranchSession: true,
-      accessMode: "branch",
-      allowedUserIds: [],
+      accessMode: "selected",
+      allowedUserIds: data.users.filter((user) => user.active !== false && user.role !== "admin" && user.branchId === branch.id).map((user) => user.id),
       supervisorsCanUse: true,
       managersCanUse: true,
       botEnabled: true,
@@ -425,15 +426,29 @@ for (const branch of data.branches) {
   }
 }
 for (const line of data.whatsappLines) {
-  const branch = getBranch(line.branchId);
-  if (!branch) { line.active = false; continue; }
+  let branch = getBranch(line.branchId);
+  if (!branch) {
+    line.branchId = primaryBranchId();
+    branch = getBranch(line.branchId);
+    branchDataChanged = true;
+  }
   line.name = cleanText(line.name, 120) || "Línea WhatsApp";
   line.provider = line.provider === "cloud" ? "cloud" : "qr";
   line.phone = cleanText(line.phone || (line.legacyBranchSession ? branch.phone : ""), 40);
   line.active = line.active !== false;
   line.isDefault = line.isDefault === true;
-  line.accessMode = line.accessMode === "selected" ? "selected" : "branch";
-  line.allowedUserIds = Array.isArray(line.allowedUserIds) ? [...new Set(line.allowedUserIds.map((id) => cleanText(id, 120)).filter(Boolean))] : [];
+  const legacyBranchAccess = line.accessMode === "branch";
+  line.accessMode = line.accessMode === "all" ? "all" : "selected";
+  line.allowedUserIds = Array.isArray(line.allowedUserIds) ? [...new Set(line.allowedUserIds.map((id) => cleanText(id, 120)).filter((id) => data.users.some((user) => user.id === id && user.active !== false)))] : [];
+  if (legacyBranchAccess) {
+    for (const user of data.users) {
+      if (user.active !== false && user.role !== "admin" && user.branchId === line.branchId && !line.allowedUserIds.includes(user.id)) line.allowedUserIds.push(user.id);
+    }
+    line.accessMode = "selected";
+    line.globalAssignmentsMigratedAt = line.globalAssignmentsMigratedAt || timestamp();
+    branchDataChanged = true;
+  }
+  if(line.scope!=="global"){line.scope="global";branchDataChanged=true;}
   line.supervisorsCanUse = line.supervisorsCanUse !== false;
   line.managersCanUse = line.managersCanUse !== false;
   line.botEnabled = line.botEnabled !== false;
@@ -451,6 +466,15 @@ for (const user of data.users) {
     user.branchId = primaryBranchId();
     branchDataChanged = true;
   }
+}
+for (const form of data.surveys || []) {
+  if(!form.shareToken){form.shareToken=randomBytes(18).toString("hex");branchDataChanged=true;}
+  if(!["survey","feedback","contact","registration","lead","custom"].includes(form.formType)){form.formType="survey";branchDataChanged=true;}
+  if(!form.theme||typeof form.theme!=="object"){form.theme={primaryColor:"#171717",accentColor:"#FF7A00"};branchDataChanged=true;}
+  if(!/^#[0-9a-f]{6}$/i.test(form.theme.primaryColor||"")){form.theme.primaryColor="#171717";branchDataChanged=true;}
+  if(!/^#[0-9a-f]{6}$/i.test(form.theme.accentColor||"")){form.theme.accentColor="#FF7A00";branchDataChanged=true;}
+  if(!["optional","required","anonymous"].includes(form.collectIdentity)){form.collectIdentity="optional";branchDataChanged=true;}
+  if(typeof form.publicAccess!=="boolean"){form.publicAccess=true;branchDataChanged=true;}
 }
 for (const deal of data.deals || []) {
   if (!deal.branchId || !getBranch(deal.branchId)) {
@@ -510,20 +534,37 @@ function defaultWhatsappLine(branchId) {
     || null;
 }
 function dealWhatsappLine(deal) { return whatsappLineById(deal?.lineId) || defaultWhatsappLine(deal?.branchId || primaryBranchId()); }
+function userExplicitlyAssignedToWhatsappLine(user, line) {
+  return Boolean(user && line && (line.allowedUserIds || []).includes(user.id));
+}
 function canUserUseWhatsappLine(user, line) {
   if (!user || !line || line.active === false) return false;
   if (user.role === "admin") return true;
+  if (line.accessMode === "all") return true;
+  if (userExplicitlyAssignedToWhatsappLine(user, line)) return true;
   if (user.role === "manager") return line.managersCanUse !== false;
-  if (user.role === "supervisor") return line.supervisorsCanUse !== false && user.branchId === line.branchId;
-  if (user.branchId !== line.branchId) return false;
-  if (line.accessMode !== "selected") return true;
-  return (line.allowedUserIds || []).includes(user.id);
+  if (user.role === "supervisor") return line.supervisorsCanUse !== false;
+  return false;
 }
 function canUserMonitorWhatsappLine(user, line) {
   if (!user || !line) return false;
-  if (["admin", "manager"].includes(user.role)) return true;
-  if (user.role === "supervisor") return user.branchId === line.branchId;
+  if (user.role === "admin") return true;
+  if (user.role === "manager") return line.managersCanUse !== false || userExplicitlyAssignedToWhatsappLine(user, line);
+  if (user.role === "supervisor") return line.supervisorsCanUse !== false || userExplicitlyAssignedToWhatsappLine(user, line);
   return canUserUseWhatsappLine(user, line);
+}
+function whatsappLineIdsForUser(userId) {
+  return (data.whatsappLines || []).filter((line) => line.active !== false && (line.allowedUserIds || []).includes(userId)).map((line) => line.id);
+}
+function syncUserWhatsappLineAssignments(userId, requestedLineIds = []) {
+  const desired = new Set((Array.isArray(requestedLineIds) ? requestedLineIds : []).filter((lineId) => whatsappLineById(lineId)?.active !== false));
+  for (const line of data.whatsappLines || []) {
+    const ids = new Set(Array.isArray(line.allowedUserIds) ? line.allowedUserIds : []);
+    if (desired.has(line.id)) ids.add(userId);
+    else ids.delete(userId);
+    line.allowedUserIds = [...ids].filter((id) => data.users.some((user) => user.id === id && user.active !== false));
+    line.updatedAt = timestamp();
+  }
 }
 function lineCloudConfig(line) {
   if (!line) return {};
@@ -534,7 +575,7 @@ function lineCloudConfigured(line) { const config=lineCloudConfig(line); return 
 function publicWhatsappLine(line, user=null) {
   const branch=getBranch(line.branchId); const state=whatsappLineConnectionState(line.id);
   return {
-    id:line.id,name:line.name,branchId:line.branchId,branchName:branch?.name||"Sucursal",provider:line.provider,phone:line.phone||state.account||"",active:line.active!==false,isDefault:line.isDefault===true,legacyBranchSession:line.legacyBranchSession===true,accessMode:line.accessMode||"branch",allowedUserIds:[...(line.allowedUserIds||[])],supervisorsCanUse:line.supervisorsCanUse!==false,managersCanUse:line.managersCanUse!==false,botEnabled:line.botEnabled!==false,notes:line.notes||"",connection:state,canUse:user?canUserUseWhatsappLine(user,line):false,canMonitor:user?canUserMonitorWhatsappLine(user,line):false,hasCloudToken:Boolean(lineCloudConfig(line)?.accessToken),cloud:{phoneNumberId:cleanText(lineCloudConfig(line)?.phoneNumberId,80),businessAccountId:cleanText(lineCloudConfig(line)?.businessAccountId,80),apiVersion:cleanText(lineCloudConfig(line)?.apiVersion||"v23.0",20),verifyTokenConfigured:Boolean(lineCloudConfig(line)?.verifyToken)}
+    id:line.id,name:line.name,scope:"global",branchId:line.branchId,branchName:branch?.name||"Sucursal inicial",routingBranchId:line.branchId,routingBranchName:branch?.name||"Sucursal inicial",provider:line.provider,phone:line.phone||state.account||"",active:line.active!==false,isDefault:line.isDefault===true,legacyBranchSession:line.legacyBranchSession===true,accessMode:line.accessMode||"selected",allowedUserIds:[...(line.allowedUserIds||[])],assignedUserIds:[...(line.allowedUserIds||[])],assignedUsers:(line.allowedUserIds||[]).map((id)=>data.users.find((entry)=>entry.id===id)).filter(Boolean).map((entry)=>({id:entry.id,name:entry.name,username:entry.username,role:entry.role,branchId:entry.branchId||null,branchName:getBranch(entry.branchId)?.name||"Administración general"})),supervisorsCanUse:line.supervisorsCanUse!==false,managersCanUse:line.managersCanUse!==false,botEnabled:line.botEnabled!==false,notes:line.notes||"",connection:state,canUse:user?canUserUseWhatsappLine(user,line):false,canMonitor:user?canUserMonitorWhatsappLine(user,line):false,hasCloudToken:Boolean(lineCloudConfig(line)?.accessToken),cloud:{phoneNumberId:cleanText(lineCloudConfig(line)?.phoneNumberId,80),businessAccountId:cleanText(lineCloudConfig(line)?.businessAccountId,80),apiVersion:cleanText(lineCloudConfig(line)?.apiVersion||"v26.0",20),verifyTokenConfigured:Boolean(lineCloudConfig(line)?.verifyToken)}
   };
 }
 const firstConnectionHistoryMs = 30 * 24 * 60 * 60 * 1000;
@@ -669,6 +710,7 @@ function publicUsers() {
     branchId: user.branchId || null,
     branchName: getBranch(user.branchId)?.name || "Administración general",
     active: user.active !== false,
+    whatsappLineIds: whatsappLineIdsForUser(user.id),
     clientDailyLimit: Number(user.clientDailyLimit || 0),
     permissions: {
       ownReports: true,
@@ -732,8 +774,28 @@ function isOwnerAway(deal) {
   return Boolean(owner && ["away", "offline"].includes(attendanceStatus(owner)));
 }
 
-function availableAgents(branchId) {
-  return data.users.filter((entry) => isAgentAvailable(entry, branchId)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+function availableAgents(branchId, line = null) {
+  return data.users.filter((entry) => {
+    if (!isAgentAvailable(entry, line ? null : branchId)) return false;
+    if (!line) return true;
+    return canUserUseWhatsappLine(entry, line);
+  }).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+}
+
+function assignedAgentsForWhatsappLine(line) {
+  if (!line) return [];
+  return data.users.filter((user) => user.active !== false && user.role === "agent" && canUserUseWhatsappLine(user, line));
+}
+
+function chooseWhatsappLineOwner(line) {
+  const candidates = assignedAgentsForWhatsappLine(line);
+  if (!candidates.length) return null;
+  const openCount = (userId) => (data.deals || []).filter((deal) => OPEN_STAGES.has(deal.stage) && deal.ownerUserId === userId).length;
+  return candidates.sort((a, b) => {
+    const aAvailable = attendanceStatus(a) === "active" ? 0 : 1;
+    const bAvailable = attendanceStatus(b) === "active" ? 0 : 1;
+    return aAvailable - bAvailable || openCount(a.id) - openCount(b.id) || String(a.name).localeCompare(String(b.name));
+  })[0] || null;
 }
 
 function branchManagers(branchId) {
@@ -892,6 +954,15 @@ function userCanAccessBranch(user, branchId) {
   if (!user.branchId) return user.role === "manager";
   if (user.role === "supervisor") return user.branchId === branchId;
   return user.branchId === branchId;
+}
+
+function userCanAccessDeal(user, deal) {
+  if(!user||!deal)return false;
+  if(user.role==="admin")return true;
+  const scopeAllowed=userCanAccessBranch(user,deal.branchId||primaryBranchId())||canUserUseWhatsappLine(user,dealWhatsappLine(deal));
+  if(!scopeAllowed)return false;
+  if(user.role==="agent"&&deal.ownerUserId&&deal.ownerUserId!==user.id&&!v214ActiveCommunicationGrant(deal,user))return false;
+  return true;
 }
 
 
@@ -1171,13 +1242,17 @@ function stateResponse(request = null) {
   if (user?.role !== "admin" && payload.settings?.sharedDrive) payload.settings.sharedDrive = { ...payload.settings.sharedDrive, folderPath: "" };
   if (user) {
     if (user.role !== "admin" && user.branchId) {
-      payload.deals = payload.deals.filter((deal) => deal.branchId === user.branchId);
+      payload.deals = payload.deals.filter((deal) => {
+        if (deal.branchId === user.branchId) return true;
+        const line = dealWhatsappLine(deal);
+        return canUserUseWhatsappLine(user, line);
+      });
     }
     if (user.role === "agent") {
-      const available = isAgentAvailable(user, user.branchId || primaryBranchId());
       payload.deals = payload.deals.filter((deal) => {
         const line=dealWhatsappLine(deal);
         if(line && !canUserUseWhatsappLine(user,line)) return false;
+        const available = isAgentAvailable(user, line ? null : (user.branchId || primaryBranchId()));
         return deal.ownerUserId === user.id || (available && !deal.ownerUserId) || Boolean(v214ActiveCommunicationGrant(deal, user));
       });
     }
@@ -1226,7 +1301,7 @@ function stateResponse(request = null) {
     superAutomation: user?.role === "admin" ? { settings:{...data.settings.superAutomation}, stageLabels:{...data.settings.stageLabels}, rules:(data.automationRules||[]).slice(0,500), waits:(data.automationWaits||[]).filter((entry)=>entry.status==="waiting").slice(0,200), executions:(data.automationExecutions||[]).slice(0,200), runtime:{lastError:superAutomationRuntime.lastError||null,lastRunAt:superAutomationRuntime.lastRunAt||null} } : undefined,
     adminGuide: user?.role === "admin" ? { ...data.settings.adminGuide } : { enabled:false },
     aiGovernance: user?.role === "admin" ? { ...data.settings.aiGovernance } : { autonomyDefault:data.settings.aiGovernance?.autonomyDefault||3,maxExternalAutonomy:data.settings.aiGovernance?.maxExternalAutonomy||3 },
-    currentUser: user ? { id: user.id, username: user.username, name: user.name, role: user.role, branchId: user.branchId || null, branchName: getBranch(user.branchId)?.name || "Administración general", clientDailyLimit: Number(user.clientDailyLimit || 0), attendance: { ...(user.attendance || { status: "offline" }) }, permissions: { ...reportPermissions(user), campaignView: user.role === "admin" || ["manager", "supervisor"].includes(user.role) || user.permissions?.campaignView === true, campaignManage: user.role === "admin" || user.permissions?.campaignManage === true, customFieldsManage: user.role === "admin" || user.permissions?.customFieldsManage === true, attendanceManage: user.role === "admin" || ["manager", "supervisor"].includes(user.role) || user.permissions?.attendanceManage === true, newsPublish: canPublishNews(user) } } : undefined,
+    currentUser: user ? { id: user.id, username: user.username, name: user.name, role: user.role, branchId: user.branchId || null, branchName: getBranch(user.branchId)?.name || "Administración general", whatsappLineIds: whatsappLineIdsForUser(user.id), clientDailyLimit: Number(user.clientDailyLimit || 0), attendance: { ...(user.attendance || { status: "offline" }) }, permissions: { ...reportPermissions(user), campaignView: user.role === "admin" || ["manager", "supervisor"].includes(user.role) || user.permissions?.campaignView === true, campaignManage: user.role === "admin" || user.permissions?.campaignManage === true, customFieldsManage: user.role === "admin" || user.permissions?.customFieldsManage === true, attendanceManage: user.role === "admin" || ["manager", "supervisor"].includes(user.role) || user.permissions?.attendanceManage === true, newsPublish: canPublishNews(user) } } : undefined,
   };
 }
 
@@ -2235,7 +2310,7 @@ function readableTransferMessage(packet) {
 }
 
 function cloudApiBase() {
-  const version = cleanText(data.settings.whatsappApi?.apiVersion || "v23.0", 20).replace(/[^v0-9.]/gi, "") || "v23.0";
+  const version = cleanText(data.settings.whatsappApi?.apiVersion || "v26.0", 20).replace(/[^v0-9.]/gi, "") || "v26.0";
   return `https://graph.facebook.com/${version}`;
 }
 
@@ -2266,7 +2341,7 @@ async function sendCloudPayload(payload) {
 async function lineCloudFetch(line, endpoint, options = {}) {
   const config=lineCloudConfig(line); const token=config?.accessToken;
   if(!token) throw new Error(`Configurá el token de acceso de ${line?.name||"la línea"}.`);
-  const version=cleanText(config?.apiVersion||"v23.0",20).replace(/[^v0-9.]/gi,"")||"v23.0";
+  const version=cleanText(config?.apiVersion||"v26.0",20).replace(/[^v0-9.]/gi,"")||"v26.0";
   const response=await fetch(`https://graph.facebook.com/${version}/${String(endpoint).replace(/^\//,"")}`,{...options,headers:{Authorization:`Bearer ${token}`,...(options.headers||{})}});
   if(!response.ok){const detail=await response.text();throw new Error(`WhatsApp API (${line?.name||"línea"}): ${response.status} ${detail.slice(0,260)}`);}
   const type=response.headers.get("content-type")||"";return type.includes("application/json")?response.json():response.arrayBuffer();
@@ -2563,7 +2638,7 @@ function automationResolveUser(action, context) {
     const byName = data.users.find((user) => user.active !== false && [user.name, user.username].some((value) => cleanText(value, 160).toLocaleLowerCase("es").includes(needle)) && (!user.branchId || user.branchId === branchId));
     if (byName) return byName;
   }
-  if (action.strategy === "first_available") return availableAgents(branchId).find((user) => !context.line || canUserUseWhatsappLine(user, context.line)) || null;
+  if (action.strategy === "first_available") return availableAgents(branchId, context.line || null)[0] || null;
   if (action.strategy === "supervisor") return data.users.find((user) => user.active !== false && user.role === "supervisor" && (!user.branchId || user.branchId === branchId)) || null;
   if (action.strategy === "manager") return data.users.find((user) => user.active !== false && user.role === "manager" && (!user.branchId || user.branchId === branchId)) || data.users.find((user) => user.active !== false && user.role === "manager") || null;
   return null;
@@ -2814,7 +2889,6 @@ function automationCreateDeal(action, context) {
   const branch=automationResolveBranch(action,context);
   const line=automationLineByReference({lineId:action.lineId,lineName:action.lineName,branchId:branch?.id});
   if(!branch||!line) throw new Error("No se pudo resolver la sucursal/línea para crear la negociación.");
-  if(line.branchId!==branch.id) throw new Error("La línea seleccionada no pertenece a la sucursal indicada.");
   const jid=`${phone}@s.whatsapp.net`;
   let deal=findOpenDeal(data,jid,branch.id,line.id);
   if(!deal) deal=createDeal(data,{jid,name:automationInterpolate(action.name,context)||`Cliente +${phone}`,branchId:branch.id,lineId:line.id,source:action.source||"super-automation"});
@@ -2828,8 +2902,8 @@ function automationConfigureWhatsappLine(action, context) {
   if(action.accessMode) line.accessMode=action.accessMode;
   line.active=action.active!==false;
   if(Array.isArray(action.allowedUserIds)||Array.isArray(action.allowedUserNames)){
-    const ids=new Set((action.allowedUserIds||[]).filter((id)=>data.users.some((u)=>u.id===id&&u.active!==false&&(!u.branchId||u.branchId===line.branchId))));
-    for(const name of action.allowedUserNames||[]){const needle=cleanText(name,160).toLocaleLowerCase("es");const u=data.users.find((user)=>user.active!==false&&(!user.branchId||user.branchId===line.branchId)&&[user.name,user.username].some((v)=>cleanText(v,160).toLocaleLowerCase("es").includes(needle)));if(u)ids.add(u.id);}
+    const ids=new Set((action.allowedUserIds||[]).filter((id)=>data.users.some((u)=>u.id===id&&u.active!==false)));
+    for(const name of action.allowedUserNames||[]){const needle=cleanText(name,160).toLocaleLowerCase("es");const u=data.users.find((user)=>user.active!==false&&[user.name,user.username].some((v)=>cleanText(v,160).toLocaleLowerCase("es").includes(needle)));if(u)ids.add(u.id);}
     line.allowedUserIds=[...ids];
   }
   if(typeof action.supervisorsCanUse==="boolean")line.supervisorsCanUse=action.supervisorsCanUse;
@@ -3712,14 +3786,25 @@ function applyIncomingRouting(deal, created = false) {
       deal.coverageRequired = false;
       deal.coverageReason = "";
     }
-  } else if (created) {
+  } else {
+    const line = dealWhatsappLine(deal);
+    const assignedOwner = chooseWhatsappLineOwner(line);
+    if (assignedOwner) {
+      deal.ownerUserId = assignedOwner.id;
+      deal.ownerName = assignedOwner.name;
+      deal.assignmentSource = "whatsapp_line";
+      deal.assignmentLineId = line?.id || null;
+      deal.assignmentAt = timestamp();
+    }
     deal.stage = STAGES.NEW;
     deal.botActive = true;
     deal.botHumanHandoff = false;
     deal.botMode = "auto";
     deal.botPauseReason = "";
-    deal.coverageRequired = false;
-    deal.coverageReason = availableAgents(branchId).length ? "" : "No hay agentes marcados como Disponibles; jefatura puede intervenir.";
+    deal.coverageRequired = Boolean(assignedOwner && attendanceStatus(assignedOwner) !== "active");
+    deal.coverageReason = assignedOwner
+      ? (deal.coverageRequired ? `${assignedOwner.name} tiene asignada esta línea, pero no está disponible; jefatura puede cubrir temporalmente.` : "")
+      : (availableAgents(branchId, line).length ? "" : "La línea no tiene agentes asignados y disponibles; jefatura puede intervenir.");
   }
 }
 
@@ -5304,11 +5389,12 @@ function v214SimilarityCandidates({ name = "", phone = "", branchId = null, user
 
 function ensureDealOwnership(deal, user, { claim = false, allowTemporaryCommunication = false } = {}) {
   if (!deal || !user) throw new Error("Negociación no encontrada.");
-  if (!userCanAccessBranch(user, deal.branchId || primaryBranchId())) throw new Error("Esta conversación pertenece a otra sucursal.");
   const line=dealWhatsappLine(deal);
+  const hasScope=userCanAccessBranch(user,deal.branchId||primaryBranchId())||canUserUseWhatsappLine(user,line);
+  if(!hasScope)throw new Error("No tenés acceso a esta conversación ni a su conexión de WhatsApp.");
   if(line && !canUserUseWhatsappLine(user,line)) throw new Error(`No estás autorizado a utilizar la línea ${line.name}.`);
   if (!deal.ownerUserId && claim) {
-    if (user.role === "agent" && !isAgentAvailable(user, deal.branchId || primaryBranchId())) throw new Error("Marcá tu estado como Disponible antes de tomar clientes nuevos.");
+    if (user.role === "agent" && !isAgentAvailable(user, line ? null : (deal.branchId || primaryBranchId()))) throw new Error("Marcá tu estado como Disponible antes de tomar clientes nuevos.");
     deal.ownerUserId = user.id;
     deal.ownerName = user.name;
     deal.updatedAt = timestamp();
@@ -5323,7 +5409,7 @@ function ensureDealOwnership(deal, user, { claim = false, allowTemporaryCommunic
   }
   if (deal.ownerUserId && deal.ownerUserId !== user.id && user.role !== "admin") {
     const communicationGrant = allowTemporaryCommunication ? v214ActiveCommunicationGrant(deal, user) : null;
-    const supervisorCoverage = ["manager", "supervisor"].includes(user.role) && isOwnerAway(deal) && userCanAccessBranch(user, deal.branchId || primaryBranchId());
+    const supervisorCoverage = ["manager", "supervisor"].includes(user.role) && isOwnerAway(deal) && hasScope;
     if (!supervisorCoverage && !communicationGrant) throw new Error(`Esta conversación pertenece a ${deal.ownerName || "otro asesor"}.${allowTemporaryCommunication ? " Solicitá autorización de comunicación antes de contactar al cliente." : ""}`);
     deal.coverageRequired = true;
     deal.coverageReason = communicationGrant ? `Comunicación temporal autorizada para ${user.name} hasta ${new Date(communicationGrant.grantedUntil).toLocaleString("es-PY")}. El responsable principal se mantiene.` : `Cobertura temporal por ${user.name}; el responsable original se mantiene.`;
@@ -5780,18 +5866,25 @@ function sanitizeSurveyOption(option = {}, index = 0) {
 }
 
 function sanitizeSurveyQuestion(question = {}, index = 0) {
-  const type = ["text","longtext","options","yesno","rating","number","email","date"].includes(question.type) ? question.type : "text";
+  const type = ["text","longtext","options","yesno","checkbox","rating","nps","number","email","phone","date","consent"].includes(question.type) ? question.type : "text";
   let options = Array.isArray(question.options) ? question.options.map(sanitizeSurveyOption).filter((entry)=>entry.label) : [];
-  if (type === "yesno" && !options.length) options = [
+  if (["yesno","consent"].includes(type) && !options.length) options = [
     { id:"yes", label:"Sí", value:"si", nextQuestionId:"" }, { id:"no", label:"No", value:"no", nextQuestionId:"" }
   ];
   return { id: cleanText(question.id, 120) || `q${index + 1}`, text: cleanText(question.text, 1200), type, required: question.required !== false, options: options.slice(0,30), defaultNextQuestionId: cleanText(question.defaultNextQuestionId,120) || "" };
+}
+
+function sanitizeFormColor(value, fallback) {
+  const color=cleanText(value,20);
+  return /^#[0-9a-f]{6}$/i.test(color) ? color.toUpperCase() : fallback;
 }
 
 function sanitizeSurveyDefinition(input = {}, existing = null) {
   const sourceQuestions = Array.isArray(input.questions) ? input.questions : (existing?.questions || []);
   const questions = sourceQuestions.map(sanitizeSurveyQuestion).filter((question)=>question.text).slice(0,60);
   if (!questions.length) throw new Error("Agregá al menos una pregunta al formulario.");
+  const questionWithoutOptions=questions.find((question)=>["options","checkbox"].includes(question.type)&&!question.options.length);
+  if(questionWithoutOptions)throw new Error(`Agregá opciones al campo “${questionWithoutOptions.text}”.`);
   const ids = new Set();
   questions.forEach((question,index)=>{ let id=question.id||`q${index+1}`; if(ids.has(id)) id=`q${index+1}`; question.id=id; ids.add(id); });
   for (const question of questions) {
@@ -5802,9 +5895,18 @@ function sanitizeSurveyDefinition(input = {}, existing = null) {
   const triggerType = ["manual","after_won","segment","scheduled","after_status"].includes(triggerInput.type) ? triggerInput.type : "manual";
   const branchId = cleanText(input.branchId ?? existing?.branchId,120) || primaryBranchId();
   const lineId = cleanText(input.lineId ?? existing?.lineId,160) || defaultWhatsappLine(branchId)?.id || null;
+  const themeInput={...(existing?.theme||{}),...(input.theme&&typeof input.theme==="object"?input.theme:{})};
   return {
     ...(existing || {}), name: cleanText(input.name ?? existing?.name,160), description: cleanText(input.description ?? existing?.description,1000),
     branchId, lineId,
+    formType: ["survey","feedback","contact","registration","lead","custom"].includes(input.formType) ? input.formType : (existing?.formType || "survey"),
+    shareToken: existing?.shareToken || randomBytes(18).toString("hex"),
+    publicAccess: input.publicAccess !== undefined ? input.publicAccess !== false : existing?.publicAccess !== false,
+    collectIdentity: ["optional","required","anonymous"].includes(input.collectIdentity) ? input.collectIdentity : (existing?.collectIdentity || "optional"),
+    theme: {
+      primaryColor: sanitizeFormColor(themeInput.primaryColor,"#171717"),
+      accentColor: sanitizeFormColor(themeInput.accentColor,"#FF7A00"),
+    },
     deliveryMode: ["web_link","whatsapp_chat"].includes(input.deliveryMode) ? input.deliveryMode : (existing?.deliveryMode || "web_link"),
     introMessage: cleanText(input.introMessage ?? existing?.introMessage,2000) || "Necesitamos algunos datos para continuar. El formulario es breve y tus respuestas quedarán registradas en el CRM.",
     closingMessage: cleanText(input.closingMessage ?? existing?.closingMessage,2000) || "¡Muchas gracias! Tus respuestas quedaron registradas correctamente.",
@@ -5852,7 +5954,9 @@ function surveyMetrics(survey) {
 
 function publicSurvey(survey, includeQuestions = true) {
   const line=whatsappLineById(survey?.lineId)||defaultWhatsappLine(survey?.branchId);
-  const result={...survey,lineId:line?.id||survey?.lineId||null,lineName:line?.name||"",metrics:surveyMetrics(survey)};
+  if(!survey.shareToken) survey.shareToken=randomBytes(18).toString("hex");
+  const sharePath=`/t/${tenantSlug}/forms/${survey.shareToken}`;
+  const result={...survey,lineId:line?.id||survey?.lineId||null,lineName:line?.name||"",sharePath,shareUrl:`${publicBaseUrl||""}${sharePath}`,metrics:surveyMetrics(survey)};
   if(!includeQuestions) delete result.questions;
   return result;
 }
@@ -5862,20 +5966,25 @@ function surveyQuestionIndex(survey,id){ return (survey?.questions||[]).findInde
 function surveyNextSequential(survey,id){ const index=surveyQuestionIndex(survey,id); return index>=0 ? survey.questions[index+1]?.id || "end" : "end"; }
 function surveyPrompt(question){
   let text=question?.text||"";
-  if(question?.type==="options") text += "\n"+(question.options||[]).map((option,index)=>`${index+1}. ${option.label}`).join("\n");
-  else if(question?.type==="yesno") text += "\nRespondé Sí o No.";
+  if(["options","checkbox"].includes(question?.type)) text += "\n"+(question.options||[]).map((option,index)=>`${index+1}. ${option.label}`).join("\n");
+  else if(["yesno","consent"].includes(question?.type)) text += "\nRespondé Sí o No.";
   else if(question?.type==="rating") text += "\nRespondé con un número del 1 al 10.";
+  else if(question?.type==="nps") text += "\nRespondé con un número del 0 al 10.";
   else if(question?.type==="number") text += "\nRespondé con un número.";
   else if(question?.type==="email") text += "\nRespondé con tu correo electrónico.";
+  else if(question?.type==="phone") text += "\nRespondé con un número de teléfono con código de país.";
   else if(question?.type==="date") text += "\nRespondé con una fecha.";
   return cleanText(text,4000);
 }
 function normalizeAnswerText(value){ return String(value||"").trim().toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
 function parseSurveyAnswer(question,text){
-  const raw=cleanText(text,2000).trim(); if(!raw) return {ok:false,error:"Necesito una respuesta para continuar."};
+  const suppliedValues=Array.isArray(text)?text.map((value)=>cleanText(value,240).trim()).filter(Boolean):[];
+  const raw=cleanText(Array.isArray(text)?suppliedValues.join(", "):text,2000).trim();
+  if(!raw) return question.required===false ? {ok:true,value:"",label:"Sin respuesta",nextQuestionId:question.defaultNextQuestionId||""} : {ok:false,error:"Necesito una respuesta para continuar."};
   if(["text","longtext"].includes(question.type)) return {ok:true,value:raw,label:raw,nextQuestionId:question.defaultNextQuestionId||""};
   if(question.type==="number") { const normalizedNumber=raw.includes(",") ? raw.replace(/\./g,"").replace(",",".") : raw; const n=Number(normalizedNumber); if(!Number.isFinite(n)) return {ok:false,error:"Respondé con un número válido."}; return {ok:true,value:n,label:String(n),nextQuestionId:question.defaultNextQuestionId||""}; }
   if(question.type==="email") { if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) return {ok:false,error:"Ingresá un correo electrónico válido."}; return {ok:true,value:raw,label:raw,nextQuestionId:question.defaultNextQuestionId||""}; }
+  if(question.type==="phone") { const phone=normalizePhone(raw); if(!/^\d{7,15}$/.test(phone))return {ok:false,error:"Ingresá un número de teléfono válido."};return {ok:true,value:phone,label:`+${phone}`,nextQuestionId:question.defaultNextQuestionId||""}; }
   if(question.type==="date") {
     let parsed=Date.parse(raw);
     const localDate=raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
@@ -5888,13 +5997,22 @@ function parseSurveyAnswer(question,text){
     return {ok:true,value:raw,label:raw,nextQuestionId:question.defaultNextQuestionId||""};
   }
   if(question.type==="rating") { const n=Number(raw.replace(",",".")); if(!Number.isFinite(n)||n<1||n>10) return {ok:false,error:"Respondé con un número del 1 al 10."}; return {ok:true,value:n,label:String(n),nextQuestionId:question.defaultNextQuestionId||""}; }
+  if(question.type==="nps") { const n=Number(raw.replace(",",".")); if(!Number.isFinite(n)||n<0||n>10) return {ok:false,error:"Respondé con un número del 0 al 10."}; return {ok:true,value:n,label:String(n),nextQuestionId:question.defaultNextQuestionId||""}; }
+  if(question.type==="checkbox") {
+    const requested=suppliedValues.length?suppliedValues:raw.split(",").map((value)=>value.trim()).filter(Boolean);
+    const selected=[];
+    for(const value of requested){const normalizedValue=normalizeAnswerText(value);const number=Number.parseInt(normalizedValue,10);const option=(Number.isFinite(number)&&number>=1&&number<=(question.options||[]).length?question.options[number-1]:null)||(question.options||[]).find((entry)=>[normalizeAnswerText(entry.label),normalizeAnswerText(entry.value)].includes(normalizedValue));if(option&&!selected.some((entry)=>entry.id===option.id))selected.push(option);}
+    if(!selected.length)return {ok:false,error:"Elegí al menos una opción."};
+    return {ok:true,value:selected.map((entry)=>entry.value),label:selected.map((entry)=>entry.label).join(", "),nextQuestionId:selected.find((entry)=>entry.nextQuestionId)?.nextQuestionId||question.defaultNextQuestionId||""};
+  }
   const normalized=normalizeAnswerText(raw);
   let option=null;
   const number=Number.parseInt(normalized,10);
   if(Number.isFinite(number)&&number>=1&&number<=(question.options||[]).length) option=question.options[number-1];
   if(!option) option=(question.options||[]).find((entry)=>[normalizeAnswerText(entry.label),normalizeAnswerText(entry.value)].includes(normalized));
-  if(question.type==="yesno"&&!option){ const yes=["si","s","yes","ok","claro"], no=["no","n"]; option=(question.options||[]).find((entry)=> yes.includes(normalized)?normalizeAnswerText(entry.value)==="si":no.includes(normalized)?normalizeAnswerText(entry.value)==="no":false); }
-  if(!option) return {ok:false,error:question.type==="yesno"?"Respondé Sí o No.":"Elegí una de las opciones indicadas."};
+  if(["yesno","consent"].includes(question.type)&&!option){ const yes=["si","s","yes","ok","claro"], no=["no","n"]; option=(question.options||[]).find((entry)=> yes.includes(normalized)?normalizeAnswerText(entry.value)==="si":no.includes(normalized)?normalizeAnswerText(entry.value)==="no":false); }
+  if(!option) return {ok:false,error:["yesno","consent"].includes(question.type)?"Respondé Sí o No.":"Elegí una de las opciones indicadas."};
+  if(question.type==="consent"&&normalizeAnswerText(option.value)!=="si")return {ok:false,error:"Necesitamos tu aceptación para continuar."};
   return {ok:true,value:option.value,label:option.label,nextQuestionId:option.nextQuestionId||question.defaultNextQuestionId||""};
 }
 
@@ -6233,19 +6351,41 @@ app.get("/api/branding/logo", (_request, response) => {
 });
 
 function publicFormSession(token){ return (data.surveySessions||[]).find((entry)=>entry.publicToken===token)||null; }
+function publicFormDefinition(token){ return (data.surveys||[]).find((entry)=>entry.shareToken===token&&entry.active!==false&&entry.publicAccess!==false)||null; }
+function publicFormDefinitionPayload(survey){
+  if(!survey)return null;
+  return {
+    company:{name:data.settings.branding?.systemName||"CRM",primaryColor:survey.theme?.primaryColor||"#171717",accentColor:survey.theme?.accentColor||"#FF7A00"},
+    form:{id:survey.id,name:survey.name,description:survey.description||"",formType:survey.formType||"survey",collectIdentity:survey.collectIdentity||"optional",questionCount:(survey.questions||[]).length,introMessage:survey.introMessage||"Completá este formulario."},
+  };
+}
+function createPublicFormSession(survey,input={}){
+  const first=survey.questions?.[0];if(!first)throw new Error("El formulario no tiene preguntas.");
+  const identityMode=survey.collectIdentity||"optional";
+  const name=cleanText(input.name,160);const email=cleanText(input.email,240);const phone=normalizePhone(input.phone||"");
+  if(identityMode==="required"&&!name)throw new Error("Ingresá tu nombre para comenzar.");
+  if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error("Ingresá un correo electrónico válido.");
+  if(phone&&!/^\d{7,15}$/.test(phone))throw new Error("Ingresá un número de teléfono válido.");
+  const session={id:makeId("surveysession"),publicToken:randomBytes(24).toString("hex"),publicBaseUrl:null,surveyId:survey.id,surveyName:survey.name,clientId:null,clientName:name||"Respuesta anónima",email:email||"",phone,branchId:survey.branchId,lineId:survey.lineId,status:"awaiting",currentQuestionId:first.id,answers:[],sourceType:"public_link",sourceDealId:null,createdAt:timestamp(),startedAt:timestamp(),completedAt:null,cancelledAt:null,updatedAt:timestamp(),lastMessageId:null};
+  data.surveySessions.unshift(session);if(data.surveySessions.length>10000)data.surveySessions.length=10000;return session;
+}
 function publicFormPayload(session){
   const survey=(data.surveys||[]).find((entry)=>entry.id===session?.surveyId); if(!session||!survey)return null;
   const q=surveyQuestionById(survey,session.currentQuestionId)||survey.questions?.[0]||null;
-  return { company:{name:data.settings.branding?.systemName||"CRM",primaryColor:data.settings.branding?.primaryColor||"#171717",accentColor:data.settings.branding?.accentColor||"#ff7a00"}, form:{name:survey.name,description:survey.description||"",closingMessage:survey.closingMessage||"Gracias por completar el formulario."}, session:{status:session.status,answered:(session.answers||[]).length,total:(survey.questions||[]).length}, question:session.status==="completed"?null:(q?{id:q.id,text:q.text,type:q.type,required:q.required!==false,options:(q.options||[]).map(o=>({label:o.label,value:o.value}))}:null) };
+  return { company:{name:data.settings.branding?.systemName||"CRM",primaryColor:survey.theme?.primaryColor||"#171717",accentColor:survey.theme?.accentColor||"#FF7A00"}, form:{name:survey.name,description:survey.description||"",formType:survey.formType||"survey",closingMessage:survey.closingMessage||"Gracias por completar el formulario."}, session:{status:session.status,answered:(session.answers||[]).length,total:(survey.questions||[]).length}, question:session.status==="completed"?null:(q?{id:q.id,text:q.text,type:q.type,required:q.required!==false,options:(q.options||[]).map(o=>({label:o.label,value:o.value}))}:null) };
 }
 const publicFormHtml=`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Formulario</title><style>:root{--a:#ff7a00;--p:#171717}*{box-sizing:border-box}body{margin:0;background:#f3f3f4;font-family:Inter,system-ui,Segoe UI,sans-serif;color:#1b1b1d;min-height:100vh;display:grid;place-items:center;padding:20px}.card{width:min(620px,100%);background:#fff;border:1px solid #e2e2e5;border-radius:22px;padding:28px;box-shadow:0 22px 60px #00000012}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px}.mark{width:36px;height:36px;border-radius:11px;background:var(--a);display:grid;place-items:center;font-weight:900}.brand b{font-size:13px}.bar{height:6px;background:#eee;border-radius:99px;overflow:hidden;margin:20px 0}.bar i{display:block;height:100%;background:var(--a);width:var(--progress,0%)}h1{font-size:23px;margin:0 0 7px}p{color:#777;font-size:13px;line-height:1.5}.q{font-size:18px;font-weight:750;margin:18px 0 14px}.input,textarea,select{width:100%;border:1px solid #d7d7dc;border-radius:13px;padding:13px;font:inherit;outline:0;background:#fff}.input:focus,textarea:focus,select:focus{border-color:var(--a);box-shadow:0 0 0 3px color-mix(in srgb,var(--a) 14%,transparent)}textarea{min-height:120px;resize:vertical}.options{display:grid;gap:8px}.opt{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;background:#fff;text-align:left;cursor:pointer}.opt:hover,.opt.selected{border-color:var(--a);background:color-mix(in srgb,var(--a) 7%,#fff)}.btn{margin-top:18px;width:100%;height:47px;border:0;border-radius:13px;background:var(--p);color:#fff;font-weight:800;cursor:pointer}.err{color:#b42318;font-size:12px;min-height:18px;margin-top:9px}.done{text-align:center;padding:25px 5px}.done .mark{margin:0 auto 15px}</style></head><body><main class="card" id="app">Cargando…</main><script>const root=document.documentElement,app=document.getElementById('app');const path=location.pathname;const m=path.match(/^\/t\/([^/]+)\/form\/([^/]+)/)||path.match(/^\/form\/([^/]+)/);const tenant=m&&m.length===3?m[1]:null,token=m?(m.length===3?m[2]:m[1]):'';const api=tenant?'/t/'+tenant+'/api/public/forms/'+token:'/api/public/forms/'+token;let payload,selected='';function field(q){selected='';if(['options','yesno'].includes(q.type))return '<div class="options">'+q.options.map(o=>'<button type="button" class="opt" data-v="'+String(o.value).replace(/"/g,'&quot;')+'">'+o.label+'</button>').join('')+'</div>';if(q.type==='longtext')return '<textarea id="answer"></textarea>';if(q.type==='rating')return '<input class="input" id="answer" type="number" min="1" max="10" placeholder="1 a 10">';if(q.type==='number')return '<input class="input" id="answer" type="number">';if(q.type==='email')return '<input class="input" id="answer" type="email">';if(q.type==='date')return '<input class="input" id="answer" type="date">';return '<input class="input" id="answer">'}function render(){const x=payload;root.style.setProperty('--a',x.company.accentColor);root.style.setProperty('--p',x.company.primaryColor);if(x.session.status==='completed'){app.innerHTML='<div class="done"><div class="mark">✓</div><h1>Formulario completado</h1><p>'+x.form.closingMessage+'</p></div>';return}const pct=Math.round((x.session.answered/Math.max(1,x.session.total))*100);app.innerHTML='<div class="brand"><span class="mark">CRM</span><div><b>'+x.company.name+'</b></div></div><h1>'+x.form.name+'</h1><p>'+x.form.description+'</p><div class="bar" style="--progress:'+pct+'%"><i></i></div><div class="q">'+x.question.text+'</div>'+field(x.question)+'<button class="btn" id="next">Continuar</button><div class="err" id="err"></div>';document.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{document.querySelectorAll('.opt').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');selected=b.dataset.v});document.getElementById('next').onclick=submit}async function load(){const r=await fetch(api);payload=await r.json();if(!r.ok){app.innerHTML='<h1>No disponible</h1><p>'+(payload.error||'El formulario no existe o expiró.')+'</p>';return}render()}async function submit(){const q=payload.question;const val=['options','yesno'].includes(q.type)?selected:(document.getElementById('answer')?.value||'');const r=await fetch(api+'/answer',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({value:val})});const x=await r.json();if(!r.ok){document.getElementById('err').textContent=x.error||'Revisá la respuesta.';return}payload=x;render()}load()</script></body></html>`;
-app.get("/form/:token", (_request,response)=>{ response.type("html").send(publicFormHtml); });
+const publicFormPagePath=path.join(publicDirectory,"form-public.html");
+app.get("/form/:token", (_request,response)=>response.sendFile(publicFormPagePath));
+app.get("/forms/:token", (_request,response)=>response.sendFile(publicFormPagePath));
+app.get("/api/public/form-definitions/:token", (request,response)=>{const survey=publicFormDefinition(request.params.token);if(!survey)return response.status(404).json({error:"Formulario no encontrado o inactivo."});response.setHeader("Cache-Control","no-store");response.json(publicFormDefinitionPayload(survey));});
+app.post("/api/public/form-definitions/:token/start", async(request,response,next)=>{try{const survey=publicFormDefinition(request.params.token);if(!survey)return response.status(404).json({error:"Formulario no encontrado o inactivo."});if(cleanText(request.body?.website,200))return response.status(400).json({error:"No se pudo iniciar el formulario."});const recent=(data.surveySessions||[]).filter((entry)=>entry.surveyId===survey.id&&entry.sourceType==="public_link"&&Date.parse(entry.createdAt||0)>Date.now()-60_000);if(recent.length>=60)return response.status(429).json({error:"Hay demasiadas solicitudes. Intentá nuevamente en un minuto."});const session=createPublicFormSession(survey,request.body||{});recordCommunicationEvent({type:"form_public_started",purpose:"survey",direction:"in",phone:session.phone,clientId:null,branchId:session.branchId,lineId:session.lineId,entityType:"survey",entityId:survey.id,sessionId:session.id,text:"Formulario público iniciado",isolated:true,metadata:{anonymous:!session.phone&&!session.email}});await store.save();response.status(201).json({token:session.publicToken,payload:publicFormPayload(session)});}catch(error){next(error);}});
 app.get("/api/public/forms/:token", (request,response)=>{ const session=publicFormSession(request.params.token); if(!session)return response.status(404).json({error:"Formulario no encontrado o vencido."}); const result=publicFormPayload(session); if(!result)return response.status(404).json({error:"Formulario no encontrado."}); response.setHeader("Cache-Control","no-store"); response.json(result); });
 app.post("/api/public/forms/:token/answer", async(request,response,next)=>{try{ const session=publicFormSession(request.params.token); if(!session) return response.status(404).json({error:"Formulario no encontrado o vencido."}); const survey=(data.surveys||[]).find((entry)=>entry.id===session.surveyId); if(!survey||survey.active===false)return response.status(410).json({error:"Este formulario ya no está disponible."}); if(session.status==="completed")return response.json(publicFormPayload(session)); if(session.status==="cancelled")return response.status(410).json({error:"Este formulario fue cancelado."}); const q=surveyQuestionById(survey,session.currentQuestionId)||survey.questions?.[0]; if(!q)throw new Error("El formulario no tiene una pregunta activa."); const parsed=parseSurveyAnswer(q,request.body?.value); if(!parsed.ok)return response.status(400).json({error:parsed.error}); if(!(session.answers||[]).some(a=>a.questionId===q.id))session.answers.push({questionId:q.id,questionText:q.text,type:q.type,value:parsed.value,label:parsed.label,answeredAt:timestamp(),channel:"web"}); session.startedAt=session.startedAt||timestamp();session.status="awaiting";const next=parsed.nextQuestionId||surveyNextSequential(survey,q.id); if(!next||next==="end"||!surveyQuestionById(survey,next)){session.status="completed";session.completedAt=timestamp();session.currentQuestionId=null;}else session.currentQuestionId=next;session.updatedAt=timestamp();recordCommunicationEvent({type:"form_web_reply",purpose:"survey",direction:"in",phone:session.phone,clientId:session.clientId,branchId:session.branchId,lineId:session.lineId,entityType:"survey",entityId:survey.id,sessionId:session.id,text:String(parsed.label||parsed.value),isolated:true,metadata:{questionId:q.id,channel:"web"}});await store.save();response.json(publicFormPayload(session)); }catch(error){next(error)} });
 
 app.use("/api", (request, response, next) => {
   // V22: la API pública usa sus propios tokens Bearer y no depende de la cookie de sesión.
-  if (String(request.path || "").startsWith("/public/v1/") || String(request.path || "").startsWith("/public/forms/")) return next();
+  if (String(request.path || "").startsWith("/public/v1/") || String(request.path || "").startsWith("/public/forms/") || String(request.path || "").startsWith("/public/form-definitions/")) return next();
   if (!isAuthenticated(request)) return response.status(401).json({ error: "Iniciá sesión." });
   return next();
 });
@@ -6382,7 +6522,7 @@ app.put("/api/custom-values/:entity/:id", async (request, response, next) => {
     if (!entity) throw new Error("Registro no encontrado.");
     if (entityType === "deal") ensureDealOwnership(entity, user, { claim: false });
     if (entityType === "contact") {
-      const visible = (data.deals||[]).some((deal)=>deal.clientId===entity.id && userCanAccessBranch(user,deal.branchId||primaryBranchId()) && (user.role!=="agent" || !deal.ownerUserId || deal.ownerUserId===user.id));
+      const visible = (data.deals||[]).some((deal)=>deal.clientId===entity.id && userCanAccessDeal(user,deal));
       if (!visible && user.role!=="admin") throw new Error("No tenés acceso a este cliente.");
     }
     if (entityType === "product" && !["admin","manager"].includes(user.role)) throw new Error("No tenés permiso para editar stock.");
@@ -6396,8 +6536,8 @@ app.put("/api/custom-values/:entity/:id", async (request, response, next) => {
 function formReportPayload(survey){
   const sessions=(data.surveySessions||[]).filter((entry)=>entry.surveyId===survey.id); const completed=sessions.filter((entry)=>entry.status==="completed");
   const questions=(survey.questions||[]).map((q)=>{ const answers=sessions.flatMap((s)=>(s.answers||[]).filter(a=>a.questionId===q.id).map(a=>({...a,sessionId:s.id,clientId:s.clientId,clientName:s.clientName,completedAt:s.completedAt}))); const base={id:q.id,text:q.text,type:q.type,totalAnswers:answers.length};
-    if(["options","yesno"].includes(q.type)){const counts={};for(const a of answers)counts[a.label||String(a.value)]=(counts[a.label||String(a.value)]||0)+1;return {...base,distribution:Object.entries(counts).map(([label,count])=>({label,count,percentage:answers.length?Number((count/answers.length*100).toFixed(1)):0}))};}
-    if(["rating","number"].includes(q.type)){const values=answers.map(a=>Number(a.value)).filter(Number.isFinite);return {...base,average:values.length?Number((values.reduce((s,n)=>s+n,0)/values.length).toFixed(2)):null,min:values.length?Math.min(...values):null,max:values.length?Math.max(...values):null};}
+    if(["options","yesno","checkbox","consent"].includes(q.type)){const counts={};for(const a of answers)counts[a.label||String(a.value)]=(counts[a.label||String(a.value)]||0)+1;return {...base,distribution:Object.entries(counts).map(([label,count])=>({label,count,percentage:answers.length?Number((count/answers.length*100).toFixed(1)):0}))};}
+    if(["rating","nps","number"].includes(q.type)){const values=answers.map(a=>Number(a.value)).filter(Number.isFinite);return {...base,average:values.length?Number((values.reduce((s,n)=>s+n,0)/values.length).toFixed(2)):null,min:values.length?Math.min(...values):null,max:values.length?Math.max(...values):null};}
     return {...base,samples:answers.slice(-30).reverse().map(a=>({clientName:a.clientName,value:a.label||a.value,at:a.completedAt}))};
   });
   const ratings=questions.filter(q=>q.type==="rating"&&Number.isFinite(q.average)); const overallRating=ratings.length?Number((ratings.reduce((s,q)=>s+q.average,0)/ratings.length).toFixed(2)):null;
@@ -6405,8 +6545,8 @@ function formReportPayload(survey){
 }
 app.get("/api/forms", requireManagerOrAdmin, (request,response)=>{ if(!canViewSurveys(request.currentUser))return response.status(403).json({error:"No tenés permisos para ver formularios."}); const forms=(data.surveys||[]).filter((form)=>request.currentUser.role==="admin"||userCanAccessBranch(request.currentUser,form.branchId)).map((form)=>publicSurvey(form,true)); const sessions=(data.surveySessions||[]).filter((entry)=>request.currentUser.role==="admin"||userCanAccessBranch(request.currentUser,entry.branchId)).slice(0,500); response.setHeader("Cache-Control","no-store"); response.json({forms,sessions,orchestrator:{...data.settings.communicationOrchestrator},commercialStatuses:COMMERCIAL_STATUS_CATALOG}); });
 app.post("/api/forms/preview", requireManagerOrAdmin, (request,response,next)=>{try{if(!canManageSurveys(request.currentUser))throw new Error("No tenés permisos para gestionar formularios.");const branchId=cleanText(request.body?.branchId,120)||request.currentUser.branchId||primaryBranchId();if(!userCanAccessBranch(request.currentUser,branchId))return response.status(403).json({error:"No podés usar esa sucursal."});const recipients=surveyRecipientsFor(request.body?.filters||{},branchId);response.json({count:recipients.length,sample:recipients.slice(0,20).map((client)=>({id:client.id,name:client.name,phone:client.phone,company:client.company,city:client.city}))});}catch(error){next(error);}});
-app.post("/api/forms", requireManagerOrAdmin, async(request,response,next)=>{try{if(!canManageSurveys(request.currentUser))return response.status(403).json({error:"No tenés permisos para crear formularios."});const form=sanitizeSurveyDefinition(request.body||{});if(!form.name)throw new Error("Ingresá un nombre para el formulario.");if(!userCanAccessBranch(request.currentUser,form.branchId))return response.status(403).json({error:"No podés usar esa sucursal."});form.id=makeId("form");form.createdAt=timestamp();form.createdByUserId=request.currentUser.id;form.createdByName=request.currentUser.name;data.surveys.unshift(form);recordAuditEvent(request.currentUser,"formulario_creado",{formId:form.id,name:form.name},form.branchId);await store.save();response.json({form:publicSurvey(form,true),revision:store.revision});}catch(error){next(error);}});
-app.put("/api/forms/:id", requireManagerOrAdmin, async(request,response,next)=>{try{if(!canManageSurveys(request.currentUser))return response.status(403).json({error:"No tenés permisos para editar formularios."});const current=(data.surveys||[]).find((entry)=>entry.id===request.params.id);if(!current)throw new Error("Formulario no encontrado.");if(!userCanAccessBranch(request.currentUser,current.branchId))return response.status(403).json({error:"No podés editar ese formulario."});Object.assign(current,sanitizeSurveyDefinition(request.body||{},current));recordAuditEvent(request.currentUser,"formulario_actualizado",{formId:current.id,name:current.name},current.branchId);await store.save();response.json({form:publicSurvey(current,true),revision:store.revision});}catch(error){next(error);}});
+app.post("/api/forms", requireManagerOrAdmin, async(request,response,next)=>{try{if(!canManageSurveys(request.currentUser))return response.status(403).json({error:"No tenés permisos para crear formularios."});const form=sanitizeSurveyDefinition(request.body||{});if(!form.name)throw new Error("Ingresá un nombre para el formulario.");if(!userCanAccessBranch(request.currentUser,form.branchId))return response.status(403).json({error:"No podés usar esa sucursal."});const line=form.lineId?whatsappLineById(form.lineId):null;if(form.lineId&&(!line||line.active===false))throw new Error("La línea de WhatsApp seleccionada no está disponible.");if(line&&request.currentUser.role!=="admin"&&!canUserUseWhatsappLine(request.currentUser,line))return response.status(403).json({error:"No tenés permiso para usar esa línea de WhatsApp."});form.id=makeId("form");form.createdAt=timestamp();form.createdByUserId=request.currentUser.id;form.createdByName=request.currentUser.name;data.surveys.unshift(form);recordAuditEvent(request.currentUser,"formulario_creado",{formId:form.id,name:form.name,formType:form.formType},form.branchId);await store.save();response.json({form:publicSurvey(form,true),revision:store.revision});}catch(error){next(error);}});
+app.put("/api/forms/:id", requireManagerOrAdmin, async(request,response,next)=>{try{if(!canManageSurveys(request.currentUser))return response.status(403).json({error:"No tenés permisos para editar formularios."});const current=(data.surveys||[]).find((entry)=>entry.id===request.params.id);if(!current)throw new Error("Formulario no encontrado.");if(!userCanAccessBranch(request.currentUser,current.branchId))return response.status(403).json({error:"No podés editar ese formulario."});const updated=sanitizeSurveyDefinition(request.body||{},current);if(!userCanAccessBranch(request.currentUser,updated.branchId))return response.status(403).json({error:"No podés mover el formulario a esa sucursal."});const line=updated.lineId?whatsappLineById(updated.lineId):null;if(updated.lineId&&(!line||line.active===false))throw new Error("La línea de WhatsApp seleccionada no está disponible.");if(line&&request.currentUser.role!=="admin"&&!canUserUseWhatsappLine(request.currentUser,line))return response.status(403).json({error:"No tenés permiso para usar esa línea de WhatsApp."});Object.assign(current,updated);recordAuditEvent(request.currentUser,"formulario_actualizado",{formId:current.id,name:current.name,formType:current.formType},current.branchId);await store.save();response.json({form:publicSurvey(current,true),revision:store.revision});}catch(error){next(error);}});
 app.get("/api/forms/:id/report", requireManagerOrAdmin, (request,response,next)=>{try{const form=(data.surveys||[]).find((entry)=>entry.id===request.params.id);if(!form)throw new Error("Formulario no encontrado.");if(!userCanAccessBranch(request.currentUser,form.branchId))return response.status(403).json({error:"No podés ver este reporte."});response.json(formReportPayload(form));}catch(error){next(error);}});
 app.post("/api/forms/:id/dispatch", requireManagerOrAdmin, async(request,response,next)=>{try{
   if(!canManageSurveys(request.currentUser))return response.status(403).json({error:"No tenés permisos para enviar formularios."});
@@ -6442,7 +6582,7 @@ app.post("/api/campaigns/preview", async (request, response, next) => {
     const branchId = user.role === "admin" ? cleanText(request.body?.branchId,120) : user.branchId;
     if(!branchId || !getBranch(branchId)) throw new Error("Seleccioná una sucursal.");
     const lineId=cleanText(request.body?.lineId,160)||defaultWhatsappLine(branchId)?.id; const line=whatsappLineById(lineId);
-    if(!line||line.branchId!==branchId||line.active===false) throw new Error("Seleccioná una línea de WhatsApp válida.");
+    if(!line||line.active===false) throw new Error("Seleccioná una línea de WhatsApp válida.");
     if(!canUserMonitorWhatsappLine(user,line)) return response.status(403).json({error:"No tenés acceso a esa línea."});
     const recipients=campaignRecipientsFor(request.body?.filters||{},branchId);
     response.json({ count: recipients.length, lineId:line.id, lineName:line.name, sample: recipients.slice(0,20), optedInRequired:data.settings.campaignSafety.requireOptIn!==false });
@@ -6455,7 +6595,7 @@ app.post("/api/campaigns", async (request, response, next) => {
     const branchId = user.role === "admin" ? cleanText(request.body?.branchId,120) : user.branchId;
     if(!branchId || !getBranch(branchId)) throw new Error("Seleccioná una sucursal válida.");
     const lineId=cleanText(request.body?.lineId,160)||defaultWhatsappLine(branchId)?.id; const line=whatsappLineById(lineId);
-    if(!line||line.branchId!==branchId||line.active===false) throw new Error("Seleccioná una línea de WhatsApp válida.");
+    if(!line||line.active===false) throw new Error("Seleccioná una línea de WhatsApp válida.");
     if(!canUserUseWhatsappLine(user,line)&&user.role!=="admin") return response.status(403).json({error:"No tenés permiso para enviar desde esa línea."});
     const name=cleanText(request.body?.name,160); const message=cleanText(request.body?.message,4000); if(!name||!message) throw new Error("Ingresá nombre y mensaje de campaña.");
     const filters=request.body?.filters&&typeof request.body.filters==="object"?request.body.filters:{};
@@ -7259,7 +7399,7 @@ app.post("/api/settings", requireAdmin, async (request, response, next) => {
       const config = input.whatsappApi;
       if (typeof config.phoneNumberId === "string") data.settings.whatsappApi.phoneNumberId = cleanText(config.phoneNumberId, 80);
       if (typeof config.businessAccountId === "string") data.settings.whatsappApi.businessAccountId = cleanText(config.businessAccountId, 80);
-      if (typeof config.apiVersion === "string") data.settings.whatsappApi.apiVersion = cleanText(config.apiVersion, 20) || "v23.0";
+      if (typeof config.apiVersion === "string") data.settings.whatsappApi.apiVersion = cleanText(config.apiVersion, 20) || "v26.0";
       if (typeof config.accessToken === "string" && config.accessToken.trim()) data.settings.whatsappApi.accessToken = config.accessToken.trim();
       if (typeof config.verifyToken === "string" && config.verifyToken.trim()) data.settings.whatsappApi.verifyToken = config.verifyToken.trim();
       if (config.clearAccessToken === true) data.settings.whatsappApi.accessToken = "";
@@ -7327,6 +7467,7 @@ app.post("/api/users", requireAdmin, async (request, response, next) => {
       newsPublish: role === "admin" || ["manager", "supervisor"].includes(role) || request.body?.newsPublish === true,
     }, attendance: { status: role === "agent" ? "offline" : "active", reason: "", until: null, updatedAt: timestamp() }, createdAt: timestamp(), updatedAt: timestamp() };
     data.users.push(user);
+    syncUserWhatsappLineAssignments(user.id, request.body?.whatsappLineIds || []);
     addActivity(data, `Usuario ${user.name} creado.`, "success");
     await store.save();
     response.json(stateResponse(request));
@@ -7375,6 +7516,7 @@ app.put("/api/users/:id", requireAdmin, async (request, response, next) => {
       user.passwordHash = hashPassword(request.body.password);
       for (const [token, session] of sessions.entries()) if (session.userId === user.id) sessions.delete(token);
     }
+    if (Array.isArray(request.body?.whatsappLineIds)) syncUserWhatsappLineAssignments(user.id, request.body.whatsappLineIds);
     user.updatedAt = timestamp();
     await store.save();
     response.json(stateResponse(request));
@@ -7563,8 +7705,9 @@ app.post("/api/deals/:id/assign", async (request, response, next) => {
     if (targetId !== actor.id && actor.role !== "admin" && actor.role !== "manager") throw new Error("No tenés permiso para reasignar clientes.");
     const target = data.users.find((entry) => entry.id === targetId && entry.active !== false);
     if (!target) throw new Error("Usuario no encontrado.");
-    if (!userCanAccessBranch(actor, deal.branchId || primaryBranchId())) throw new Error("La negociación pertenece a otra sucursal.");
-    if (target.branchId && target.branchId !== deal.branchId) throw new Error("Para enviar a otra sucursal usá Transferir conversación.");
+    const line=dealWhatsappLine(deal);
+    if (!userCanAccessDeal(actor,deal)) throw new Error("No tenés acceso a esta negociación ni a su conexión de WhatsApp.");
+    if (target.role!=="admin"&&!canUserUseWhatsappLine(target,line)) throw new Error(`Primero asigná la conexión ${line?.name||"WhatsApp"} a ${target.name}.`);
     if (deal.ownerUserId && deal.ownerUserId !== actor.id && actor.role !== "admin") throw new Error(`Esta conversación pertenece a ${deal.ownerName || "otro asesor"}.`);
     deal.ownerUserId = target.id;
     deal.ownerName = target.name;
@@ -7589,12 +7732,11 @@ app.get("/api/clients/:id/profile", async (request, response, next) => {
     const client = findClient(data, request.params.id);
     if (!client) throw new Error("Cliente no encontrado.");
     let negotiations = data.deals.filter((deal) => deal.clientId === client.id);
-    if (user.role !== "admin") negotiations = negotiations.filter((deal) => deal.branchId === (user.branchId || primaryBranchId()));
-    if (user.role === "agent") negotiations = negotiations.filter((deal) => !deal.ownerUserId || deal.ownerUserId === user.id);
+    if (user.role !== "admin") negotiations = negotiations.filter((deal) => userCanAccessDeal(user,deal));
     if (!negotiations.length) throw new Error("No tenés acceso a este cliente.");
     negotiations.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     refreshClientBranchRelationships(client);
-    const branchId = user.role === "admin" ? negotiations[0]?.branchId : (user.branchId || primaryBranchId());
+    const branchId = negotiations[0]?.branchId || user.branchId || primaryBranchId();
     const branchOwner = client.branchOwners?.[branchId];
     const visibleClient = { ...client, ownerUserId: branchOwner?.userId || client.ownerUserId, ownerName: branchOwner?.userName || client.ownerName };
     const globalHistory = centralClientProfileByPhone(visibleClient.phone);
@@ -7608,11 +7750,7 @@ app.put("/api/clients/:id", async (request, response, next) => {
     const user = currentUser(request);
     const client = findClient(data, request.params.id);
     if (!client) throw new Error("Cliente no encontrado.");
-    const branchId = user.role === "admin" ? null : (user.branchId || primaryBranchId());
-    if (branchId) {
-      const accessible = data.deals.some((deal) => deal.clientId === client.id && deal.branchId === branchId && (user.role !== "agent" || !deal.ownerUserId || deal.ownerUserId === user.id));
-      if (!accessible) throw new Error("No tenés acceso a este cliente.");
-    }
+    if (user.role!=="admin"&&!data.deals.some((deal)=>deal.clientId===client.id&&userCanAccessDeal(user,deal)))throw new Error("No tenés acceso a este cliente.");
     updateClient(data, client.id, request.body || {});
     refreshClientBranchRelationships(client);
     addActivity(data, `${user.name} actualizó la ficha de ${client.name}.`, "success");
@@ -7625,7 +7763,7 @@ app.put("/api/clients/:id", async (request, response, next) => {
 function v212ClientAccess(user, client) {
   if (!user || !client) return false;
   if (user.role === "admin") return true;
-  return (data.deals || []).some((deal) => deal.clientId === client.id && deal.branchId === (user.branchId || primaryBranchId()) && (user.role !== "agent" || !deal.ownerUserId || deal.ownerUserId === user.id));
+  return (data.deals || []).some((deal) => deal.clientId === client.id && userCanAccessDeal(user,deal));
 }
 
 function v212PhoneConflict(phone, clientId, allowedPhoneId = null) {
@@ -7979,7 +8117,7 @@ app.post("/api/branches", requireAdmin, async (request, response, next) => {
       updatedAt: timestamp(),
     };
     data.branches.push(branch);
-    data.whatsappLines.push({id:`line_default_${branch.id}`,name:"Línea principal",branchId:branch.id,provider:"qr",phone:branch.phone||"",active:true,isDefault:true,legacyBranchSession:true,accessMode:"branch",allowedUserIds:[],supervisorsCanUse:true,managersCanUse:true,botEnabled:true,notes:"Línea principal creada junto con la sucursal.",cloud:{phoneNumberId:"",businessAccountId:"",apiVersion:"v23.0",accessToken:"",verifyToken:""},createdAt:timestamp(),updatedAt:timestamp()});
+    data.whatsappLines.push({id:`line_default_${branch.id}`,name:"Línea principal",scope:"global",branchId:branch.id,provider:"qr",phone:branch.phone||"",active:true,isDefault:true,legacyBranchSession:true,accessMode:"selected",allowedUserIds:[],supervisorsCanUse:true,managersCanUse:true,botEnabled:true,notes:"Línea principal creada junto con la sucursal; puede asignarse a usuarios de cualquier sucursal.",cloud:{phoneNumberId:"",businessAccountId:"",apiVersion:"v26.0",accessToken:"",verifyToken:""},createdAt:timestamp(),updatedAt:timestamp()});
     addActivity(data, `Sucursal ${branch.name} creada con su línea principal de WhatsApp.`, "success");
     await store.save();
     response.json(stateResponse(request));
@@ -8055,12 +8193,12 @@ app.get("/api/whatsapp-lines", (request, response) => {
 });
 
 app.post("/api/whatsapp-lines", requireAdmin, async (request,response,next)=>{try{
-  const input=request.body||{}; const branch=getBranch(cleanText(input.branchId,120)); if(!branch||branch.active===false)throw new Error("Seleccioná una sucursal activa.");
+  const input=request.body||{}; const branch=getBranch(cleanText(input.routingBranchId||input.branchId,120)||primaryBranchId()); if(!branch||branch.active===false)throw new Error("Seleccioná una sucursal inicial activa.");
   const name=cleanText(input.name,120); if(!name)throw new Error("Ingresá un nombre para la línea."); const provider=input.provider==="cloud"?"cloud":"qr"; const phone=cleanText(input.phone,40);
   if(phone&&(normalizePhone(phone).length<10||normalizePhone(phone).length>15))throw new Error("Ingresá un número válido.");
   if(phone&&(data.whatsappLines||[]).some((line)=>normalizePhone(line.phone)===normalizePhone(phone)))throw new Error("Ese número ya está registrado en otra línea.");
-  const allowed=(Array.isArray(input.allowedUserIds)?input.allowedUserIds:[]).filter((id)=>data.users.some((u)=>u.id===id&&u.active!==false&&(u.branchId===branch.id||u.role==="manager")));
-  const line={id:makeId("line"),name,branchId:branch.id,provider,phone,active:input.active!==false,isDefault:input.isDefault===true,legacyBranchSession:false,accessMode:input.accessMode==="selected"?"selected":"branch",allowedUserIds:[...new Set(allowed)],supervisorsCanUse:input.supervisorsCanUse!==false,managersCanUse:input.managersCanUse!==false,botEnabled:input.botEnabled!==false,notes:cleanText(input.notes,1000),cloud:{phoneNumberId:cleanText(input.cloud?.phoneNumberId,80),businessAccountId:cleanText(input.cloud?.businessAccountId,80),apiVersion:cleanText(input.cloud?.apiVersion||"v23.0",20)||"v23.0",accessToken:typeof input.cloud?.accessToken==="string"?input.cloud.accessToken.trim():"",verifyToken:typeof input.cloud?.verifyToken==="string"?input.cloud.verifyToken.trim():""},createdAt:timestamp(),updatedAt:timestamp()};
+  const allowed=(Array.isArray(input.allowedUserIds)?input.allowedUserIds:[]).filter((id)=>data.users.some((u)=>u.id===id&&u.active!==false));
+  const line={id:makeId("line"),name,scope:"global",branchId:branch.id,provider,phone,active:input.active!==false,isDefault:input.isDefault===true,legacyBranchSession:false,accessMode:input.accessMode==="all"?"all":"selected",allowedUserIds:[...new Set(allowed)],supervisorsCanUse:input.supervisorsCanUse!==false,managersCanUse:input.managersCanUse!==false,botEnabled:input.botEnabled!==false,notes:cleanText(input.notes,1000),cloud:{phoneNumberId:cleanText(input.cloud?.phoneNumberId,80),businessAccountId:cleanText(input.cloud?.businessAccountId,80),apiVersion:cleanText(input.cloud?.apiVersion||"v26.0",20)||"v26.0",accessToken:typeof input.cloud?.accessToken==="string"?input.cloud.accessToken.trim():"",verifyToken:typeof input.cloud?.verifyToken==="string"?input.cloud.verifyToken.trim():""},createdAt:timestamp(),updatedAt:timestamp()};
   if(line.isDefault)for(const other of data.whatsappLines)if(other.branchId===branch.id)other.isDefault=false; data.whatsappLines.push(line); recordAuditEvent(request.currentUser,"linea_whatsapp_creada",{lineId:line.id,name:line.name,branchId:branch.id,provider:line.provider},branch.id); await store.save(); response.json(stateResponse(request));
 }catch(error){next(error);}});
 
@@ -8070,8 +8208,8 @@ app.put("/api/whatsapp-lines/:id", requireAdmin, async (request,response,next)=>
   if(!line.legacyBranchSession&&typeof input.provider==="string")line.provider=input.provider==="cloud"?"cloud":"qr";
   if(typeof input.phone==="string"){const phone=cleanText(input.phone,40);if(phone&&(normalizePhone(phone).length<10||normalizePhone(phone).length>15))throw new Error("Número inválido.");if(phone&&(data.whatsappLines||[]).some((other)=>other.id!==line.id&&normalizePhone(other.phone)===normalizePhone(phone)))throw new Error("Ese número ya está registrado en otra línea.");line.phone=phone;}
   if(typeof input.active==="boolean")line.active=input.active;
-  if(typeof input.accessMode==="string")line.accessMode=input.accessMode==="selected"?"selected":"branch";
-  if(Array.isArray(input.allowedUserIds))line.allowedUserIds=[...new Set(input.allowedUserIds.filter((id)=>data.users.some((u)=>u.id===id&&u.active!==false&&(u.branchId===line.branchId||u.role==="manager"))))];
+  if(typeof input.accessMode==="string")line.accessMode=input.accessMode==="all"?"all":"selected";
+  if(Array.isArray(input.allowedUserIds))line.allowedUserIds=[...new Set(input.allowedUserIds.filter((id)=>data.users.some((u)=>u.id===id&&u.active!==false)))];
   if(typeof input.supervisorsCanUse==="boolean")line.supervisorsCanUse=input.supervisorsCanUse;
   if(typeof input.managersCanUse==="boolean")line.managersCanUse=input.managersCanUse;
   if(typeof input.botEnabled==="boolean")line.botEnabled=input.botEnabled;

@@ -8,7 +8,8 @@
   },
   "scripts": {
     "start": "node server.mjs",
-    "mock": "WHATSAPP_MOCK=1 NO_OPEN=1 node server.mjs"
+    "mock": "WHATSAPP_MOCK=1 NO_OPEN=1 node server.mjs",
+    "test:features": "node test/feature-smoke.mjs"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "7.0.0-rc14",

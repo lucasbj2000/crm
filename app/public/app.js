@@ -652,7 +652,7 @@ function hydrateSettings() {
   $("#whatsapp-mode").value = settings.whatsappMode === "cloud" ? "cloud" : "qr";
   $("#wa-phone-number-id").value = wa.phoneNumberId || "";
   $("#wa-business-id").value = wa.businessAccountId || "";
-  $("#wa-api-version").value = wa.apiVersion || "v23.0";
+  $("#wa-api-version").value = wa.apiVersion || "v26.0";
   $("#wa-access-token").value = "";
   $("#wa-verify-token").value = "";
   $("#wa-token-status").textContent = wa.hasAccessToken ? "Token configurado" : "No configurado";
@@ -940,13 +940,42 @@ function renderUsers() {
   if (!list || !["admin", "manager"].includes(currentRole)) return;
   const canEdit = currentRole === "admin";
   const users = appState.users || [];
-  list.innerHTML = users.length ? users.map((user) => `<div class="user-row" data-user-id="${escapeHtml(user.id)}">
+  list.innerHTML = users.length ? users.map((user) => { const assignedLines=(appState.whatsappLines||[]).filter((line)=>(user.whatsappLineIds||[]).includes(line.id)); return `<div class="user-row" data-user-id="${escapeHtml(user.id)}">
     <span class="user-avatar">${escapeHtml(initials(user.name))}</span>
-    <div><strong>${escapeHtml(user.name)}</strong><small>@${escapeHtml(user.username)} · ${escapeHtml(roleLabel(user.role))} · ${escapeHtml(user.branchName || "Todas las sucursales")} · ${Number(user.clientLoadsToday || 0)}/${Number(user.clientDailyLimit || 0)} clientes cargados hoy</small></div>
+    <div><strong>${escapeHtml(user.name)}</strong><small>@${escapeHtml(user.username)} · ${escapeHtml(roleLabel(user.role))} · ${escapeHtml(user.branchName || "Todas las sucursales")} · ${Number(user.clientLoadsToday || 0)}/${Number(user.clientDailyLimit || 0)} clientes cargados hoy</small><small>${assignedLines.length ? `WhatsApp: ${escapeHtml(assignedLines.map((line)=>line.name).join(", "))}` : "WhatsApp: sin líneas asignadas"}</small></div>
     <span class="online-badge ${user.online ? "online" : ""}">${user.online ? "● En línea" : "○ Desconectado"}</span>
     <span class="active-badge ${user.active ? "" : "inactive"}">${user.active ? "Activo" : "Inactivo"}</span>
     ${canEdit ? `<button type="button" data-user-edit="${escapeHtml(user.id)}">Editar</button>` : ""}
-  </div>`).join("") : `<div class="column-empty">No hay usuarios cargados</div>`;
+  </div>`; }).join("") : `<div class="column-empty">No hay usuarios cargados</div>`;
+}
+
+function ensureUserWhatsappAssignment() {
+  let section = $("#user-whatsapp-assignment");
+  if (section) return section;
+  section = document.createElement("section");
+  section.id = "user-whatsapp-assignment";
+  section.className = "line-user-selector user-whatsapp-assignment";
+  section.innerHTML = `<div class="panel-title"><div><p class="kicker">LÍNEAS DE WHATSAPP</p><h4>Números asignados al usuario</h4><small>Asignale una, dos o todas las líneas, sin importar su sucursal. También podés cambiarlo después desde esta misma ficha.</small></div><span id="user-whatsapp-line-count">0 seleccionadas</span></div><div id="user-whatsapp-line-list" class="line-user-list"></div>`;
+  const passwordInput = $("#user-password");
+  passwordInput?.closest("label")?.before(section);
+  section.addEventListener("change", updateUserWhatsappLineCount);
+  return section;
+}
+
+function updateUserWhatsappLineCount() {
+  const count = $$("#user-whatsapp-line-list input:checked").length;
+  const label = $("#user-whatsapp-line-count");
+  if (label) label.textContent = `${count} seleccionada${count === 1 ? "" : "s"}`;
+}
+
+function renderUserWhatsappLineAssignments(selectedIds = []) {
+  ensureUserWhatsappAssignment();
+  const selected = new Set(selectedIds || []);
+  const lines = (appState.whatsappLines || []).filter((line) => line.active !== false);
+  const list = $("#user-whatsapp-line-list");
+  if (!list) return;
+  list.innerHTML = lines.length ? lines.map((line) => `<label class="line-user-row"><input type="checkbox" value="${escapeHtml(line.id)}" ${selected.has(line.id) ? "checked" : ""}><span><b>${escapeHtml(line.name)}</b><small>${escapeHtml(line.phone || line.connection?.account || "Número pendiente")} · ${escapeHtml(line.routingBranchName || line.branchName || "Ingreso general")}</small></span></label>`).join("") : `<div class="column-empty">Todavía no hay líneas de WhatsApp activas.</div>`;
+  updateUserWhatsappLineCount();
 }
 
 function openUserDialog(user = null) {
@@ -960,6 +989,7 @@ function openUserDialog(user = null) {
   const branches = (appState.branches || []).filter((branch) => branch.active !== false);
   $("#user-branch").innerHTML = `<option value="">Administración general</option>` + branches.map((branch) => `<option value="${escapeHtml(branch.id)}">${escapeHtml(branch.name)}${branch.city ? ` · ${escapeHtml(branch.city)}` : ""}</option>`).join("");
   $("#user-branch").value = user?.branchId || (user?.role === "admin" ? "" : branches[0]?.id || "");
+  renderUserWhatsappLineAssignments(user?.whatsappLineIds || []);
   $("#user-client-limit").value = user?.clientDailyLimit ?? 30;
   const adminRole = (user?.role || "agent") === "admin";
   $("#user-branch-reports").checked = adminRole || user?.role === "manager" || user?.permissions?.branchReports === true;
@@ -2047,7 +2077,7 @@ function openCampaignDialog() {
   $("#campaign-branch").innerHTML=branches.map(b=>`<option value="${escapeHtml(b.id)}">${escapeHtml(b.name)}</option>`).join("");
   if (user.branchId) $("#campaign-branch").value=user.branchId;
   $("#campaign-branch").disabled=user.role!=="admin";
-  const refreshCampaignLines=()=>{ const branchId=$("#campaign-branch").value; const lines=(appState.whatsappLines||[]).filter(line=>line.active!==false&&line.branchId===branchId&&line.canUse!==false); $("#campaign-line").innerHTML=lines.length?lines.map(line=>`<option value="${escapeHtml(line.id)}">${escapeHtml(line.name)} · ${escapeHtml(line.phone||line.connection?.account||"Sin número")} · ${line.provider==="cloud"?"Cloud API":"QR"}</option>`).join(""):`<option value="">Sin línea habilitada</option>`; const preferred=lines.find(line=>line.isDefault)||lines[0]; if(preferred)$("#campaign-line").value=preferred.id; };
+  const refreshCampaignLines=()=>{ const branchId=$("#campaign-branch").value; const lines=(appState.whatsappLines||[]).filter(line=>line.active!==false&&line.canUse!==false).sort((a,b)=>Number(b.branchId===branchId)-Number(a.branchId===branchId)||String(a.name||"").localeCompare(String(b.name||""),"es")); $("#campaign-line").innerHTML=lines.length?lines.map(line=>`<option value="${escapeHtml(line.id)}">${escapeHtml(line.name)} · ${escapeHtml(line.phone||line.connection?.account||"Sin número")} · ${line.provider==="cloud"?"Cloud API":"QR"}</option>`).join(""):`<option value="">Sin línea habilitada</option>`; const preferred=lines.find(line=>line.branchId===branchId&&line.isDefault)||lines[0]; if(preferred)$("#campaign-line").value=preferred.id; };
   refreshCampaignLines();
   $("#campaign-line").dataset.refreshReady="1";
   $("#campaign-document").innerHTML=`<option value="">Sin adjunto</option>`+(campaignCatalog.documents||appState.assistantDocuments||[]).map(d=>`<option value="${escapeHtml(d.id)}">${escapeHtml(d.title||d.fileName)}</option>`).join("");
@@ -2365,7 +2395,7 @@ $("#save-whatsapp-api-button").addEventListener("click", async () => {
   const whatsappApi = {
     phoneNumberId: $("#wa-phone-number-id").value.trim(),
     businessAccountId: $("#wa-business-id").value.trim(),
-    apiVersion: $("#wa-api-version").value.trim() || "v23.0",
+    apiVersion: $("#wa-api-version").value.trim() || "v26.0",
   };
   if ($("#wa-access-token").value.trim()) whatsappApi.accessToken = $("#wa-access-token").value.trim();
   if ($("#wa-verify-token").value.trim()) whatsappApi.verifyToken = $("#wa-verify-token").value.trim();
@@ -2715,6 +2745,7 @@ $("#user-form").addEventListener("submit", async (event) => {
     customFieldsManage: role === "admin" || $("#user-custom-fields-manage").checked,
     newsPublish: role === "admin" || $("#user-news-publish").checked,
     active: $("#user-active").checked,
+    whatsappLineIds: $$("#user-whatsapp-line-list input:checked").map((input) => input.value),
   };
   if (password) payload.password = password;
   const saveButton = $("#user-save-button");
@@ -3056,8 +3087,8 @@ $("#campaign-branch")?.addEventListener("change", () => {
   const branchId=$("#campaign-branch").value;
   const eligible=(appState.users||[]).filter(entry=>entry.active!==false&&entry.role!=="admin"&&(!branchId||entry.branchId===branchId));
   $("#campaign-filter-owner").innerHTML=`<option value="all">Cualquier responsable</option>`+eligible.map(entry=>`<option value="${escapeHtml(entry.id)}">${escapeHtml(entry.name)}</option>`).join("");
-  const lines=(appState.whatsappLines||[]).filter(line=>line.active!==false&&line.branchId===branchId&&line.canUse!==false);
-  if($("#campaign-line")){ $("#campaign-line").innerHTML=lines.length?lines.map(line=>`<option value="${escapeHtml(line.id)}">${escapeHtml(line.name)} · ${escapeHtml(line.phone||line.connection?.account||"Sin número")}</option>`).join(""):`<option value="">Sin línea habilitada</option>`; const preferred=lines.find(line=>line.isDefault)||lines[0]; if(preferred)$("#campaign-line").value=preferred.id; }
+  const lines=(appState.whatsappLines||[]).filter(line=>line.active!==false&&line.canUse!==false).sort((a,b)=>Number(b.branchId===branchId)-Number(a.branchId===branchId)||String(a.name||"").localeCompare(String(b.name||""),"es"));
+  if($("#campaign-line")){ $("#campaign-line").innerHTML=lines.length?lines.map(line=>`<option value="${escapeHtml(line.id)}">${escapeHtml(line.name)} · ${escapeHtml(line.phone||line.connection?.account||"Sin número")}</option>`).join(""):`<option value="">Sin línea habilitada</option>`; const preferred=lines.find(line=>line.branchId===branchId&&line.isDefault)||lines[0]; if(preferred)$("#campaign-line").value=preferred.id; }
 });
 
 

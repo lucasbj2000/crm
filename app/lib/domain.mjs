@@ -178,7 +178,7 @@ export function createInitialData(now = Date.now()) {
         businessAccountId: "",
         accessToken: "",
         verifyToken: "",
-        apiVersion: "v23.0",
+        apiVersion: "v26.0",
       },
       sharedDrive: {
         enabled: false,

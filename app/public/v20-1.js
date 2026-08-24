@@ -13,7 +13,7 @@
     const branchNav = document.querySelector('[data-view="branches"]');
     const nav = document.createElement('button');
     nav.className = 'nav-item'; nav.type = 'button'; nav.dataset.view = 'whatsappLines'; nav.dataset.module = 'whatsapp';
-    nav.innerHTML = '<span>◉</span><b>Líneas WhatsApp</b><i id="nav-line-count">0</i>';
+    nav.innerHTML = '<span>◉</span><b>Conexiones WhatsApp</b><i id="nav-line-count">0</i>';
     branchNav?.parentNode?.insertBefore(nav, branchNav);
     nav.addEventListener('click', () => switchView('whatsappLines'));
 
@@ -21,32 +21,32 @@
     const section = document.createElement('section'); section.className = 'view'; section.dataset.viewPanel = 'whatsappLines';
     section.innerHTML = `
       <div class="section-heading multiline-heading">
-        <div><p class="kicker">MULTI-LÍNEA WHATSAPP · V20.1</p><h2>Números, permisos y enrutamiento</h2><p>Administrá varias líneas por sucursal. Cada número conserva su propia sesión, QR o Cloud API, usuarios autorizados, BOT y conversaciones.</p></div>
+        <div><p class="kicker">CONEXIONES WHATSAPP</p><h2>Números, agentes y enrutamiento</h2><p>Administrá todas las líneas en un solo lugar. Cada número conserva su sesión QR o Cloud API y puede asignarse a cualquier agente, incluso varias líneas al mismo usuario.</p></div>
         <div class="heading-actions"><button class="button ghost" id="line-refresh" type="button">↻ Actualizar</button><button class="button primary" id="line-new" type="button">＋ Nueva línea</button></div>
       </div>
       <div class="multiline-summary" id="multiline-summary"></div>
-      <article class="panel multiline-help"><span>i</span><div><b>Cómo funciona</b><p>Cuando un cliente escribe a un número, la negociación queda asociada a esa línea. Solo los usuarios habilitados para esa línea pueden verla y responderla. Si una línea se marca como predeterminada, también se usa para nuevas operaciones internas de esa sucursal.</p></div></article>
+      <article class="panel multiline-help"><span>i</span><div><b>Cómo funciona</b><p>Cuando un cliente escribe, la conversación queda asociada al número y se entrega a sus agentes asignados. Si hay varios disponibles, el CRM prioriza al de menor carga. La sucursal inicial solo organiza el nuevo contacto; no limita quién puede atenderlo.</p></div></article>
       <div class="whatsapp-line-grid" id="whatsapp-line-grid"></div>`;
     branchView?.parentNode?.insertBefore(section, branchView);
 
     document.body.insertAdjacentHTML('beforeend', `
       <dialog id="whatsapp-line-dialog"><form id="whatsapp-line-form" class="dialog-card whatsapp-line-dialog">
-        <header><div><p class="kicker">LÍNEA DE WHATSAPP</p><h3 id="line-dialog-title">Nueva línea</h3><small>Definí el número, la sucursal y quién puede utilizarlo.</small></div><button class="icon-button close" type="button" data-dialog-close>×</button></header>
+        <header><div><p class="kicker">CONEXIÓN DE WHATSAPP</p><h3 id="line-dialog-title">Nueva línea</h3><small>Definí el número y asignalo a los agentes que lo atenderán.</small></div><button class="icon-button close" type="button" data-dialog-close>×</button></header>
         <input id="line-id" type="hidden">
-        <div class="form-grid"><label><span>Nombre de la línea *</span><input id="line-name" maxlength="120" required placeholder="Ej.: Ventas Casa Central"></label><label><span>Sucursal *</span><select id="line-branch" required></select></label></div>
+        <div class="form-grid"><label><span>Nombre de la línea *</span><input id="line-name" maxlength="120" required placeholder="Ej.: Ventas principal"></label><label><span>Sucursal inicial de nuevos contactos *</span><select id="line-branch" required></select><small>Sirve para reportes y stock; no restringe los agentes asignados.</small></label></div>
         <div class="form-grid"><label><span>Conexión</span><select id="line-provider"><option value="qr">WhatsApp por QR</option><option value="cloud">WhatsApp Cloud API</option></select></label><label><span>Número / referencia</span><input id="line-phone" maxlength="40" placeholder="Ej.: +595981123456"></label></div>
-        <div class="form-grid"><label><span>Acceso de agentes</span><select id="line-access"><option value="branch">Todos los agentes de la sucursal</option><option value="selected">Solo usuarios seleccionados</option></select></label><label><span>Notas internas</span><input id="line-notes" maxlength="500" placeholder="Ej.: Línea exclusiva para Ventas"></label></div>
+        <div class="form-grid"><label><span>Acceso de agentes</span><select id="line-access"><option value="selected">Solo usuarios seleccionados</option><option value="all">Todo el equipo</option></select></label><label><span>Notas internas</span><input id="line-notes" maxlength="500" placeholder="Ej.: Línea de ventas y postventa"></label></div>
         <section class="line-user-selector" id="line-user-selector"><div class="panel-title"><div><p class="kicker">USUARIOS AUTORIZADOS</p><h4>Quién puede atender este número</h4></div><span id="line-user-count">0 seleccionados</span></div><div id="line-user-list" class="line-user-list"></div></section>
         <div class="line-toggle-grid">
-          <label class="switch-row"><input id="line-supervisors" type="checkbox" checked><span><b>Jefes</b><small>Permitir a jefes de la sucursal usar la línea.</small></span></label>
-          <label class="switch-row"><input id="line-managers" type="checkbox" checked><span><b>Gerencia</b><small>Permitir a gerencia usar la línea según su ámbito.</small></span></label>
+          <label class="switch-row"><input id="line-supervisors" type="checkbox" checked><span><b>Jefes</b><small>Permitir supervisión operativa de esta línea.</small></span></label>
+          <label class="switch-row"><input id="line-managers" type="checkbox" checked><span><b>Gerencia</b><small>Permitir supervisión gerencial de esta línea.</small></span></label>
           <label class="switch-row"><input id="line-bot" type="checkbox" checked><span><b>BOT activo</b><small>El BOT puede responder clientes de esta línea.</small></span></label>
           <label class="switch-row"><input id="line-default" type="checkbox"><span><b>Línea predeterminada</b><small>Usarla por defecto dentro de la sucursal.</small></span></label>
           <label class="switch-row"><input id="line-active" type="checkbox" checked><span><b>Línea activa</b><small>Habilitar recepción, envío y asignación.</small></span></label>
         </div>
         <section class="line-cloud-fields" id="line-cloud-fields" hidden>
           <p class="kicker">CLOUD API</p><div class="form-grid"><label><span>Phone Number ID</span><input id="line-cloud-phone-id" maxlength="80"></label><label><span>Business Account ID</span><input id="line-cloud-business-id" maxlength="80"></label></div>
-          <div class="form-grid"><label><span>Versión API</span><input id="line-cloud-version" maxlength="20" value="v23.0"></label><label><span>Access Token</span><input id="line-cloud-token" type="password" autocomplete="new-password" placeholder="Dejar vacío para conservar"></label></div>
+          <div class="form-grid"><label><span>Versión API</span><input id="line-cloud-version" maxlength="20" value="v26.0"></label><label><span>Access Token</span><input id="line-cloud-token" type="password" autocomplete="new-password" placeholder="Dejar vacío para conservar"></label></div>
           <label><span>Verify Token del webhook</span><input id="line-cloud-verify" type="password" autocomplete="new-password" placeholder="Dejar vacío para conservar"></label>
           <div class="notice"><span>!</span><p>Los tokens no se muestran nuevamente. Si editás una línea y dejás estos campos vacíos, se conservan los valores guardados.</p></div>
         </section>
@@ -93,8 +93,8 @@
     } catch (e) { if (toast) showToast(e.message, 'warning'); }
   }
 
-  function visibleLineUsers(branchId) {
-    return (appState?.users || []).filter(u => u.active !== false && u.branchId === branchId && u.role === 'agent');
+  function visibleLineUsers() {
+    return (appState?.users || []).filter(u => u.active !== false && u.role !== 'admin').sort((a,b)=>String(a.branchName||'').localeCompare(String(b.branchName||''))||String(a.name||a.username).localeCompare(String(b.name||b.username)));
   }
   function authorizedNames(line) {
     const ids = new Set(line.allowedUserIds || []);
@@ -114,9 +114,9 @@
       const status = line.connection?.status || 'disconnected'; const names = authorizedNames(line); const selected = line.accessMode === 'selected';
       const canConnect = ['admin','manager','supervisor'].includes(appState.currentUser?.role) && line.canUse !== false;
       return `<article class="panel whatsapp-line-card ${lineStatusTone(status)}" data-line-id="${escapeHtml(line.id)}">
-        <div class="line-card-top"><div class="line-icon">◉</div><div><div class="line-title-row"><h3>${escapeHtml(line.name)}</h3>${line.isDefault?'<span class="line-default-badge">Predeterminada</span>':''}${line.legacyBranchSession?'<span class="line-legacy-badge">Migrada</span>':''}</div><small>${escapeHtml(line.branchName || 'Sucursal')} · ${line.provider === 'cloud' ? 'Cloud API' : 'QR independiente'}</small></div><span class="line-state ${lineStatusTone(status)}"><i></i>${escapeHtml(lineStatusLabel(status))}</span></div>
+        <div class="line-card-top"><div class="line-icon">◉</div><div><div class="line-title-row"><h3>${escapeHtml(line.name)}</h3>${line.isDefault?'<span class="line-default-badge">Predeterminada</span>':''}${line.legacyBranchSession?'<span class="line-legacy-badge">Migrada</span>':''}</div><small>Ingreso: ${escapeHtml(line.routingBranchName || line.branchName || 'General')} · ${line.provider === 'cloud' ? 'Cloud API' : 'QR independiente'}</small></div><span class="line-state ${lineStatusTone(status)}"><i></i>${escapeHtml(lineStatusLabel(status))}</span></div>
         <div class="line-number"><small>Número</small><strong>${escapeHtml(line.phone || line.connection?.account || 'Todavía sin identificar')}</strong></div>
-        <div class="line-meta"><span>BOT ${line.botEnabled!==false?'✓':'—'}</span><span>${selected ? `${names.length} agente${names.length===1?'':'s'} seleccionado${names.length===1?'':'s'}` : 'Todos los agentes de sucursal'}</span><span>${line.active!==false?'Activa':'Inactiva'}</span></div>
+        <div class="line-meta"><span>BOT ${line.botEnabled!==false?'✓':'—'}</span><span>${selected ? `${names.length} usuario${names.length===1?'':'s'} asignado${names.length===1?'':'s'}` : 'Todo el equipo'}</span><span>${line.active!==false?'Activa':'Inactiva'}</span></div>
         ${selected ? `<div class="line-allowed"><b>Autorizados:</b> ${escapeHtml(names.join(', ') || 'Ningún agente seleccionado')}</div>` : ''}
         ${line.connection?.error ? `<div class="campaign-warning">${escapeHtml(line.connection.error)}</div>` : ''}
         ${status === 'qr' && line.connection?.qr ? `<div class="line-qr"><img src="${line.connection.qr}" alt="QR de ${escapeHtml(line.name)}"><div><b>Escaneá este QR</b><small>WhatsApp → Dispositivos vinculados → Vincular dispositivo.</small></div></div>` : ''}
@@ -126,8 +126,8 @@
   }
 
   function renderLineUsers(selectedIds=null) {
-    const branchId = $('#line-branch')?.value; const users = visibleLineUsers(branchId); const ids = selectedIds || new Set($$('#line-user-list input:checked').map(x => x.value));
-    $('#line-user-list').innerHTML = users.length ? users.map(u => `<label class="line-user-row"><input type="checkbox" value="${escapeHtml(u.id)}" ${ids.has(u.id)?'checked':''}><span><b>${escapeHtml(u.name || u.username)}</b><small>${escapeHtml(roleLabel(u.role))}</small></span></label>`).join('') : '<div class="ai-empty">Esta sucursal todavía no tiene agentes activos.</div>';
+    const users = visibleLineUsers(); const ids = selectedIds || new Set($$('#line-user-list input:checked').map(x => x.value));
+    $('#line-user-list').innerHTML = users.length ? users.map(u => `<label class="line-user-row"><input type="checkbox" value="${escapeHtml(u.id)}" ${ids.has(u.id)?'checked':''}><span><b>${escapeHtml(u.name || u.username)}</b><small>${escapeHtml(roleLabel(u.role))} · ${escapeHtml(u.branchName || 'Administración general')}</small></span></label>`).join('') : '<div class="ai-empty">Todavía no hay usuarios activos para asignar.</div>';
     updateLineUserCount(); updateLineFormVisibility();
   }
   function updateLineUserCount() { const count = $$('#line-user-list input:checked').length; if ($('#line-user-count')) $('#line-user-count').textContent = `${count} seleccionado${count===1?'':'s'}`; }
@@ -140,15 +140,15 @@
     $('#line-branch').innerHTML = branches.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.name)}</option>`).join('');
     $('#line-branch').value = line?.branchId || appState.currentUser?.branchId || branches[0]?.id || ''; $('#line-branch').disabled = Boolean(line);
     $('#line-name').value = line?.name || ''; $('#line-provider').value = line?.provider || 'qr'; $('#line-provider').disabled = line?.legacyBranchSession === true;
-    $('#line-phone').value = line?.phone || ''; $('#line-access').value = line?.accessMode || 'branch'; $('#line-notes').value = line?.notes || '';
+    $('#line-phone').value = line?.phone || ''; $('#line-access').value = line?.accessMode === 'all' ? 'all' : 'selected'; $('#line-notes').value = line?.notes || '';
     $('#line-supervisors').checked = line?.supervisorsCanUse !== false; $('#line-managers').checked = line?.managersCanUse !== false; $('#line-bot').checked = line?.botEnabled !== false; $('#line-default').checked = line?.isDefault === true; $('#line-active').checked = line?.active !== false;
-    $('#line-cloud-phone-id').value = line?.cloud?.phoneNumberId || ''; $('#line-cloud-business-id').value = line?.cloud?.businessAccountId || ''; $('#line-cloud-version').value = line?.cloud?.apiVersion || 'v23.0'; $('#line-cloud-token').value = ''; $('#line-cloud-verify').value = '';
+    $('#line-cloud-phone-id').value = line?.cloud?.phoneNumberId || ''; $('#line-cloud-business-id').value = line?.cloud?.businessAccountId || ''; $('#line-cloud-version').value = line?.cloud?.apiVersion || 'v26.0'; $('#line-cloud-token').value = ''; $('#line-cloud-verify').value = '';
     renderLineUsers(new Set(line?.allowedUserIds || [])); updateLineFormVisibility(); $('#whatsapp-line-dialog').showModal();
   }
 
   async function saveLine(event) {
     event.preventDefault(); const id = $('#line-id').value; const allowedUserIds = $$('#line-user-list input:checked').map(x => x.value);
-    const payload = {name:$('#line-name').value.trim(),branchId:$('#line-branch').value,provider:$('#line-provider').value,phone:$('#line-phone').value.trim(),accessMode:$('#line-access').value,allowedUserIds,supervisorsCanUse:$('#line-supervisors').checked,managersCanUse:$('#line-managers').checked,botEnabled:$('#line-bot').checked,isDefault:$('#line-default').checked,active:$('#line-active').checked,notes:$('#line-notes').value.trim(),cloud:{phoneNumberId:$('#line-cloud-phone-id').value.trim(),businessAccountId:$('#line-cloud-business-id').value.trim(),apiVersion:$('#line-cloud-version').value.trim()||'v23.0',accessToken:$('#line-cloud-token').value.trim(),verifyToken:$('#line-cloud-verify').value.trim()}};
+    const payload = {name:$('#line-name').value.trim(),branchId:$('#line-branch').value,provider:$('#line-provider').value,phone:$('#line-phone').value.trim(),accessMode:$('#line-access').value,allowedUserIds,supervisorsCanUse:$('#line-supervisors').checked,managersCanUse:$('#line-managers').checked,botEnabled:$('#line-bot').checked,isDefault:$('#line-default').checked,active:$('#line-active').checked,notes:$('#line-notes').value.trim(),cloud:{phoneNumberId:$('#line-cloud-phone-id').value.trim(),businessAccountId:$('#line-cloud-business-id').value.trim(),apiVersion:$('#line-cloud-version').value.trim()||'v26.0',accessToken:$('#line-cloud-token').value.trim(),verifyToken:$('#line-cloud-verify').value.trim()}};
     try { const next = await api(id ? `/api/whatsapp-lines/${encodeURIComponent(id)}` : '/api/whatsapp-lines',{method:id?'PUT':'POST',body:JSON.stringify(payload)}); setState(next); $('#whatsapp-line-dialog').close(); await fetchLines(); showToast(id?'Línea actualizada':'Línea creada'); }
     catch(e){ showToast(e.message,'warning'); }
   }
@@ -186,7 +186,7 @@
   }
 
   injectMultiLineView(); injectAiRepairPanel();
-  try { if (typeof viewCopy !== 'undefined') viewCopy.whatsappLines = ['Líneas WhatsApp','Números y permisos']; } catch {}
+  try { if (typeof viewCopy !== 'undefined') viewCopy.whatsappLines = ['Conexiones WhatsApp','Números y agentes']; } catch {}
   const priorRenderAll = renderAll; renderAll = function(){ priorRenderAll(); renderV201(); };
   const priorSwitchView = switchView; switchView = function(view){ priorSwitchView(view); if(view==='whatsappLines'){void fetchLines();startLinePolling();} if(view==='advanced')void loadAiStatus(); };
 })();
