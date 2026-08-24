@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<meta content="light" name="color-scheme"/>
+<meta content="#171717" name="theme-color"/>
+<meta content="yes" name="mobile-web-app-capable"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="default" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="WhatsBot CRM" name="apple-mobile-web-app-title"/>
+<link href="/manifest.webmanifest" rel="manifest"/>
+<link href="/icons/icon-192.png" rel="apple-touch-icon"/>
+<link href="/icons/icon-192.png" id="brand-favicon" rel="icon"/>
+<title>WhatsBot CRM</title>
+<meta content="CRM multiusuario con WhatsApp por QR o API oficial, bot, responsables y control de stock." name="description"/>
+<link href="/styles.css" rel="stylesheet"/>
+<link href="/v20.css" rel="stylesheet"/>
+<link href="/v20-1.css" rel="stylesheet"/>
+<link href="/v20-2.css" rel="stylesheet"/>
+<link href="/v20-3.css" rel="stylesheet"/>
+<link href="/v21.css" rel="stylesheet"/>
+<link href="/v21-1.css" rel="stylesheet"/>
+<link href="/v21-2.css" rel="stylesheet"/>
+<link href="/v21-3.css" rel="stylesheet"/>
+<link href="/v21-4.css" rel="stylesheet"/>
+<link href="/v21-5.css" rel="stylesheet"/>
+<link href="/v21-6.css" rel="stylesheet"/>
+<link href="/v21-8.css" rel="stylesheet"/>
+<link href="/v21-9.css" rel="stylesheet"/>
+<script defer="" src="/app.js"></script>
+<script defer="" src="/v20.js"></script>
+<script defer="" src="/v20-1.js"></script>
+<script defer="" src="/v20-2.js"></script>
+<script defer="" src="/v20-3.js"></script>
+<script defer="" src="/v21.js"></script>
+<script defer="" src="/v21-1.js"></script>
+<script defer="" src="/v21-2.js"></script>
+<script defer="" src="/v21-3.js"></script>
+<script defer="" src="/v21-4.js"></script>
+<script defer="" src="/v21-6.js"></script>
+<script defer="" src="/v21-7.js"></script>
+<script defer="" src="/v21-9.js"></script>
+<link href="/v22.css" rel="stylesheet"/>
+<link href="/v22-3.css" rel="stylesheet"/>
+<script defer src="/v22.js"></script>
+</head>
+<body>
+<section class="login-screen" id="login-screen">
+<div class="login-ambient login-a"></div>
+<div class="login-ambient login-b"></div>
+<form class="login-card" id="login-form">
+<div class="brand-mark"><img alt="Logo" hidden="" id="login-brand-logo"/><span id="login-brand-letter">W</span><i></i></div>
+<p class="kicker" id="login-brand-kicker">CONTROL LOCAL · 24/7</p>
+<h1 id="login-brand-name">WhatsBot <em>CRM</em></h1>
+<p class="login-copy" id="login-brand-message">Ingresá con tu usuario para administrar las conversaciones, el bot y el stock.</p>
+<label class="input-label" for="login-username">Usuario</label>
+<input autocomplete="username" id="login-username" required="" type="text" value="admin"/>
+<label class="input-label" for="login-password">Contraseña</label>
+<input autocomplete="current-password" id="login-password" required="" type="password"/>
+<button class="button primary wide" type="submit">Ingresar <span>→</span></button>
+<p class="form-error" id="login-error" role="alert"></p>
+</form>
+</section>
+<div class="app-shell" hidden="" id="app-shell">
+<aside class="sidebar">
+<div class="sidebar-brand">
+<div class="brand-mark small"><img alt="Logo" hidden="" id="sidebar-brand-logo"/><span id="sidebar-brand-letter">W</span><i></i></div>
+<div><strong id="sidebar-brand-name">WhatsBot</strong><small id="sidebar-brand-subtitle">CRM LOCAL</small></div>
+</div>
+<nav aria-label="Navegación principal" class="nav-list">
+<button class="nav-item active" data-module="crm" data-view="crm" type="button">
+<span>◫</span><b>Negociaciones</b><i id="nav-deal-count">0</i>
+</button>
+<button class="nav-item" data-module="whatsapp" data-view="whatsapp" type="button">
+<span>◉</span><b>WhatsApp y bot</b><i class="connection-dot" id="nav-connection-dot"></i>
+</button>
+<button class="nav-item" data-module="branches" data-view="branches" type="button">
+<span>⌂</span><b>Sucursales</b><i id="nav-branch-count">0</i>
+</button>
+<button class="nav-item" data-module="attendance" data-view="attendance" type="button">
+<span>◉</span><b>Marcación</b><i id="nav-available-count">0</i>
+</button>
+<button class="nav-item" data-view="drive" hidden="" type="button">
+<span>☁</span><b>Drive compartido</b><i class="connection-dot" id="nav-drive-dot"></i>
+</button>
+<button class="nav-item" data-module="stock" data-view="stock" type="button">
+<span>▦</span><b>Stock</b><i id="nav-stock-alert">0</i>
+</button>
+<button class="nav-item" data-module="replies" data-view="replies" type="button">
+<span>⚡</span><b>Respuestas rápidas</b>
+</button>
+<button class="nav-item" data-module="campaigns" data-view="campaigns" type="button">
+<span>✦</span><b>Campañas</b><i id="nav-campaign-count">0</i>
+</button>
+<button class="nav-item" data-module="news" data-view="news" type="button">
+<span>◆</span><b>Noticias</b><i id="nav-news-count">0</i>
+</button>
+<button class="nav-item ai-nav" data-module="aiCenter" data-view="ai" type="button"><span>✦</span><b>Centro IA</b><i id="nav-ai-alert">AI</i></button>
+<button class="nav-item" data-module="productivity" data-view="productivity" type="button"><span>✓</span><b>Productividad</b><i id="nav-task-count">0</i></button>
+<button class="nav-item" data-module="data" data-view="data" type="button">
+<span>⇅</span><b>Datos y respaldos</b>
+</button>
+<button class="nav-item" data-module="reports" data-view="reports" type="button">
+<span>▥</span><b>Reportes</b>
+</button>
+<button class="nav-item" data-view="design" type="button"><span>✦</span><b>Diseño y marca</b><i>WL</i></button><button class="nav-item" data-view="settings" type="button">
+<span>⚙</span><b>Configuración</b>
+</button>
+</nav>
+<div class="sidebar-bottom">
+<div class="current-user-card"><span id="current-user-avatar">A</span><div><b id="current-user-name">Administrador</b><small id="current-user-role">Administrador</small><small id="current-user-branch">Todas las sucursales</small></div></div>
+<div class="server-status"><i></i><div><b>Servidor activo</b><small>Este equipo mantiene el bot encendido</small></div></div>
+<button class="nav-item logout" id="logout-button" type="button"><span>↪</span><b>Cerrar sesión</b></button>
+</div>
+</aside>
+<main class="workspace">
+<header class="workspace-header">
+<div>
+<p class="breadcrumb">WHATSAPP / <span id="header-section">NEGOCIACIONES</span></p>
+<h2 id="header-title">Panel comercial</h2>
+</div>
+<div class="header-actions operational-header">
+<div class="live-clock" title="Fecha y hora de la sucursal"><small id="live-date">--</small><strong id="live-time">--:--:--</strong></div>
+<button class="weather-pill" id="weather-pill" title="Actualizar clima" type="button"><span id="weather-icon">🌤</span><div><strong id="weather-temp">--°</strong><small id="weather-location">Clima</small></div></button>
+<label class="header-attendance"><span class="attendance-dot" id="header-attendance-dot"></span><div><small>Mi estado</small><select aria-label="Marcación" id="header-attendance-select"><option value="active">Disponible</option><option value="paused">Pausa</option><option value="away">Permiso / Ausente</option><option value="offline">Fuera de línea</option></select></div></label>
+<button class="presence-pill" id="presence-button" type="button"><span>●</span><div><strong id="presence-count">0 disponibles</strong><small id="presence-scope">Equipo</small></div></button>
+<div class="connection-pill" id="connection-pill"><i></i><span>Sin vincular</span></div>
+<button class="button ghost install-app-button" hidden="" id="install-app-button" type="button">＋ Instalar app</button>
+<button class="button ghost compact-refresh" id="refresh-button" type="button">↻</button>
+</div>
+</header>
+<div class="incident-banner" hidden="" id="incident-banner"><span id="incident-icon">!</span><div><strong id="incident-title">Aviso operativo</strong><small id="incident-message"></small></div></div>
+<div class="live-activity-strip" hidden="" id="live-activity-strip"><span class="live-activity-signal"><i></i> EN VIVO</span><div class="live-activity-track"><span id="live-activity-text">Actividad del equipo</span></div><small id="live-activity-time"></small></div>
+<section class="view active" data-view-panel="crm">
+<div class="metric-grid">
+<article class="metric"><span class="metric-icon green">◫</span><div><small>Abiertas</small><strong id="metric-open">0</strong></div><em id="metric-open-note">Sin conversaciones</em></article>
+<article class="metric"><span class="metric-icon amber">⌛</span><div><small>Esperan respuesta</small><strong id="metric-waiting">0</strong></div><em id="metric-oldest">Al día</em></article>
+<article class="metric"><span class="metric-icon blue">✓</span><div><small>Ganadas</small><strong id="metric-won">0</strong></div><em>Histórico</em></article>
+<article class="metric"><span class="metric-icon red">!</span><div><small>Stock bajo</small><strong id="metric-low-stock">0</strong></div><em>Productos</em></article>
+</div>
+<div class="toolbar">
+<label class="search-box"><span>⌕</span><input id="deal-search" placeholder="Buscar nombre, teléfono o mensaje…" type="search"/></label>
+<label class="select-box"><span>Mostrar</span><select id="deal-filter"><option value="all">Todas</option><option value="mine">Mis clientes</option><option value="unassigned">Sin responsable</option><option value="bot">Con bot activo</option><option value="reserved">Con reserva</option></select></label>
+<button class="button primary" id="new-client-button" type="button">＋ Cargar cliente</button>
+<div class="heat-legend"><small>Prioridad:</small><i class="heat fresh"></i><span>Reciente</span><i class="heat hot"></i><span>Atención</span><i class="heat critical"></i><span>Urgente</span></div>
+</div>
+<div aria-label="Etapas de negociación" class="mobile-stage-tabs" id="mobile-stage-tabs">
+<button class="active" data-mobile-stage="new" type="button"><span>Nuevos</span><b data-mobile-stage-count="new">0</b></button>
+<button data-mobile-stage="contacted" type="button"><span>Contactados</span><b data-mobile-stage-count="contacted">0</b></button>
+<button data-mobile-stage="waiting" type="button"><span>Esperan</span><b data-mobile-stage-count="waiting">0</b></button>
+<button data-mobile-stage="won" type="button"><span>Ganados</span><b data-mobile-stage-count="won">0</b></button>
+<button data-mobile-stage="lost" type="button"><span>Perdidos</span><b data-mobile-stage-count="lost">0</b></button>
+</div>
+<div class="board" id="crm-board">
+<section class="board-column" data-stage="new"><header><div><i class="stage-dot new"></i><b>Nuevos contactos</b></div><span>0</span></header><div class="deal-list"></div></section>
+<section class="board-column" data-stage="contacted"><header><div><i class="stage-dot contacted"></i><b>Contactado</b></div><span>0</span></header><div class="deal-list"></div></section>
+<section class="board-column waiting-column" data-stage="waiting"><header><div><i class="stage-dot waiting"></i><b>Cliente espera respuesta</b></div><span>0</span></header><div class="deal-list"></div></section>
+<section class="board-column" data-stage="won"><header><div><i class="stage-dot won"></i><b>Ganado</b></div><span>0</span></header><div class="deal-list"></div></section>
+<section class="board-column" data-stage="lost"><header><div><i class="stage-dot lost"></i><b>Cerrado perdido</b></div><span>0</span></header><div class="deal-list"></div></section>
+</div>
+</section>
+<section class="view" data-view-panel="whatsapp">
+<div class="section-grid two-cols">
+<article class="panel qr-panel">
+<div class="panel-title"><div><p class="kicker">CONEXIÓN DE WHATSAPP</p><h3>Conectar WhatsApp</h3></div><span class="mini-status" id="mini-status"><i></i><b>Pendiente</b></span></div>
+<label class="input-label" for="whatsapp-mode">Método de conexión</label>
+<select id="whatsapp-mode"><option value="qr">Código QR</option><option value="cloud">WhatsApp API oficial</option></select>
+<div id="qr-connection-section">
+<div class="qr-stage" id="qr-stage">
+<div class="phone-illustration"><span>W</span><i></i><small>Generá un QR para comenzar</small></div>
+</div>
+<div class="connection-copy"><h4 id="connection-title">Listo para vincular</h4><p id="connection-detail">Escaneá el código desde Dispositivos vinculados.</p></div>
+<button class="button primary wide" id="connect-button" type="button">▦ Generar código QR</button>
+<button class="button danger-outline wide" hidden="" id="unlink-button" type="button">Desvincular cuenta</button>
+<ol class="qr-steps"><li><span>1</span>Abrí WhatsApp en tu teléfono</li><li><span>2</span>Entrá en Dispositivos vinculados</li><li><span>3</span>Escaneá este código QR</li></ol>
+<div class="sync-card"><span>↻</span><div><b>Recuperación automática</b><small id="sync-detail">Al reconectar, los mensajes pendientes aparecerán en el CRM.</small></div></div>
+</div>
+<div hidden="" id="api-connection-section">
+<div class="form-grid"><label><span>ID del número</span><input autocomplete="off" id="wa-phone-number-id"/></label><label><span>ID de cuenta empresarial</span><input autocomplete="off" id="wa-business-id"/></label></div>
+<div class="form-grid"><label><span>Token de acceso</span><input autocomplete="off" id="wa-access-token" placeholder="Token permanente" type="password"/><small id="wa-token-status">No configurado</small></label><label><span>Versión Graph API</span><input id="wa-api-version" value="v23.0"/></label></div>
+<label><span>Token de verificación del webhook</span><input autocomplete="off" id="wa-verify-token" placeholder="Token secreto" type="password"/><small id="wa-verify-status">No configurado</small></label>
+<div class="notice"><span>i</span><p>Webhook: <code id="wa-webhook-url">/api/whatsapp/webhook</code>. Para recibir mensajes desde internet, publicá este equipo con HTTPS o usa un servidor.</p></div>
+<div class="inline-actions"><button class="button primary" id="save-whatsapp-api-button" type="button">Guardar WhatsApp API</button><button class="button ghost" id="test-whatsapp-api-button" type="button">Activar conexión</button></div>
+</div>
+</article>
+<article class="panel bot-panel">
+<div class="panel-title"><div><p class="kicker">BOT + COPILOTO</p><h3>Automatización antes del handoff humano</h3></div><button aria-checked="true" class="toggle" id="global-bot-toggle" role="switch" type="button"><i></i><span>Activo</span></button></div>
+<label class="input-label" for="instructions">Personalidad, información y reglas</label>
+<textarea id="instructions" maxlength="12000" rows="11"></textarea>
+<div class="textarea-meta"><span>Indicá tono, horarios y cuándo derivar a una persona.</span><b id="instruction-counter">0 / 12.000</b></div>
+<div class="form-grid">
+<label><span>Clave de OpenAI</span><input autocomplete="off" id="api-key" placeholder="sk-…" type="password"/><small id="api-key-status">No configurada</small></label>
+<label><span>Modelo</span><input id="model" type="text"/></label>
+</div>
+<label class="check-row"><input id="bot-can-reserve" type="checkbox"/><span><b>Permitir reservas de stock</b><small>Solo después de una confirmación explícita del cliente.</small></span></label>
+<div class="inline-actions"><button class="button primary" id="save-bot-button" type="button">Guardar configuración</button><button class="button ghost" id="clear-key-button" type="button">Quitar clave</button></div>
+</article>
+</div>
+<article class="panel activity-panel">
+<div class="panel-title"><div><p class="kicker">REGISTRO</p><h3>Actividad reciente</h3></div></div>
+<div class="activity-list" id="activity-list"></div>
+</article>
+</section>
+<section class="view" data-view-panel="branches">
+<div class="section-heading branch-heading"><div><p>Administrá todas las <b>sucursales desde un único servidor</b>. Los usuarios ingresan por la misma IP y cada sucursal utiliza su propia sesión de WhatsApp.</p></div><button class="button primary" id="new-branch-button" type="button">＋ Agregar sucursal</button></div>
+<div class="notice branch-notice central-network-notice"><span>◎</span><p><b>Red central V15:</b> todas las sucursales comparten la misma base en este equipo servidor. Cada usuario queda asociado a una sucursal y todos sus mensajes salen por el <b>WhatsApp conectado a esa sucursal</b>. Las d

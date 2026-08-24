@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Formulario</title>
+  <link rel="stylesheet" href="/public-form.css">
+</head>
+<body>
+  <main class="form-shell">
+    <header class="public-brand">
+      <img id="public-logo" alt="" hidden>
+      <div><span id="public-short-name">FORMULARIO</span><strong id="public-system-name">WhatsBot CRM</strong></div>
+    </header>
+
+    <section class="public-card" id="loading-state">
+      <div class="loader" aria-hidden="true"></div>
+      <h1>Cargando formulario…</h1>
+      <p>Estamos preparando las preguntas.</p>
+    </section>
+
+    <section class="public-card error-card" id="error-state" hidden>
+      <span class="state-icon">!</span>
+      <h1>Formulario no disponible</h1>
+      <p id="error-copy">Revisá el enlace o solicitá uno nuevo.</p>
+    </section>
+
+    <form class="public-card" id="public-form" hidden novalidate>
+      <div class="progress-track"><i id="progress-value"></i></div>
+      <p class="eyebrow" id="form-kicker">FORMULARIO</p>
+      <h1 id="form-title"></h1>
+      <p class="form-description" id="form-description"></p>
+      <div class="question-stage" id="question-stage"></div>
+      <label class="website-field" aria-hidden="true">Sitio web<input id="website-field" tabindex="-1" autocomplete="off"></label>
+      <div class="form-actions">
+        <button class="button secondary" id="back-button" type="button" hidden>Anterior</button>
+        <button class="button primary" id="next-button" type="submit">Continuar</button>
+      </div>
+      <p class="form-error" id="form-error" role="alert" hidden></p>
+      <small class="privacy-copy">Tus respuestas se registrarán de forma segura en el CRM de la empresa.</small>
+    </form>
+
+    <section class="public-card success-card" id="success-state" hidden>
+      <span class="state-icon success">✓</span>
+      <p class="eyebrow">RESPUESTA REGISTRADA</p>
+      <h1>¡Muchas gracias!</h1>
+      <p id="success-copy">Tus respuestas quedaron registradas correctamente.</p>
+    </section>
+  </main>
+  <script src="/public-form.js" defer></script>
+</body>
+</html>

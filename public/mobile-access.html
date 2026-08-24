@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#143c2f" />
+  <title>Acceso Mobile · WhatsBot CRM</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:#f4f2ea;color:#263930;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{width:min(920px,calc(100% - 28px));margin:0 auto;padding:42px 0}.head{margin-bottom:24px}.head small{font-weight:900;letter-spacing:.13em;color:#5f7569}.head h1{margin:8px 0;font-family:Georgia,serif;font-size:34px}.head p{max-width:650px;color:#6f7d75;line-height:1.55}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}.card{padding:20px;border:1px solid #dce3dc;border-radius:18px;background:#fff;box-shadow:0 16px 40px rgba(24,60,46,.08);text-align:center}.card img{width:min(260px,100%);aspect-ratio:1;border-radius:14px}.card a{display:block;margin-top:14px;color:#143c2f;font-weight:900;overflow-wrap:anywhere}.card p{margin:8px 0 0;color:#7b8881;font-size:13px}.notice{margin-top:18px;padding:14px 16px;border-radius:13px;background:#eaf2e9;color:#476457;font-size:13px;line-height:1.5}.empty{padding:25px;border:1px dashed #cdd7d0;border-radius:16px;background:#fff}.button{display:inline-flex;min-height:42px;align-items:center;justify-content:center;margin-top:18px;padding:0 16px;border-radius:10px;background:#143c2f;color:#fff;text-decoration:none;font-weight:800}@media(max-width:560px){.wrap{padding:24px 0}.head h1{font-size:28px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="head"><small>WHATSBOT CRM · MOBILE</small><h1>Escaneá y entrá desde tu celular</h1><p>La computadora debe estar encendida y el teléfono conectado a la misma red Wi‑Fi. Elegí cualquiera de las direcciones que aparezcan abajo.</p></div>
+    <div id="grid" class="grid"><div class="empty">Buscando direcciones de red…</div></div>
+    <div class="notice">Para acceso fuera de la red local, utilizá HTTPS mediante un servidor o proxy seguro. No publiques directamente el puerto 3030 en Internet.</div>
+    <a class="button" href="/">Volver al CRM</a>
+  </main>
+<script>
+fetch('/api/mobile/access').then(r=>r.json()).then(({entries=[]})=>{
+  const grid=document.getElementById('grid');
+  if(!entries.length){grid.innerHTML='<div class="empty">No se detectó una dirección de red. Verificá que la PC esté conectada a Wi‑Fi o cable de red.</div>';return;}
+  grid.innerHTML=entries.map((x,i)=>`<article class="card"><img src="${x.qr}" alt="QR de acceso ${i+1}"><a href="${x.url}">${x.url}</a><p>Escaneá este QR desde el celular.</p></article>`).join('');
+}).catch(()=>{document.getElementById('grid').innerHTML='<div class="empty">No se pudieron obtener las direcciones. Asegurate de que el servidor esté iniciado.</div>';});
+</script>
+</body>
+</html>

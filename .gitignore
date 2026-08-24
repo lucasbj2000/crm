@@ -1,0 +1,21 @@
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Datos persistentes y credenciales del CRM
+data/*
+!data/.gitkeep
+runtime-data/
+sessions/
+auth_info*/
+media/
+uploads/
+backups/
+
+# Registros y archivos locales
+*.log
+npm-debug.log*
+.DS_Store
+coverage/
+.nyc_output/
