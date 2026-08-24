@@ -1,0 +1,17 @@
+services:
+  crm:
+    build: .
+    container_name: whatsbot-crm
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:3030:3030"
+    volumes:
+      - crm_data:/data
+    init: true
+    stop_grace_period: 30s
+
+volumes:
+  crm_data:
+    name: whatsbot_crm_data
