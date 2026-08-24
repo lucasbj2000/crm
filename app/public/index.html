@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<meta content="light" name="color-scheme"/>
+<meta content="#171717" name="theme-color"/>
+<meta content="yes" name="mobile-web-app-capable"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="default" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="WhatsBot CRM" name="apple-mobile-web-app-title"/>
+<link href="/manifest.webmanifest" rel="manifest"/>
+<link href="/icons/icon-192.png" rel="apple-touch-icon"/>
+<link href="/icons/icon-192.png" id="brand-favicon" rel="icon"/>
+<title>WhatsBot CRM</title>
+<meta content="CRM multiusuario con WhatsApp por QR o API oficial, bot, responsables y control de stock." name="description"/>
+<link href="/styles.css" rel="stylesheet"/>
+<link href="/v20.css" rel="stylesheet"/>
+<link href="/v20-1.css" rel="stylesheet"/>
+<link href="/v20-2.css" rel="stylesheet"/>
+<link href="/v20-3.css" rel="stylesheet"/>
+<link href="/v21.css" rel="stylesheet"/>
+<link href="/v21-1.css" rel="stylesheet"/>
+<link href="/v21-2.css" rel="stylesheet"/>
+<link href="/v21-3.css" rel="stylesheet"/>
+<link href="/v21-4.css" rel="stylesheet"/>
+<link href="/v21-5.css" rel="stylesheet"/>
+<link href="/v21-6.css" rel="stylesheet"/>
+<link href="/v21-8.css" rel="stylesheet"/>
+<link href="/v21-9.css" rel="stylesheet"/>
+<script defer="" src="/app.js?v=23.0.1-ui-fix"></script>
+<script defer="" src="/v20.js"></script>
+<script defer="" src="/v20-1.js"></script>
+<script defer="" src="/v20-2.js"></script>
+<script defer="" src="/v20-3.js"></script>
+<script defer="" src="/v21.js"></script>
+<script defer="" src="/v21-1.js"></script>
+<script defer="" src="/v21-2.js"></script>
+<script defer="" src="/v21-3.js"></script>
+<script defer="" src="/v21-4.js"></script>
+<script defer="" src="/v21-6.js"></script>
+<script defer="" src="/v21-7.js"></script>
+<script defer="" src="/v21-9.js"></script>
+<link href="/v22.css" rel="stylesheet"/>
+<link href="/v22-3.css" rel="stylesheet"/>
+<script defer src="/v22.js"></script>
+</head>
+<body>
+<section class="login-screen" id="login-screen">
+<div class="login-ambient login-a"></div>
+<div class="login-ambient login-b"></div>
+<form class="login-card" id="login-form">
+<div class="brand-mark"><img alt="Logo" hidden="" id="login-brand-logo"/><span id="login-brand-letter">W</span><i></i></div>
+<p class="kicker" id="login-brand-kicker">CONTROL LOCAL · 24/7</p>
+<h1 id="login-brand-name">WhatsBot <em>CRM</em></h1>
+<p class="login-copy" id="login-brand-message">Ingresá con tu usuario para administrar las conversaciones, el bot y el stock.</p>
+<label class="input-label" for="login-username">Usuario</label>
+<input autocomplete="username" id="login-username" required="" type="text" value="admin"/>
+<label class="input-label" for="login-password">Contraseña</label>
+<input autocomplete="current-password" id="login-password" required="" type="password"/>
+<button class="button primary wide" type="submit">Ingresar <span>→</span></button>
+<p class="form-error" id="login-error" role="alert"></p>
+</form>
+</section>
+<div class="app-shell" hidden="" id="app-shell">
+<aside class="sidebar">
+<div class="sidebar-brand">
+<div class="brand-mark small"><img alt="Logo" hidden="" id="sidebar-brand-logo"/><span id="sidebar-brand-letter">W</span><i></i></div>
+<div><strong id="sidebar-brand-name">WhatsBot</strong><small id="sidebar-brand-subtitle">CRM LOCAL</small></div>
+</div>
+<nav aria-label="Navegación principal" class="nav-list">
+<button class="nav-item active" data-module="crm" data-view="crm" type="button">
+<span>◫</span><b>Negociaciones</b><i id="nav-deal-count">0</i>
+</button>
+<button class="nav-item" data-module="whatsapp" data-view="whatsapp" type="button">
+<span>◉</span><b>WhatsApp y bot</b><i class="connection-dot" id="nav-connection-dot"></i>
+</button>
+<button class="nav-item" data-module="branches" data-view="branches" type="button">
+<span>⌂</span><b>Sucursales</b><i id="nav-branch-count">0</i>
+</button>
+<button class="nav-item" data-module="attendance" data-view="attendance" type="button">
+<span>◉</span><b>Marcación</b><i id="nav-available-count">0</i>
+</button>
+<button class="nav-item" data-view="drive" hidden="" type="button">
+<span>☁</span><b>Drive compartido</b><i class="connection-dot" id="nav-drive-dot"></i>
+</button>
+<button class="nav-item" data-module="stock" data-view="stock" type="button">
+<span>▦</span><b>Stock</b><i id="nav-stock-alert">0</i>
+</button>
+<button class="nav-item" data-module="replies" data-view="replies" type="button">
+<span>⚡</span><b>Respuestas rápidas</b>
+</button>
+<button class="nav-item" data-module="campaigns" data-view="campaigns" type="button">
+<span>✦</span><b>Campañas</b><i id="nav-campaign-count">0</i>
+</button>
+<button class="nav-item" data-module="news" data-view="news" type="button">
+<span>◆</span><b>Noticias</b><i id="nav-news-count">0</i>
+</button>
+<button class="nav-item ai-nav" data-module="aiCenter" data-view="ai" type="button"><span>✦</span><b>Centro IA</b><i id="nav-ai-alert">AI</i></button>
+<button class="nav-item" data-module="productivity" data-view="productivity" type="button"><span>✓</span><b>Productividad</b><i id="nav-task-count">0</i></button>
+<button class="nav-item" data-module="data" data-view="data" type="button">
+<span>⇅</span><b>Datos y respaldos</b>
+</button>
+<button class="nav-item" data-module="reports" data-view="reports" type="button">
+<span>▥</span><b>Reportes</b>
+</button>
+<button class="nav-item" data-view="design" type="button"><span>✦</span><b>Diseño y marca</b><i>WL</i></button><button class="nav-item" data-view="settings" type="button">
+<span>⚙</span><b>Configuración</b>
+</button>
+</nav>
+<div class="sidebar-bottom">
+<div class="current-user-card"><span id="current-user-avatar">A</span><div><b id="current-user-name">Administrador</b><small id="current-user-role">Administrador</small><small id="current-user-branch">Todas las sucursales</small></div></div>
+<div class="server-status"><i></i><div><b>Servidor activo</b><small>Este equipo mantiene el bot encendido</small></div></div>
+<button class="nav-item logout" id="logout-button" type="button"><span>↪</span><b>Cerrar sesión</b></button>
+</div>
+</aside>
+<main class="workspace">
+<header class="workspace-header">
+<div>
+<p class="breadcrumb">WHATSAPP / <span id="header-section">NEGOCIACIONES</span></p>
+<h2 id="header-title">Panel comercial</h2>
+</div>
+<div class="header-actions operational-header">
+<div class="live-clock" title="Fecha y hora de la sucursal"><small id="live-date">--</small><strong id="live-time">--:--:--</strong></div>
+<button class="weather-pill" id="weather-pill" title="Actualizar clima" type="button"><span id="weather-icon">🌤</span><div><strong id="weather-temp">--°</strong><small id="weather-location">Clima</small></div></button>
+<label class="header-attendance"><span class="attendance-dot" id="header-attendance-dot"></span><div><small>Mi estado</small><select aria-label="Marcación" id="header-attendance-select"><option value="active">Disponible</option><option value="paused">Pausa</option><option value="away">Permiso / Ausente</option><option value="offline">Fuera de línea</option></select></div></label>
+<button class="presence-pill" id="presence-button" type="button"><span>●</span><div><strong id="presence-count">0 disponibles</strong><small id="presence-scope">Equipo</small></div></button>
+<div class="connection-pill" id="connection-pill"><i></i><span>Sin vincular</span></div>
+<button class="button ghost install-app-button" hidden="" id="install-app-button" type="button">＋ Instalar app</button>
+<button class="button ghost compact-refresh" id="refresh-button" type="button">↻</button>
+</div>
+</header>
+<div class="incident-banner" hidden="" id="incident-banner"><span id="incident-icon">!</span><div><strong id="incident-title">Aviso operativo</strong><small id="incident-message"></small></div></div>
+<div class="live-activity-strip" hidden="" id="live-activity-strip"><span class="live-activity-signal"><i></i> EN VIVO</span><div class="live-activity-track"><span id="live-activity-text">Actividad del equipo</span></div><small id="live-activity-time"></small></div>
+<section class="view active" data-view-panel="crm">
+<div class="metric-grid">
+<article class="metric"><span class="metric-icon green">◫</span><div><small>Abiertas</small><strong id="metric-open">0</strong></div><em id="metric-open-note">Sin conversaciones</em></article>
+<article class="metric"><span class="metric-icon amber">⌛</span><div><small>Esperan respuesta</small><strong id="metric-waiting">0</strong></div><em id="metric-oldest">Al día</em></article>
+<article class="metric"><span class="metric-icon blue">✓</span><div><small>Ganadas</small><strong id="metric-won">0</strong></div><em>Histórico</em></article>
+<article class="metric"><span class="metric-icon red">!</span><div><small>Stock bajo</small><strong id="metric-low-stock">0</strong></div><em>Productos</em></article>
+</div>
+<div class="toolbar">
+<label class="search-box"><span>⌕</span><input id="deal-search" placeholder="Buscar nombre, teléfono o mensaje…" type="search"/></label>
+<label class="select-box"><span>Mostrar</span><select id="deal-filter"><option value="all">Todas</option><option value="mine">Mis clientes</option><option value="unassigned">Sin responsable</option><option value="bot">Con bot activo</option><option value="reserved">Con reserva</option></select></label>
+<button class="button primary" id="new-client-button" type="button">＋ Cargar cliente</button>
+<div class="heat-legend"><small>Prioridad:</small><i class="heat fresh"></i><span>Reciente</span><i class="heat hot"></i><span>Atención</span><i class="heat critical"></i><span>Urgente</span></div>
+</div>
+<div aria-label="Etapas de negociación" class="mobile-stage-tabs" id="mobile-stage-tabs">
+<button class="active" data-mobile-stage="new" type="button"><span>Nuevos</span><b data-mobile-stage-count="new">0</b></button>
+<button data-mobile-stage="contacted" type="button"><span>Contactados</span><b data-mobile-stage-count="contacted">0</b></button>
+<button data-mobile-stage="waiting" type="button"><span>Esperan</span><b data-mobile-stage-count="waiting">0</b></button>
+<button data-mobile-stage="won" type="button"><span>Ganados</span><b data-mobile-stage-count="won">0</b></button>
+<button data-mobile-stage="lost" type="button"><span>Perdidos</span><b data-mobile-stage-count="lost">0</b></button>
+</div>
+<div class="board" id="crm-board">
+<section class="board-column" data-stage="new"><header><div><i class="stage-dot new"></i><b>Nuevos contactos</b></div><span>0</span></header><div class="deal-list"></div></section>
+<section class="board-column" data-stage="contacted"><header><div><i class="stage-dot contacted"></i><b>Contactado</b></div><span>0</span></header><div class="deal-list"></div></section>
+<section class="board-column waiting-column" data-stage="waiting"><header><div><i class="stage-dot waiting"></i><b>Cliente espera respuesta</b></div><span>0</span></header><div class="deal-list"></div></section>
+<section class="board-column" data-stage="won"><header><div><i class="stage-dot won"></i><b>Ganado</b></div><span>0</span></header><div class="deal-list"></div></section>
+<section class="board-column" data-stage="lost"><header><div><i class="stage-dot lost"></i><b>Cerrado perdido</b></div><span>0</span></header><div class="deal-list"></div></section>
+</div>
+</section>
+<section class="view" data-view-panel="whatsapp">
+<div class="section-grid two-cols">
+<article class="panel qr-panel">
+<div class="panel-title"><div><p class="kicker">CONEXIÓN DE WHATSAPP</p><h3>Conectar WhatsApp</h3></div><span class="mini-status" id="mini-status"><i></i><b>Pendiente</b></span></div>
+<label class="input-label" for="whatsapp-mode">Método de conexión</label>
+<select id="whatsapp-mode"><option value="qr">Código QR</option><option value="cloud">WhatsApp API oficial</option></select>
+<div id="qr-connection-section">
+<div class="qr-stage" id="qr-stage">
+<div class="phone-illustration"><span>W</span><i></i><small>Generá un QR para comenzar</small></div>
+</div>
+<div class="connection-copy"><h4 id="connection-title">Listo para vincular</h4><p id="connection-detail">Escaneá el código desde Dispositivos vinculados.</p></div>
+<button class="button primary wide" id="connect-button" type="button">▦ Generar código QR</button>
+<button class="button danger-outline wide" hidden="" id="unlink-button" type="button">Desvincular cuenta</button>
+<ol class="qr-steps"><li><span>1</span>Abrí WhatsApp en tu teléfono</li><li><span>2</span>Entrá en Dispositivos vinculados</li><li><span>3</span>Escaneá este código QR</li></ol>
+<div class="sync-card"><span>↻</span><div><b>Recuperación automática</b><small id="sync-detail">Al reconectar, los mensajes pendientes aparecerán en el CRM.</small></div></div>
+</div>
+<div hidden="" id="api-connection-section">
+<div class="form-grid"><label><span>ID del número</span><input autocomplete="off" id="wa-phone-number-id"/></label><label><span>ID de cuenta empresarial</span><input autocomplete="off" id="wa-business-id"/></label></div>
+<div class="form-grid"><label><span>Token de acceso</span><input autocomplete="off" id="wa-access-token" placeholder="Token permanente" type="password"/><small id="wa-token-status">No configurado</small></label><label><span>Versión Graph API</span><input id="wa-api-version" value="v23.0"/></label></div>
+<label><span>Token de verificación del webhook</span><input autocomplete="off" id="wa-verify-token" placeholder="Token secreto" type="password"/><small id="wa-verify-status">No configurado</small></label>
+<div class="notice"><span>i</span><p>Webhook: <code id="wa-webhook-url">/api/whatsapp/webhook</code>. Para recibir mensajes desde internet, publicá este equipo con HTTPS o usa un servidor.</p></div>
+<div class="inline-actions"><button class="button primary" id="save-whatsapp-api-button" type="button">Guardar WhatsApp API</button><button class="button ghost" id="test-whatsapp-api-button" type="button">Activar conexión</button></div>
+</div>
+</article>
+<article class="panel bot-panel">
+<div class="panel-title"><div><p class="kicker">BOT + COPILOTO</p><h3>Automatización antes del handoff humano</h3></div><button aria-checked="true" class="toggle" id="global-bot-toggle" role="switch" type="button"><i></i><span>Activo</span></button></div>
+<label class="input-label" for="instructions">Personalidad, información y reglas</label>
+<textarea id="instructions" maxlength="12000" rows="11"></textarea>
+<div class="textarea-meta"><span>Indicá tono, horarios y cuándo derivar a una persona.</span><b id="instruction-counter">0 / 12.000</b></div>
+<div class="form-grid">
+<label><span>Clave de OpenAI</span><input autocomplete="off" id="api-key" placeholder="sk-…" type="password"/><small id="api-key-status">No configurada</small></label>
+<label><span>Modelo</span><input id="model" type="text"/></label>
+</div>
+<label class="check-row"><input id="bot-can-reserve" type="checkbox"/><span><b>Permitir reservas de stock</b><small>Solo después de una confirmación explícita del cliente.</small></span></label>
+<div class="inline-actions"><button class="button primary" id="save-bot-button" type="button">Guardar configuración</button><button class="button ghost" id="clear-key-button" type="button">Quitar clave</button></div>
+</article>
+</div>
+<article class="panel activity-panel">
+<div class="panel-title"><div><p class="kicker">REGISTRO</p><h3>Actividad reciente</h3></div></div>
+<div class="activity-list" id="activity-list"></div>
+</article>
+</section>
+<section class="view" data-view-panel="branches">
+<div class="section-heading branch-heading"><div><p>Administrá todas las <b>sucursales desde un único servidor</b>. Los usuarios ingresan por la misma IP y cada sucursal utiliza su propia sesión de WhatsApp.</p></div><button class="button primary" id="new-branch-button" type="button">＋ Agregar sucursal</button></div>
+<div class="notice branch-notice central-network-notice"><span>◎</span><p><b>Red central V15:</b> todas las sucursales comparten la misma base en este equipo servidor. Cada usuario queda asociado a una sucursal y todos sus mensajes salen por el <b>WhatsApp conectado a esa sucursal</b>. Las derivaciones entre sucursales son internas e inmediatas, sin enviar mensajes técnicos entre números.</p></div>
+<div class="branch-grid" id="branches-list"></div>
+</section>
+<section class="view" data-view-panel="attendance">
+<div class="section-heading"><div><p class="kicker">MARCACIÓN Y DISPONIBILIDAD</p><h2>Estado de atención</h2><p>Solo los agentes marcados como <b>Disponibles</b> reciben negociaciones nuevas sin responsable. Los clientes ya asignados conservan siempre a su responsable.</p></div></div>
+<div class="attendance-layout">
+<article class="panel attendance-self"><div class="panel-title"><div><p class="kicker">MI ESTADO</p><h3 id="attendance-my-title">Fuera de línea</h3><p id="attendance-my-copy">Marcá Disponible para comenzar a recibir clientes nuevos.</p></div><span class="attendance-light" id="attendance-my-light"></span></div>
+<div class="attendance-buttons"><button class="attendance-choice active-choice" data-attendance-status="active" type="button"><i></i><b>Disponible</b><small>Recibir clientes nuevos</small></button><button class="attendance-choice pause-choice" data-attendance-status="paused" type="button"><i></i><b>Pausa</b><small>No recibir nuevos</small></button><button class="attendance-choice away-choice" data-attendance-status="away" type="button"><i></i><b>Permiso / Ausente</b><small>Activa protocolo de cobertura</small></button></div>
+<label class="attendance-reason"><span>Motivo / observación</span><input id="attendance-reason" maxlength="240" placeholder="Ej.: Almuerzo, reunión, permiso médico…"/></label>
+</article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">EQUIPO</p><h3>Disponibilidad de la sucursal</h3><p>Jefatura puede verificar quién está disponible y quién requiere cobertura.</p></div></div><div class="attendance-team" id="attendance-team"></div></article>
+</div>
+</section>
+<section class="view" data-view-panel="drive">
+<div class="section-heading"><div><p>Consolidá clientes, stock, negociaciones y auditoría de todas las sucursales utilizando una carpeta compartida de Google Drive para Escritorio.</p></div><button class="button ghost" id="drive-sync-button" type="button">↻ Sincronizar ahora</button></div>
+<div class="notice"><span>☁</span><p><b>Cómo funciona:</b> cada PC conserva su base local. Cada sucursal publica únicamente su propio snapshot y sus movimientos en Drive. Las demás instalaciones leen esos archivos para identificar clientes y generar reportes, evitando que dos equipos escriban el mismo archivo.</p></div>
+<div class="section-grid two-cols">
+<article class="panel" id="drive-settings-panel">
+<div class="panel-title"><div><p class="kicker">CONFIGURACIÓN</p><h3>Carpeta compartida</h3><p>Usá en todas las PCs la misma carpeta compartida mediante Google Drive para Escritorio.</p></div><span class="mini-status" id="drive-status-pill"><i></i><b>Desactivado</b></span></div>
+<label><span>Ruta local de la carpeta Drive</span><input id="drive-folder-path" maxlength="500" placeholder="Ej.: G:\Mi unidad\WhatsBotCRM-Compartido"/><small>La ruta puede ser diferente en cada PC; lo importante es que apunte a la misma carpeta compartida de Drive.</small></label>
+<div class="form-grid"><label><span>Sincronizar cada</span><select id="drive-sync-interval"><option value="5">5 segundos</option><option value="10">10 segundos</option><option selected="" value="15">15 segundos</option><option value="30">30 segundos</option><option value="60">1 minuto</option></select></label><label class="check-row"><input id="drive-enabled" type="checkbox"/><span><b>Activar sincronización</b><small>La instalación seguirá funcionando localmente si Drive queda temporalmente sin conexión.</small></span></label></div>
+<div class="inline-actions"><button class="button primary" id="save-drive-settings" type="button">Guardar y probar</button><button class="button ghost" id="drive-open-folder" type="button">Copiar ruta</button></div>
+<div class="sync-card"><span>↻</span><div><b id="drive-last-sync">Todavía no sincronizado</b><small id="drive-error-copy">Sin errores</small></div></div>
+</article>
+<article class="panel">
+<div class="panel-title"><div><p class="kicker">RESUMEN COMPARTIDO</p><h3>Red de sucursales</h3><p>Información leída desde los snapshots de Drive.</p></div></div>
+<div class="metric-grid drive-metrics"><article class="metric"><span class="metric-icon green">⌂</span><div><small>Sucursales</small><strong id="drive-branch-count">0</strong></div></article><article class="metric"><span class="metric-icon blue">◎</span><div><small>Clientes únicos</small><strong id="drive-client-count">0</strong></div></article><article class="metric"><span class="metric-icon amber">◫</span><div><small>Negociaciones</small><strong id="drive-deal-count">0</strong></div></article></div>
+<div class="drive-branches-list" id="drive-branches-list"></div>
+</article>
+</div>
+<article class="panel table-panel">
+<div class="panel-title"><div><p class="kicker">STOCK MULTI-SUCURSAL</p><h3>Disponibilidad por sucursal</h3><p>El stock continúa siendo administrado por cada sucursal, pero puede consultarse desde todas las instalaciones.</p></div><label class="search-box compact"><span>⌕</span><input id="drive-stock-search" placeholder="Buscar producto o sucursal…" type="search"/></label></div>
+<div class="table-scroll"><table><thead><tr><th>Sucursal</th><th>Producto</th><th>SKU</th><th>Disponible</th><th>Reservado</th><th>Mínimo</th></tr></thead><tbody id="drive-stock-body"></tbody></table></div>
+</article>
+<article class="panel" id="drive-audit-panel"><div class="panel-title"><div><p class="kicker">AUDITORÍA CONSOLIDADA</p><h3>Movimientos recientes</h3><p>Usuario, sucursal, acción y fecha/hora de cada movimiento registrado.</p></div></div><div class="movement-list" id="drive-audit-list"></div></article>
+</section>
+<section class="view" data-view-panel="stock">
+<div class="section-heading"><div><p>Controlá lo disponible, lo reservado y cada movimiento.</p></div><div class="inline-actions"><button class="button ghost" id="import-stock-button" type="button">⇧ Importar CSV</button><input accept=".csv,text/csv" hidden="" id="stock-csv-file" type="file"/><button class="button primary" id="new-product-button" type="button">＋ Nuevo producto</button></div></div>
+<div class="metric-grid stock-metrics">
+<article class="metric"><span class="metric-icon green">▦</span><div><small>Productos activos</small><strong id="stock-total-products">0</strong></div></article>
+<article class="metric"><span class="metric-icon blue">□</span><div><small>Unidades disponibles</small><strong id="stock-total-units">0</strong></div></article>
+<article class="metric"><span class="metric-icon amber">⌛</span><div><small>Unidades reservadas</small><strong id="stock-total-reserved">0</strong></div></article>
+</div>
+<article class="panel table-panel">
+<div class="panel-title"><div><p class="kicker">INVENTARIO</p><h3>Productos</h3></div><label class="search-box compact"><span>⌕</span><input id="stock-search" placeholder="Buscar producto…" type="search"/></label></div>
+<div class="table-scroll"><table><thead><tr><th>Producto</th><th>Código</th><th>Disponible</th><th>Reservado</th><th>Mínimo</th><th>Precio</th><th></th></tr></thead><tbody id="stock-table-body"></tbody></table></div>
+<div class="empty-state" id="stock-empty"><span>▦</span><h4>El stock está vacío</h4><p>Agregá productos para que el bot pueda consultar y reservar.</p></div>
+</article>
+<article class="panel movements-panel"><div class="panel-title"><div><p class="kicker">AUDITORÍA</p><h3>Últimos movimientos</h3></div></div><div class="movement-list" id="movement-list"></div></article>
+</section>
+<section class="view" data-view-panel="replies">
+<div class="section-heading">
+<div>
+<p class="kicker">CENTRO DE CONOCIMIENTO</p>
+<h2>Respuestas y documentos</h2>
+<p>Todo lo que los agentes necesitan para responder rápido, con información consistente y documentos preparados para cada cliente.</p>
+</div>
+<div class="heading-actions">
+<button class="button ghost" id="new-assistant-document-button" type="button">⌁ Cargar documento</button>
+<button class="button primary" id="new-reply-button" type="button">＋ Nueva respuesta</button>
+</div>
+</div>
+<div class="knowledge-grid">
+<article class="panel">
+<div class="panel-title"><div><p class="kicker">RESPUESTAS RÁPIDAS</p><h3>Biblioteca operativa</h3><p>Usá atajos como <b>/stock</b> o insertá respuestas desde la conversación.</p></div></div>
+<div class="quick-replies-list" id="quick-replies-list"></div>
+</article>
+<article class="panel document-library-panel" data-module-block="documents">
+<div class="panel-title">
+<div><p class="kicker">COPILOTO</p><h3>Documentos con contexto</h3><p>Cargá archivos y explicá cuándo deben recomendarse. Las plantillas DOCX/TXT pueden completarse con datos del cliente y del pedido.</p></div>
+<span class="ai-badge">✦ IA asistida</span>
+</div>
+<div class="document-placeholder-guide">
+<b>Variables de plantilla</b>
+<span>{{cliente}}</span><span>{{telefono}}</span><span>{{empresa}}</span><span>{{direccion}}</span><span>{{responsable}}</span><span>{{sucursal}}</span><span>{{pedido}}</span><span>{{solicitud}}</span><span>{{fecha}}</span>
+</div>
+<div class="assistant-document-list" id="assistant-document-list"></div>
+</article>
+</div>
+</section>
+<section class="view" data-view-panel="campaigns">
+<div class="section-heading"><div><p class="kicker">CAMPAÑAS</p><h2>Segmentación y seguimiento comercial</h2><p>Filtrá clientes por datos, historial y frecuencia de compra. Cada envío queda medido para conocer respuestas y conversiones.</p></div><button class="button primary" id="new-campaign-button" type="button">＋ Nueva campaña</button></div>
+<div class="campaign-summary-grid"><article class="metric"><span class="metric-icon violet">✦</span><div><small>Campañas</small><strong id="campaign-total">0</strong></div></article><article class="metric"><span class="metric-icon blue">➤</span><div><small>Mensajes enviados</small><strong id="campaign-sent">0</strong></div></article><article class="metric"><span class="metric-icon green">↩</span><div><small>Tasa de respuesta</small><strong id="campaign-response-rate">0%</strong></div></article><article class="metric"><span class="metric-icon amber">✓</span><div><small>Conversiones</small><strong id="campaign-conversions">0</strong></div></article></div>
+<article class="panel campaign-safety"><div><p class="kicker">ENVÍO RESPONSABLE</p><h3>Protección de la línea</h3><p>En QR el sistema aplica consentimiento obligatorio, límite diario, intervalo fijo y pausa automática ante errores. No intenta ocultar automatización ni evadir controles de WhatsApp.</p></div><div class="safety-badges"><span>✓ Opt-in</span><span>✓ Límite diario</span><span>✓ Intervalo fijo</span><span>✓ Pausa por error</span></div><div class="campaign-safety-config" id="campaign-safety-config"><label><span>Máximo diario QR por sucursal</span><input id="campaign-qr-daily-limit" max="100" min="1" type="number"/></label><label><span>Intervalo QR (segundos)</span><input id="campaign-qr-interval" max="600" min="30" type="number"/></label><label><span>Días sin repetir campaña al mismo cliente</span><input id="campaign-qr-cooldown" max="90" min="0" type="number"/></label><label><span>Horario permitido QR</span><div class="inline-hour-fields"><input id="campaign-qr-start-hour" max="23" min="0" type="number"/><span>a</span><input id="campaign-qr-end-hour" max="24" min="1" type="number"/></div></label><button class="button ghost" id="save-campaign-safety" type="button">Guardar protección</button></div></article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">HISTORIAL</p><h3>Campañas y efectividad</h3></div></div><div class="campaign-list" id="campaign-list"></div></article>
+</section>
+<section class="view" data-view-panel="data">
+<div class="section-heading"><div><p>Exportá información, descargá plantillas CSV e importá datos sin tener que adaptar columnas manualmente.</p></div></div>
+<div class="data-grid">
+<article class="panel data-card" data-data-type="stock"><div><p class="kicker">INVENTARIO</p><h3>Stock de productos</h3><p>SKU, nombre, descripción, disponible, mínimo, precio y estado.</p></div><div class="data-actions"><button class="button ghost" data-template="stock" type="button">Descargar plantilla CSV</button><button class="button dark" data-export="stock" type="button">Exportar stock actual</button><button class="button primary" data-import="stock" type="button">Importar CSV</button></div></article>
+<article class="panel data-card" data-data-type="contacts"><div><p class="kicker">CLIENTES</p><h3>Contactos y fichas</h3><p>Datos del cliente, etiquetas, notas y responsable. Los agentes mantienen su límite diario.</p></div><div class="data-actions"><button class="button ghost" data-template="contacts" type="button">Descargar plantilla CSV</button><button class="button dark" data-export="contacts" type="button">Exportar contactos</button><button class="button primary" data-import="contacts" type="button">Importar CSV</button></div></article>
+<article class="panel data-card" data-data-type="users" id="data-users-card"><div><p class="kicker">EQUIPO</p><h3>Usuarios</h3><p>Usuario, nombre, rol, límite diario y estado. Las contraseñas nunca se exportan en texto plano.</p></div><div class="data-actions"><button class="button ghost" data-template="users" type="button">Descargar plantilla CSV</button><button class="button dark" data-export="users" type="button">Exportar usuarios</button><button class="button primary" data-import="users" type="button">Importar CSV</button></div></article>
+<article class="panel data-card" data-data-type="branches" id="data-branches-card"><div><p class="kicker">SUCURSALES</p><h3>Sucursales</h3><p>Código, nombre, ciudad, dirección, WhatsApp, mensaje de presentación y estado.</p></div><div class="data-actions"><button class="button ghost" data-template="branches" type="button">Descargar plantilla CSV</button><button class="button dark" data-export="branches" type="button">Exportar sucursales</button><button class="button primary" data-import="branches" type="button">Importar CSV</button></div></article>
+<article class="panel data-card" data-data-type="replies" id="data-replies-card"><div><p class="kicker">ATENCIÓN</p><h3>Respuestas rápidas</h3><p>Título, atajo, categoría, mensaje y estado.</p></div><div class="data-actions"><button class="button ghost" data-template="replies" type="button">Descargar plantilla CSV</button><button class="button dark" data-export="replies" type="button">Exportar respuestas</button><button class="button primary" data-import="replies" type="button">Importar CSV</button></div></article>
+</div>
+<article class="panel backup-panel" id="backup-panel">
+<div class="panel-title"><div><p class="kicker">MIGRACIÓN Y SEGURIDAD</p><h3>Respaldo completo del sistema</h3><p>Ideal antes de actualizar de versión. Incluye base de datos, clientes, negociaciones, stock, usuarios, configuración, multimedia y sesiones QR de WhatsApp de todas las sucursales.</p></div></div>
+<div class="notice"><span>!</span><p>El respaldo contiene información sensible de tu instalación. Guardalo en un lugar seguro y no lo compartas con terceros.</p></div>
+<div class="backup-actions"><button class="button dark" id="export-backup-button" type="button">⇩ Exportar respaldo completo</button><button class="button danger-outline" id="import-backup-button" type="button">⇧ Importar respaldo</button></div>
+</article>
+<input accept=".csv,text/csv" hidden="" id="data-import-file" type="file"/>
+<input accept=".zip,application/zip" hidden="" id="backup-import-file" type="file"/>
+</section>
+<section class="view" data-view-panel="news">
+<div class="section-heading news-heading"><div><p class="kicker">COMUNICACIÓN INTERNA</p><h2>Noticias y novedades</h2><p>Actualizaciones operativas, avisos de gerencia, cambios del sistema y contenido multimedia para el equipo.</p></div><button class="button primary" hidden="" id="new-news-button" type="button">＋ Publicar noticia</button></div>
+<div class="news-summary"><article><span>◆</span><div><small>Sin leer</small><strong id="news-unread-total">0</strong></div></article><article><span>⚑</span><div><small>Importantes</small><strong id="news-important-total">0</strong></div></article><article><span>●</span><div><small>Publicadas</small><strong id="news-visible-total">0</strong></div></article></div>
+<div class="news-feed" id="news-feed"></div>
+</section>
+<section class="view ai-center-view" data-view-panel="ai">
+<div class="ai-hero"><div><p class="kicker">INTELIGENCIA ARTIFICIAL</p><h2>Copiloto 360° del agente</h2><p>La IA analiza contexto, historial y datos del CRM para ayudarte a decidir y responder. Nada externo se ejecuta sin una acción humana cuando la aprobación está habilitada.</p></div><div class="ai-hero-badge"><span>✦</span><strong id="ai-suite-status">IA activa</strong><small id="ai-suite-model">Modelo configurado</small></div></div>
+<article class="panel ai-management-brief" id="ai-management-brief-panel"><div class="panel-title"><div><p class="kicker">BRIEF OPERATIVO IA</p><h3>Qué necesita saber la jefatura ahora</h3><p>Resumen ejecutivo de riesgos, cobertura, tareas, ventas y prioridades visibles para tu rol.</p></div><button class="button dark" id="generate-management-brief" type="button">✦ Generar brief</button></div><div class="management-brief-content" id="management-brief-content"><span>✦</span><p>Generalo bajo demanda para obtener un resumen actualizado.</p></div></article>
+<div class="ai-workbench">
+<article class="panel ai-analyze-panel"><div class="panel-title"><div><p class="kicker">ANÁLISIS DE CLIENTE</p><h3>Resumen, riesgo y siguiente acción</h3></div><button class="button primary" id="ai-analyze-button" type="button">✦ Analizar ahora</button></div><label><span>Negociación</span><select id="ai-deal-select"></select></label><div class="ai-insight-grid" id="ai-insight-grid"><div class="ai-empty">Seleccioná una negociación y analizala.</div></div></article>
+<article class="panel ai-ask-panel"><div class="panel-title"><div><p class="kicker">PREGUNTARLE AL CRM</p><h3>Consultá información sin buscar pantalla por pantalla</h3></div></div><div class="ai-question-log" id="ai-question-log"><div class="ai-empty">Ej.: ¿Qué compró este cliente la última vez? · ¿Tenemos stock? · ¿Qué dato falta?</div></div><div class="ai-question-row"><input id="ai-question" maxlength="2000" placeholder="Preguntale al CRM…"/><button class="button dark" id="ai-question-button" type="button">Preguntar</button></div></article>
+</div>
+<article class="panel smart-capture-settings" id="smart-capture-settings-panel">
+  <div class="panel-title"><div><p class="kicker">ENRIQUECIMIENTO INTELIGENTE</p><h3>Captura automática de datos del cliente</h3><p>Detecta datos explícitos del chat y recomienda completar la ficha. Los campos seguros pueden completarse automáticamente; los protegidos requieren aprobación humana.</p></div><button class="button primary" id="save-smart-capture-settings" type="button">Guardar configuración</button></div>
+  <div class="smart-capture-grid">
+    <label class="check-row"><input id="smart-capture-enabled" type="checkbox"/><span><b>Detección activa</b><small>Analiza mensajes entrantes sin interferir con el bot ni el Copiloto.</small></span></label>
+    <label class="check-row"><input id="smart-capture-auto" type="checkbox"/><span><b>Autocompletar campos seguros</b><small>Solo cuando el campo está vacío y la confianza supera el mínimo configurado.</small></span></label>
+    <label class="check-row"><input id="smart-capture-ai" type="checkbox"/><span><b>Usar IA avanzada</b><small>Complementa reglas locales para campos personalizados y frases menos estructuradas.</small></span></label>
+    <label><span>Confianza mínima para sugerir</span><input id="smart-capture-threshold" min="60" max="100" type="number"/></label>
+    <label><span>Confianza mínima para autocompletar</span><input id="smart-capture-auto-threshold" min="85" max="100" type="number"/></label>
+  </div>
+  <div class="notice"><span>!</span><p><b>Campos protegidos:</b> nombre, CI/documento, RUC, dirección, fecha de nacimiento, empresa y cargo se muestran como recomendación y no se modifican automáticamente si ya existe información.</p></div>
+</article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">CAPACIDADES ACTIVAS</p><h3>Herramientas IA disponibles para tu usuario</h3></div></div><div class="ai-capability-grid" id="ai-capability-grid"></div></article>
+</section>
+<section class="view productivity-view" data-view-panel="productivity">
+<div class="metric-grid productivity-metrics"><article class="metric"><span class="metric-icon amber">!</span><div><small>Alertas</small><strong id="productivity-alert-count">0</strong></div><em>Requieren atención</em></article><article class="metric"><span class="metric-icon blue">✓</span><div><small>Tareas pendientes</small><strong id="productivity-task-count">0</strong></div><em>Seguimientos</em></article><article class="metric"><span class="metric-icon green">◎</span><div><small>Objetivos</small><strong id="productivity-objective-count">0</strong></div><em>Activos</em></article><article class="metric"><span class="metric-icon red">⌛</span><div><small>Aprobaciones</small><strong id="productivity-approval-count">0</strong></div><em>Pendientes</em></article></div>
+<div class="productivity-grid"><article class="panel" data-module-block="alerts"><div class="panel-title"><div><p class="kicker">ALERTAS INTELIGENTES</p><h3>Qué necesita atención ahora</h3></div></div><div class="smart-alert-list" id="smart-alert-list"></div></article><article class="panel" data-module-block="tasks"><div class="panel-title"><div><p class="kicker">TAREAS Y COMPROMISOS</p><h3>Seguimientos del equipo</h3></div><button class="button primary" id="new-task-button" type="button">＋ Tarea</button></div><div class="task-list" id="task-list"></div></article><article class="panel" data-module-block="objectives"><div class="panel-title"><div><p class="kicker">OBJETIVOS</p><h3>Metas visibles</h3></div><button class="button ghost" id="new-objective-button" type="button">＋ Objetivo</button></div><div class="objective-list" id="objective-list"></div></article><article class="panel" data-module-block="approvals"><div class="panel-title"><div><p class="kicker">APROBACIONES</p><h3>Solicitudes controladas</h3></div><button class="button ghost" id="new-approval-button" type="button">＋ Solicitar</button></div><div class="approval-list" id="approval-list"></div></article></div>
+</section>
+<section class="view" data-view-panel="reports">
+<div class="report-hero">
+<div><p class="kicker" id="report-audience-kicker">INTELIGENCIA OPERATIVA</p><h2 id="report-audience-title">Reportes</h2><p class="report-intro" id="report-audience-copy">Indicadores actualizados según tu rol y permisos.</p></div>
+<div class="report-live-badge"><i></i><span>Datos centralizados</span><b id="report-generated">Actualizando…</b></div>
+</div>
+<div class="report-toolbar premium-toolbar">
+<div class="report-actions">
+<label class="select-box" hidden="" id="report-branch-filter-box"><span>Sucursal</span><select id="report-branch"><option value="all">Todas las sucursales</option></select></label>
+<label class="select-box" hidden="" id="report-user-filter-box"><span>Responsable</span><select id="report-user"><option value="all">Todo el equipo</option></select></label>
+<label class="select-box"><span>Período</span><select id="report-period"><option value="7">Últimos 7 días</option><option selected="" value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="365">Último año</option><option value="0">Todo el histórico</option></select></label>
+<button class="button ghost" id="refresh-report-button" type="button">↻ Actualizar</button><button class="button dark" id="print-report-button" type="button">Imprimir / PDF</button>
+</div>
+</div>
+<div class="metric-grid report-metrics report-metrics-expanded">
+<article class="metric"><span class="metric-icon green">＋</span><div><small>Clientes nuevos</small><strong id="report-new-clients">0</strong></div><em>En el período</em></article>
+<article class="metric"><span class="metric-icon blue">%</span><div><small>Conversión</small><strong id="report-conversion">0%</strong></div><em>Ganadas / cerradas</em></article>
+<article class="metric"><span class="metric-icon green">₲</span><div><small>Ventas confirmadas</small><strong id="report-sales">₲ 0</strong></div><em>Valor vendido</em></article>
+<article class="metric"><span class="metric-icon amber">⌛</span><div><small>Primera respuesta</small><strong id="report-first-response">0 min</strong></div><em>Promedio humano</em></article>
+<article class="metric"><span class="metric-icon violet">◫</span><div><small>Negociaciones abiertas</small><strong id="report-open">0</strong></div><em>Carga actual</em></article>
+<article class="metric"><span class="metric-icon blue">✓</span><div><small>SLA ≤ 15 min</small><strong id="report-sla-rate">0%</strong></div><em>Atención rápida</em></article>
+<article class="metric"><span class="metric-icon amber">◷</span><div><small>Tiempo de cierre</small><strong id="report-close-time">0 h</strong></div><em>Promedio</em></article>
+<article class="metric"><span class="metric-icon green">↻</span><div><small>Clientes recurrentes</small><strong id="report-returning">0%</strong></div><em>Volvieron a contactar</em></article>
+<article class="metric"><span class="metric-icon violet">✦</span><div><small>Respuesta de campañas</small><strong id="report-campaign-response">0%</strong></div><em>Efectividad</em></article>
+<article class="metric"><span class="metric-icon green">●</span><div><small>Agentes disponibles</small><strong id="report-available-agents">0</strong></div><em>Marcados activos</em></article>
+</div>
+<div class="report-grid report-grid-v15">
+<article class="panel report-wide executive-panel" data-report-capability="global" hidden="" id="branch-comparison-panel"><div class="panel-title"><div><p class="kicker">RED COMERCIAL</p><h3>Comparativo por sucursal</h3><p>Detectá rápidamente dónde se vende más, dónde hay mayor espera y cómo responde cada equipo.</p></div></div><div class="table-scroll"><table class="branch-report-table"><thead><tr><th>Sucursal</th><th>Clientes</th><th>Abiertas</th><th>Espera</th><th>Ganadas</th><th>Conversión</th><th>1ª respuesta</th><th>Ventas</th></tr></thead><tbody id="branch-comparison-body"></tbody></table></div></article>
+<article class="panel report-wide" data-report-capability="team" hidden="" id="agent-performance-panel"><div class="panel-title"><div><p class="kicker">EQUIPO</p><h3>Rendimiento por responsable</h3><p>Ventas, conversión, carga actual y velocidad de respuesta.</p></div></div><div class="table-scroll"><table class="agent-report-table"><thead><tr><th>Responsable</th><th>Asignadas</th><th>Abiertas</th><th>Espera</th><th>Ganadas</th><th>Conversión</th><th>1ª respuesta</th><th>Ventas</th></tr></thead><tbody id="agent-performance-body"></tbody></table></div></article>
+<article class="panel report-wide" id="campaign-report-panel"><div class="panel-title"><div><p class="kicker">CAMPAÑAS</p><h3>Efectividad de campañas</h3><p>Enviados, respuestas y conversiones atribuidas dentro de la ventana comercial.</p></div></div><div class="table-scroll"><table><thead><tr><th>Campaña</th><th>Estado</th><th>Enviados</th><th>Respuestas</th><th>Tasa</th><th>Conversiones</th><th>Conv.</th></tr></thead><tbody id="campaign-report-body"></tbody></table></div></article>
+<article class="panel" id="attendance-report-panel"><div class="panel-title"><div><p class="kicker">COBERTURA</p><h3>Disponibilidad del equipo</h3></div></div><div class="operational-health" id="attendance-report"></div></article>
+<article class="panel report-wide"><div class="panel-title"><div><p class="kicker">EVOLUCIÓN</p><h3>Actividad diaria</h3><p>Contactos, mensajes y resultados comerciales en el tiempo.</p></div></div><div class="daily-chart" id="daily-chart"></div><div class="chart-legend"><span><i class="contacts"></i>Contactos</span><span><i class="incoming"></i>Mensajes entrantes</span><span><i class="wins"></i>Ganadas</span></div></article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">DEMANDA</p><h3>Horarios con más contactos</h3><p>Ayuda a dimensionar turnos y cobertura.</p></div></div><div class="mini-bar-report" id="hourly-demand"></div></article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">DEMANDA</p><h3>Días más activos</h3></div></div><div class="bar-report" id="weekday-demand"></div></article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">EMBUDO</p><h3>Estado de negociaciones</h3></div></div><div class="bar-report" id="funnel-list"></div></article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">SERVICIO</p><h3>Tiempo de primera respuesta</h3></div></div><div class="bar-report" id="sla-chart"></div></article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">ANTIGÜEDAD</p><h3>Edad de oportunidades abiertas</h3></div></div><div class="bar-report" id="aging-chart"></div></article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">CIERRES</p><h3>Motivos de pérdida</h3></div></div><div class="bar-report" id="loss-chart"></div></article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">PRODUCTOS</p><h3>Más vendidos</h3></div></div><div class="ranking-list" id="products-report"></div></article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">CLIENTES</p><h3>Clientes de mayor valor</h3></div></div><div class="ranking-list" id="top-clients-report"></div></article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">CANALES</p><h3>Actividad de conversación</h3></div></div><div class="communication-grid" id="communications-report"></div></article>
+<article class="panel"><div class="panel-title"><div><p class="kicker">WHATSAPP</p><h3>Eventos de llamada</h3></div></div><p class="panel-copy">Registro de llamadas entrantes detectadas por WhatsApp.</p><div class="call-summary" id="calls-summary"></div><div class="calls-list" id="calls-list"></div></article>
+<article class="panel report-wide priority-panel"><div class="panel-title"><div><p class="kicker">ACCIÓN INMEDIATA</p><h3>Clientes con mayor espera</h3><p>Ordenados por tiempo esperando respuesta.</p></div></div><div class="risk-list" id="waiting-risk"></div></article>
+<article class="panel report-wide priority-panel"><div class="panel-title"><div><p class="kicker">RIESGO DE ABANDONO</p><h3>Negociaciones sin movimiento</h3><p>Conversaciones abiertas que llevan varias horas sin actividad.</p></div></div><div class="risk-list" id="inactivity-risk"></div></article>
+<article class="panel" data-report-capability="team" hidden="" id="stock-alert-report"><div class="panel-title"><div><p class="kicker">STOCK</p><h3>Alertas de inventario</h3></div></div><div class="risk-list" id="low-stock-report"></div></article>
+<article class="panel" data-report-capability="team" hidden="" id="operational-health-panel"><div class="panel-title"><div><p class="kicker">SALUD OPERATIVA</p><h3>Puntos de atención</h3></div></div><div class="health-grid" id="operational-health"></div></article>
+<article class="panel report-wide" data-module-block="audit" data-report-capability="audit" hidden="" id="report-audit-panel"><div class="panel-title"><div><p class="kicker">AUDITORÍA</p><h3>Movimientos del período</h3><p>Acciones realizadas por usuario y sucursal dentro del servidor central.</p></div><small id="report-audit-count"></small></div><div class="table-scroll audit-table-scroll"><table class="audit-report-table"><thead><tr><th>Fecha</th><th>Sucursal</th><th>Usuario</th><th>Acción</th><th>Cliente / referencia</th></tr></thead><tbody id="report-audit-body"></tbody></table></div></article>
+</div>
+</section>
+<section class="view v213-design-view" data-view-panel="design">
+<div class="section-heading v213-view-heading">
+<div><p class="kicker">WHITE-LABEL · V22.0</p><h2>Diseño y marca</h2><p>Personalizá el CRM para cada empresa sin tocar código: identidad, colores, logo, estilo, login y apariencia general.</p></div>
+<div class="v213-heading-actions"><span class="v213-unsaved" hidden="" id="v213-brand-unsaved">Cambios sin guardar</span><button class="button ghost" id="v213-export-branding" type="button">Exportar tema</button><button class="button primary" id="save-branding-button" type="button">Guardar diseño</button></div>
+</div>
+<div class="v213-design-layout">
+<aside aria-label="Secciones de diseño" class="v213-design-menu">
+<button class="active" data-v213-brand-section="identity" type="button"><span>01</span><b>Identidad</b><small>Nombre y logo</small></button>
+<button data-v213-brand-section="palette" type="button"><span>02</span><b>Colores</b><small>Paleta corporativa</small></button>
+<button data-v213-brand-section="style" type="button"><span>03</span><b>Estilo</b><small>Tipografía y formas</small></button>
+<button data-v213-brand-section="login" type="button"><span>04</span><b>Acceso</b><small>Pantalla de login</small></button>
+<button data-v213-brand-section="preview" type="button"><span>05</span><b>Vista previa</b><small>Resultado final</small></button>
+<div class="v213-design-tip"><b>White-label</b><p>Guardá un tema por empresa y exportalo para reutilizarlo en otra instalación.</p></div>
+</aside>
+<main class="v213-design-main">
+<article class="panel branding-panel v213-brand-panel" id="branding-panel">
+<section class="v213-brand-section active" data-v213-brand-panel="identity">
+<div class="v213-section-title"><div><span class="v213-section-number">01</span><div><h3>Identidad de la empresa</h3><p>Estos datos aparecen en el login, menú lateral, título del navegador y pantallas principales.</p></div></div></div>
+<div class="v213-identity-layout">
+<div class="branding-logo-editor v213-logo-editor">
+<div class="branding-preview v213-logo-preview" id="branding-preview"><img alt="Vista previa del logo" hidden="" id="branding-preview-image"/><span id="branding-preview-letter">W</span></div>
+<div><b>Logo principal</b><small>PNG, JPG o WEBP · recomendado fondo transparente.</small></div>
+<div class="inline-actions"><button class="button ghost" id="upload-brand-logo-button" type="button">Subir logo</button><button class="button danger-outline" id="remove-brand-logo-button" type="button">Quitar</button></div>
+<input accept="image/png,image/jpeg,image/webp" hidden="" id="brand-logo-file" type="file"/>
+</div>
+<div class="branding-fields v213-fields">
+<div class="form-grid"><label><span>Nombre del sistema</span><input id="brand-system-name" maxlength="80" placeholder="Ej.: Nova CRM"/></label><label><span>Nombre corto</span><input id="brand-short-name" maxlength="40" placeholder="Ej.: NOVA"/></label></div>
+<div class="form-grid"><label><span>Subtítulo</span><input id="brand-subtitle" maxlength="40" placeholder="Ej.: Centro Comercial"/></label><label><span>Texto superior del login</span><input id="brand-login-kicker" maxlength="50" placeholder="Ej.: PLATAFORMA COMERCIAL"/></label></div>
+<label><span>Mensaje de bienvenida del login</span><textarea id="brand-login-message" maxlength="220" placeholder="Ingresá con tu usuario para comenzar." rows="3"></textarea></label>
+</div>
+</div>
+</section>
+<section class="v213-brand-section" data-v213-brand-panel="palette">
+<div class="v213-section-title"><div><span class="v213-section-number">02</span><div><h3>Paleta corporativa</h3><p>Elegí una combinación preparada o definí los colores exactos de la empresa.</p></div></div></div>
+<div class="v213-preset-grid" id="v213-brand-presets">
+<button data-brand-preset="emerald" type="button"><i style="--c1:#143C2F;--c2:#B9D977;--c3:#F4F2EA"></i><b>Esmeralda</b><small>Actual</small></button>
+<button data-brand-preset="corporate" type="button"><i style="--c1:#123A63;--c2:#4FA3FF;--c3:#F4F7FB"></i><b>Corporativo</b><small>Azul</small></button>
+<button data-brand-preset="navy" type="button"><i style="--c1:#111D38;--c2:#D5B45D;--c3:#F6F4EE"></i><b>Executive</b><small>Azul + dorado</small></button>
+<button data-brand-preset="burgundy" type="button"><i style="--c1:#5A1830;--c2:#E1B46E;--c3:#F8F3F2"></i><b>Borgoña</b><small>Premium</small></button>
+<button data-brand-preset="graphite" type="button"><i style="--c1:#252A31;--c2:#63C3A3;--c3:#F2F4F5"></i><b>Grafito</b><small>Minimalista</small></button>
+<button data-brand-preset="orange" type="button"><i style="--c1:#4B2D18;--c2:#F39A43;--c3:#FFF7EE"></i><b>Ámbar</b><small>Cálido</small></button>
+</div>
+<div class="v213-color-grid">
+<label><span>Color principal</span><div><input id="brand-primary-color" type="color"/><code data-color-code="brand-primary-color"></code></div></label>
+<label><span>Color de acento</span><div><input id="brand-accent-color" type="color"/><code data-color-code="brand-accent-color"></code></div></label>
+<label><span>Fondo general</span><div><input id="brand-background-color" type="color"/><code data-color-code="brand-background-color"></code></div></label>
+<label><span>Menú lateral</span><div><input id="brand-sidebar-color" type="color"/><code data-color-code="brand-sidebar-color"></code></div></label>
+<label><span>Tarjetas / superficie</span><div><input id="brand-surface-color" type="color"/><code data-color-code="brand-surface-color"></code></div></label>
+<label><span>Texto principal</span><div><input id="brand-text-color" type="color"/><code data-color-code="brand-text-color"></code></div></label>
+</div>
+</section>
+<section class="v213-brand-section" data-v213-brand-panel="style">
+<div class="v213-section-title"><div><span class="v213-section-number">03</span><div><h3>Estilo visual</h3><p>Controlá la personalidad del producto sin perder legibilidad ni consistencia.</p></div></div></div>
+<div class="v213-style-grid">
+<label><span>Estilo tipográfico</span><select id="brand-font-style"><option value="modern">Moderno</option><option value="system">Sistema</option><option value="rounded">Amigable</option><option value="classic">Clásico</option></select><small>Se aplica a toda la interfaz.</small></label>
+<label><span>Redondeo de tarjetas</span><select id="brand-radius"><option value="10">Recto</option><option value="14">Equilibrado</option><option value="18">Moderno</option><option value="24">Suave</option></select><small>Botones, tarjetas y formularios.</small></label>
+<label><span>Ajuste del logo</span><select id="brand-logo-fit"><option value="contain">Mostrar completo</option><option value="cover">Ocupar el espacio</option></select><small>Recomendado: Mostrar completo.</small></label>
+<label><span>Tema inicial</span><select id="brand-default-theme"><option value="light">Claro</option><option value="dark">Oscuro</option><option value="system">Según dispositivo</option></select><small>Cada usuario puede cambiarlo después.</small></label>
+</div>
+<div class="v213-style-note"><span>✓</span><div><b>Diseño seguro</b><p>Los colores se aplican usando tokens visuales. Los estados crítico, advertencia y correcto mantienen contraste propio para no confundir al usuario.</p></div></div>
+</section>
+<section class="v213-brand-section" data-v213-brand-panel="login">
+<div class="v213-section-title"><div><span class="v213-section-number">04</span><div><h3>Pantalla de acceso</h3><p>La primera impresión del sistema también se adapta a la identidad del cliente.</p></div></div></div>
+<div class="v213-login-options">
+<label><span>Diseño del login</span><select id="brand-login-style"><option value="ambient">Ambientado</option><option value="split">Corporativo dividido</option><option value="minimal">Minimalista</option></select></label>
+<label><span>Mostrar subtítulo de marca</span><select id="brand-show-subtitle"><option value="true">Sí</option><option value="false">No</option></select></label>
+</div>
+<div class="v213-login-preview" id="v213-login-preview"><div class="v213-login-preview-brand"><div class="v213-preview-logo" id="v213-preview-login-logo">W</div><small id="v213-preview-kicker">PLATAFORMA COMERCIAL</small><h3 id="v213-preview-login-name">WhatsBot CRM</h3><p id="v213-preview-login-message">Ingresá con tu usuario para comenzar.</p></div><div class="v213-login-preview-form"><label>Usuario<input disabled="" value="usuario"/></label><label>Contraseña<input disabled="" type="password" value="12345678"/></label><button disabled="" type="button">Ingresar</button></div></div>
+</section>
+<section class="v213-brand-section" data-v213-brand-panel="preview">
+<div class="v213-section-title"><div><span class="v213-section-number">05</span><div><h3>Vista previa general</h3><p>Así se verá la aplicación con la identidad seleccionada.</p></div></div></div>
+<div class="v213-app-preview" id="v213-app-preview"><aside><div class="v213-preview-brand"><span id="v213-preview-sidebar-logo">W</span><b id="v213-preview-short-name">WhatsBot</b></div><i></i><i></i><i></i><i></i></aside><main><header><div><small>INICIO</small><b id="v213-preview-system-name">WhatsBot CRM</b></div><span></span><span></span></header><section><div class="v213-preview-hero"><small>RESUMEN</small><h3>Todo lo importante, en orden.</h3><p>Prioridades, conversaciones y resultados visibles sin sobrecargar la pantalla.</p></div><div class="v213-preview-cards"><article><small>CLIENTES</small><b>248</b></article><article><small>RESPUESTA</small><b>04:12</b></article><article><small>CONVERSIÓN</small><b>32%</b></article></div></section></main></div>
+</section>
+<div class="v213-brand-actions"><div><button class="button ghost" id="v213-revert-branding" type="button">Descartar cambios</button><button class="button ghost" id="v213-reset-branding" type="button">Restablecer diseño base</button><button class="button ghost" id="v213-import-branding" type="button">Importar tema</button><input accept="application/json,.json" hidden="" id="v213-import-branding-file" type="file"/></div><button class="button primary" id="v213-save-branding-bottom" type="button">Guardar diseño</button></div>
+</article>
+</main>
+</div>
+</section><section class="view" data-view-panel="settings">
+<article class="panel platform-config-panel" id="platform-config-panel">
+<div class="panel-title"><div><p class="kicker">PLATAFORMA MODULAR V20</p><h3>Módulos, IA y experiencia visual</h3><p>El administrador decide qué partes existen en el sistema. Los módulos desactivados desaparecen del menú y la IA respeta cada interruptor.</p></div><span class="ops-shield">ADMIN</span></div>
+<div class="platform-tabs"><button class="active" data-platform-tab="modules" type="button">Módulos CRM</button><button data-platform-tab="ai" type="button">Funciones IA</button><button data-platform-tab="policy" type="button">Política IA</button><button data-platform-tab="experience" type="button">Experiencia visual</button></div>
+<div class="platform-tab-panel active" data-platform-panel="modules"><div class="module-toggle-grid" id="module-toggle-grid"></div></div>
+<div class="platform-tab-panel" data-platform-panel="ai"><div class="module-toggle-grid ai-toggle-grid" id="ai-feature-toggle-grid"></div></div>
+<div class="platform-tab-panel" data-platform-panel="policy"><div class="form-grid"><label><span>IA general</span><select id="ai-suite-enabled"><option value="true">Activada</option><option value="false">Desactivada</option></select></label><label><span>Confianza mínima para sugerencias</span><input id="ai-confidence" max="100" min="40" type="number"/></label></div><div class="form-grid"><label><span>Mensajes de contexto</span><input id="ai-context-messages" max="50" min="6" type="number"/></label><label><span>Modo proactivo</span><select id="ai-proactive"><option value="true">Sí, sugerir sin pedirlo</option><option value="false">Solo bajo demanda</option></select></label></div><label class="check-row"><input id="ai-auto-fields" type="checkbox"/><span><b>Permitir actualización automática de campos con evidencia explícita</b><small>El dato debe estar presente en el mensaje del cliente.</small></span></label><label class="check-row"><input id="ai-auto-tags" type="checkbox"/><span><b>Permitir etiquetas automáticas</b><small>Clasificación interna; no envía mensajes.</small></span></label><label class="check-row"><input id="ai-human-approval" type="checkbox"/><span><b>Exigir aprobación humana para acciones externas</b><small>Recomendado: documentos, campañas, cambios sensibles y comunicaciones siempre requieren confirmación humana.</small></span></label></div>
+<div class="platform-tab-panel" data-platform-panel="experience">
+<div class="experience-hero"><div><span>✦</span><div><strong>Motion Experience V20</strong><small>Microinteracciones, transiciones, actividad en vivo y feedback visual configurable.</small></div></div><button class="experience-preview-button" id="experience-preview-button" type="button">▶ Probar animaciones</button></div>
+<div class="form-grid"><label><span>Nivel de animación</span><select id="experience-motion-level"><option value="off">Sin animaciones</option><option value="soft">Suaves</option><option value="full">Completas</option></select></label><label><span>Densidad visual</span><select id="experience-density"><option value="comfortable">Cómoda</option><option value="compact">Compacta</option></select></label></div>
+<div class="module-toggle-grid experience-toggle-grid" id="experience-toggle-grid"></div>
+<div class="experience-note"><span>⚡</span><p>Con <b>Rendimiento automático</b> el CRM reduce efectos si detecta un equipo con pocos recursos o si el navegador solicita “reducir movimiento”.</p></div>
+</div>
+<div class="inline-actions"><button class="button primary" id="save-platform-config" type="button">Guardar configuración modular</button></div>
+</article>
+<article class="panel operations-admin-panel" id="operations-admin-panel">
+<div class="panel-title"><div><p class="kicker">CENTRO OPERATIVO</p><h3>Reloj, clima y contingencias</h3><p>Configuración exclusiva del administrador para la barra superior de cada sucursal y avisos ante inconvenientes.</p></div><span class="ops-shield">ADMIN</span></div>
+<div class="operations-grid"><label><span>Sucursal</span><select id="ops-branch"></select></label><label><span>Zona horaria</span><input id="ops-timezone" maxlength="80" placeholder="America/Asuncion"/></label><label><span>Ubicación para el clima</span><input id="ops-weather-location" maxlength="240" placeholder="Ej.: Lambaré, Paraguay"/></label><label><span>Actualizar clima cada</span><select id="ops-weather-refresh"><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">60 min</option></select></label></div>
+<div class="form-grid"><label><span>Latitud opcional</span><input id="ops-weather-lat" placeholder="-25.34" step="0.000001" type="number"/></label><label><span>Longitud opcional</span><input id="ops-weather-lon" placeholder="-57.61" step="0.000001" type="number"/></label></div>
+<label class="check-row"><input checked="" id="ops-weather-enabled" type="checkbox"/><span><b>Mostrar clima en la barra superior</b><small>Usa la ubicación de la sucursal; si no hay coordenadas se busca por nombre.</small></span></label>
+<label><span>Mensaje de soporte / contingencia</span><textarea id="ops-support-message" maxlength="1000" rows="2"></textarea></label>
+<div class="incident-config"><p class="kicker">AVISO GENERAL ANTE INCONVENIENTES</p><div class="form-grid"><label><span>Estado</span><select id="ops-incident-enabled"><option value="false">Sin aviso</option><option value="true">Mostrar aviso</option></select></label><label><span>Severidad</span><select id="ops-incident-severity"><option value="info">Información</option><option value="warning">Advertencia</option><option value="critical">Crítico</option></select></label></div><label><span>Título</span><input id="ops-incident-title" maxlength="160"/></label><label><span>Mensaje</span><textarea id="ops-incident-message" maxlength="2000" placeholder="Ej.: WhatsApp presenta demoras. Continuar registrando las gestiones; el servicio se normalizará en breve." rows="3"></textarea></label></div>
+<div class="inline-actions"><button class="button primary" id="save-operations-settings" type="button">Guardar configuración operativa</button><button class="button ghost" id="test-weather-button" type="button">↻ Probar clima</button></div>
+</article>
+<div class="settings-grid" id="automation-admin-content">
+<article class="panel">
+<div class="panel-title"><div><p class="kicker">AUTOMATIZACIÓN 01</p><h3>Seguimiento sin respuesta</h3></div><label class="small-switch"><input id="followup-enabled" type="checkbox"/><i></i></label></div>
+<p class="panel-copy">Después de responderle al cliente, enviará un mensaje automático por WhatsApp si todavía no contestó.</p>
+<div class="time-row"><label><span>Esperar</span><input id="followup-value" min="1" type="number"/></label><label><span>Unidad</span><select id="followup-unit"><option value="minutes">Minutos</option><option value="hours">Horas</option><option value="days">Días</option></select></label></div>
+<label class="input-label" for="followup-message">Mensaje automático</label><textarea id="followup-message" maxlength="1000" rows="5"></textarea>
+</article>
+<article class="panel">
+<div class="panel-title"><div><p class="kicker">AUTOMATIZACIÓN 02</p><h3>Cierre por falta de retorno</h3></div><label class="small-switch"><input id="close-enabled" type="checkbox"/><i></i></label></div>
+<p class="panel-copy">Cierra automáticamente como perdido usando el motivo “Sin retorno del cliente”.</p>
+<div class="time-row"><label><span>Cerrar después de</span><input id="close-value" min="1" type="number"/></label><label><span>Unidad</span><select id="close-unit"><option value="minutes">Minutos</option><option value="hours">Horas</option><option value="days">Días</option></select></label></div>
+<div class="notice"><span>i</span><p>El contador empieza con la última respuesta humana y se cancela si el cliente vuelve a escribir.</p></div>
+</article>
+<article class="panel">
+<div class="panel-title"><div><p class="kicker">PRIORIDAD VISUAL</p><h3>Colores de espera</h3></div></div>
+<p class="panel-copy">Configurá desde cuántos minutos una tarjeta cambia de color.</p>
+<div class="heat-settings"><label><i class="heat fresh"></i><span>Amarillo</span><input id="heat-warm" min="1" type="number"/></label><label><i class="heat hot"></i><span>Naranja</span><input id="heat-hot" min="2" type="number"/></label><label><i class="heat red"></i><span>Rojo</span><input id="heat-red" min="3" type="number"/></label><label><i class="heat critical"></i><span>Rojo intenso</span><input id="heat-critical" min="4" type="number"/></label></div>
+</article>
+<article class="panel reasons-panel">
+<div class="panel-title"><div><p class="kicker">CIERRES</p><h3>Motivos de pérdida</h3></div></div>
+<div class="reason-list" id="reason-list"></div>
+<form class="add-reason" id="add-reason-form"><input id="new-reason" maxlength="120" placeholder="Nuevo motivo…"/><button class="button ghost" type="submit">Agregar</button></form>
+</article>
+</div>
+<div class="settings-footer" id="automation-admin-footer"><button class="button primary" id="save-automation-button" type="button">Guardar automatizaciones</button></div>
+<article class="panel users-panel" id="users-panel">
+<div class="panel-title"><div><p class="kicker">EQUIPO</p><h3>Usuarios y responsables</h3><p>Los usuarios conectados aparecen en línea. El primer agente que responde queda como responsable principal.</p></div><button class="button primary" id="new-user-button" type="button">＋ Agregar usuario</button></div>
+<div class="users-list" id="users-list"></div>
+</article>
+<article class="panel admin-assistant-panel" id="admin-assistant-panel">
+<div class="panel-title"><div><p class="kicker">ADMINISTRACIÓN ASISTIDA</p><h3>Asistente del administrador</h3><p>Ejecuta únicamente acciones CRM controladas; no ejecuta comandos del sistema operativo.</p></div></div>
+<textarea id="admin-command" maxlength="3000" placeholder="Ej.: reasignar cliente client_xxx a vendedor1" rows="4"></textarea>
+<div class="admin-command-help">
+<code>crear usuario | vendedor1 | Juan Pérez | agente | ClaveSegura123* | 30</code>
+<code>reasignar cliente CLIENT_ID a usuario</code>
+<code>editar cliente | CLIENT_ID | empresa=Empresa SA | notas=Cliente VIP</code>
+<code>buscar cliente Empresa SA</code>
+<code>ajustar stock SKU001 10 Reposición</code>
+</div>
+<div class="inline-actions"><button class="button dark" id="run-admin-command" type="button">Ejecutar instrucción</button></div>
+<div class="admin-result" id="admin-result"></div>
+</article>
+<article class="panel v16-config-panel" data-module-block="botAutomation" id="bot-instructions-panel">
+<div class="panel-title"><div><p class="kicker">BOT INTELIGENTE</p><h3>Instrucciones y captura automática</h3><p>Definí comportamientos como “si el cliente informa nombre y apellido, guardarlo en Nombre”. El bot solo actualiza datos respaldados por el mensaje del cliente.</p></div><button class="button primary" id="new-bot-rule-button" type="button">＋ Instrucción</button></div>
+<div class="bot-profile-grid"><label><span>Cliente nuevo</span><textarea id="bot-profile-new" rows="4"></textarea></label><label><span>Cliente conocido con responsable</span><textarea id="bot-profile-known" rows="4"></textarea></label><label><span>Responsable ausente / permiso</span><textarea id="bot-profile-away" rows="4"></textarea></label></div>
+<div class="inline-actions"><button class="button dark" id="save-bot-profiles" type="button">Guardar tratamientos</button></div>
+<div class="bot-rules-list" id="bot-rules-list"></div>
+</article>
+<article class="panel v16-config-panel" data-module-block="customFields" id="custom-fields-panel">
+<div class="panel-title"><div><p class="kicker">CAMPOS PERSONALIZADOS</p><h3>Constructor de datos</h3><p>Agregá campos al contacto, negociación o stock. El contexto explica al bot para qué sirve cada campo y si puede completarlo automáticamente.</p></div><button class="button primary" id="new-custom-field-button" type="button">＋ Nuevo campo</button></div>
+<div class="custom-fields-list" id="custom-fields-list"></div>
+</article>
+<article class="panel security-panel">
+<div><p class="kicker">SEGURIDAD</p><h3>Cambiar contraseña</h3><p>La contraseña protege el panel local.</p></div>
+<form id="password-form"><input autocomplete="current-password" id="current-password" placeholder="Contraseña actual" type="password"/><input autocomplete="new-password" id="new-password" placeholder="Nueva contraseña (mínimo 8)" type="password"/><button class="button dark" type="submit">Cambiar contraseña</button></form>
+</article>
+</section>
+</main>
+</div>
+<aside aria-hidden="true" class="deal-drawer" id="deal-drawer">
+<div class="drawer-backdrop" data-close-drawer=""></div>
+<section class="drawer-panel">
+<header class="drawer-header"><div><p class="kicker" id="drawer-stage">NEGOCIACIÓN</p><h3 id="drawer-name">Cliente</h3><span id="drawer-phone"></span></div><button class="icon-button close" data-close-drawer="" type="button">×</button></header>
+<div class="drawer-content">
+<div class="drawer-status-row"><div id="drawer-wait"></div><button class="toggle compact-toggle" id="deal-bot-toggle" role="switch" type="button"><i></i><span>Bot</span></button></div>
+<div class="deal-branch-strip"><span>⌂</span><div><small>Sucursal de atención</small><strong id="drawer-branch">Sucursal</strong></div></div>
+<div class="owner-card"><div><small>Responsable principal</small><strong id="drawer-owner">Sin asignar</strong></div><div class="owner-actions"><select id="drawer-owner-select"></select><button class="button ghost" id="assign-owner-button" type="button">Asignar</button></div></div>
+<div class="drawer-transfer-action"><button class="button primary wide" id="transfer-conversation-button" type="button">↔ Transferir conversación</button><small>Pasá el cliente a un compañero o a otra sucursal sin perder el historial.</small></div>
+<div class="drawer-call-actions"><button class="button dark" id="open-client-profile-button" type="button">Ficha del cliente</button><button class="button ghost" id="v212-link-master-button" type="button">Vincular a Cliente Maestro</button><a class="button ghost" id="open-whatsapp-button" rel="noreferrer" target="_blank">Abrir conversación en WhatsApp</a></div>
+<p class="call-limit-note">Las llamadas entrantes de WhatsApp se detectan y se vinculan al responsable del cliente. Esta versión no genera enlaces de llamada ni ofrece un botón de llamada saliente no soportado por la conexión QR.</p>
+<section class="drawer-section conversation-section">
+<div class="drawer-section-title">
+<div><h4>Conversación</h4><small>Historial reciente con el cliente</small></div>
+<span class="keyboard-hint">Enter envía · Shift+Enter nueva línea</span>
+</div>
+<div class="quick-reply-bar"><select id="drawer-quick-reply"><option value="">Respuesta rápida…</option></select><button class="button ghost" id="insert-quick-reply" type="button">Insertar</button><button class="button dark" id="send-quick-reply" type="button">Enviar</button></div>
+<div class="message-list" id="drawer-messages"></div>
+<div class="copilot-card" hidden="" id="copilot-card">
+<div class="copilot-head">
+<div class="copilot-orb">✦</div>
+<div><strong>Copiloto de respuesta</strong><small id="copilot-source">Sugerencia privada para el agente · nunca se envía sola</small></div>
+<button class="icon-button copilot-refresh" id="refresh-copilot" title="Generar otra sugerencia" type="button">↻</button>
+</div>
+<div class="copilot-loading" hidden="" id="copilot-loading"><i></i><span>Analizando la consulta y el contexto del cliente…</span></div>
+<div class="copilot-content" id="copilot-content">
+<p class="copilot-reply" id="copilot-reply"></p>
+<small class="copilot-reason" id="copilot-reason"></small>
+<div class="copilot-documents" id="copilot-documents"></div>
+<div class="copilot-actions">
+<button class="button ghost" id="edit-copilot" type="button">✎ Usar y editar</button>
+<button class="button primary" id="send-copilot" type="button">Enviar sugerencia</button>
+</div>
+</div>
+</div>
+<div class="smart-data-card" hidden id="smart-data-card">
+  <div class="smart-data-head"><div class="smart-data-icon">✦</div><div><strong>Datos detectados en la conversación</strong><small>El Copiloto propone completar la ficha usando únicamente lo que afirmó el cliente.</small></div><button class="icon-button" id="refresh-smart-data" title="Volver a analizar el último mensaje" type="button">↻</button></div>
+  <div class="smart-data-list" id="smart-data-list"></div>
+  <div class="smart-data-foot"><span>Los campos seguros pueden autocompletarse si la confianza es alta. CI, RUC y otros campos protegidos requieren aprobación.</span></div>
+</div>
+<div class="agent-ai-toolbar" id="agent-ai-toolbar"><span>✦ IA</span><button data-ai-rewrite="profesional" type="button">Mejorar</button><button data-ai-rewrite="breve" type="button">Más breve</button><button data-ai-rewrite="comercial" type="button">Más comercial</button><button data-ai-rewrite="técnico y claro" type="button">Más técnico</button><button id="open-ai-center-deal" type="button">Analizar cliente</button></div>
+<form class="message-form modern-composer" id="message-form">
+<textarea id="manual-message" placeholder="Escribí tu respuesta…" rows="1"></textarea>
+<button aria-label="Enviar mensaje" class="composer-send" type="submit"><span>➤</span></button>
+</form>
+<div class="message-tools"><button id="attach-button" type="button">＋ Adjuntar</button><button id="record-audio-button" type="button">● Audio</button><span class="composer-state">El bot automático queda pausado cuando responde un agente.</span><input hidden="" id="media-file" type="file"/></div>
+<form class="media-composer" hidden="" id="media-form"><div class="media-pending"><span id="media-pending-icon">□</span><div><strong id="media-pending-name">Archivo</strong><small id="media-pending-size"></small></div><button aria-label="Cancelar archivo" id="cancel-media-button" type="button">×</button></div><input id="media-caption" maxlength="1000" placeholder="Comentario opcional…"/><button class="button primary" type="submit">Enviar archivo</button></form>
+</section>
+<section class="drawer-section" hidden="" id="coverage-section"><div class="coverage-banner"><span>!</span><div><strong>Cobertura temporal</strong><small id="coverage-copy"></small></div></div></section>
+<section class="drawer-section" id="deal-custom-fields-section"><div class="drawer-section-title"><h4>Datos personalizados</h4><small>Contacto y negociación</small></div><div class="dynamic-fields" id="drawer-custom-fields"></div><button class="button ghost" id="save-drawer-custom-fields" type="button">Guardar datos</button></section>
+<section class="drawer-section"><div class="drawer-section-title"><h4>Productos reservados</h4><button class="text-button" id="show-reserve-form" type="button">＋ Agregar</button></div><form class="reserve-form" hidden="" id="reserve-form"><select id="reserve-product"></select><input id="reserve-quantity" min="1" type="number" value="1"/><button class="button dark" type="submit">Reservar</button></form><div class="reserved-list" id="reserved-list"></div></section>
+</div>
+<footer class="drawer-footer"><button class="button danger-outline" id="mark-lost-button" type="button">Cerrar perdido</button><button class="button success" id="mark-won-button" type="button">✓ Marcar ganado</button></footer>
+</section>
+</aside>
+<dialog id="client-dialog"><form class="dialog-card small-dialog" id="client-form"><header><div><p class="kicker">CLIENTES</p><h3>Cargar cliente</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><label><span>Nombre</span><input id="client-name" maxlength="120" placeholder="Nombre del cliente"/></label><label><span>Número de WhatsApp *</span><input id="client-phone" maxlength="30" placeholder="Ej.: 0981 123 456" required=""/></label><label id="client-branch-row"><span>Sucursal</span><select id="client-branch"></select></label><p class="panel-copy" id="client-limit-copy"></p><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Cargar cliente</button></footer></form></dialog>
+<dialog id="user-dialog"><form class="dialog-card" id="user-form"><header><div><p class="kicker">EQUIPO</p><h3 id="user-dialog-title">Nuevo usuario</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><input id="user-id" type="hidden"/><div class="form-grid"><label><span>Nombre *</span><input id="user-name" maxlength="120" required=""/></label><label><span>Usuario *</span><input autocomplete="off" id="user-username" maxlength="80" placeholder="Ej.: juan.perez" required="" spellcheck="false"/><small>Usá al menos 3 caracteres, sin espacios. Se permiten letras, números, punto, guion y guion bajo.</small></label></div><div class="form-grid"><label><span>Rol</span><select id="user-role"><option value="agent">Agente</option><option value="supervisor">Jefe</option><option value="manager">Gerente</option><option value="admin">Administrador</option></select></label><label><span>Límite diario de clientes</span><input id="user-client-limit" max="500" min="1" type="number" value="30"/></label></div><label><span>Sucursal de trabajo</span><select id="user-branch"></select><small>Los agentes y gerentes ingresarán directamente a la información de esta sucursal.</small></label><label><span>Contraseña <small id="user-password-note">*</small></span><input autocomplete="new-password" id="user-password" placeholder="Mínimo 8 caracteres" type="password"/></label><div class="permission-box"><p class="kicker">PERMISOS DE REPORTES</p><label class="check-row"><input id="user-branch-reports" type="checkbox"/><span><b>Reportes de su sucursal</b><small>Permite ver indicadores generales de la sucursal, además de sus métricas personales.</small></span></label><label class="check-row"><input id="user-team-reports" type="checkbox"/><span><b>Comparativo del equipo</b><small>Permite comparar responsables, carga, conversión y tiempos de atención.</small></span></label><label class="check-row"><input id="user-global-reports" type="checkbox"/><span><b>Reportes de todas las sucursales</b><small>Permite consultar el consolidado completo del servidor central.</small></span></label><label class="check-row"><input id="user-audit-reports" type="checkbox"/><span><b>Auditoría de movimientos</b><small>Permite revisar acciones de usuarios, fechas y referencias de clientes.</small></span></label><label class="check-row"><input id="user-campaign-view" type="checkbox"/><span><b>Ver campañas</b><small>Permite consultar campañas y su efectividad.</small></span></label><label class="check-row"><input id="user-campaign-manage" type="checkbox"/><span><b>Gestionar campañas</b><small>Crear, iniciar y pausar campañas de su sucursal.</small></span></label><label class="check-row"><input id="user-custom-fields-manage" type="checkbox"/><span><b>Configurar campos personalizados</b><small>Crear campos y definir qué puede interpretar el bot.</small></span></label><label class="check-row"><input id="user-news-publish" type="checkbox"/><span><b>Publicar noticias internas</b><small>Permite enviar novedades al equipo según el alcance del rol.</small></span></label></div><label class="check-row" id="user-active-row"><input checked="" id="user-active" type="checkbox"/><span><b>Usuario activo</b><small>Puede iniciar sesión y recibir clientes.</small></span></label><div aria-live="assertive" class="form-error-banner" hidden="" id="user-form-error" role="alert"></div><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" id="user-save-button" type="submit">Guardar usuario</button></footer></form></dialog>
+<dialog id="news-dialog"><form class="dialog-card news-dialog" id="news-form"><header><div><p class="kicker">NOTICIAS</p><h3>Publicar actualización</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><label><span>Título *</span><input id="news-title" maxlength="180" required=""/></label><label><span>Contenido *</span><textarea id="news-body" maxlength="8000" placeholder="Escribí el aviso o actualización para el equipo…" required="" rows="7"></textarea></label><div class="form-grid"><label><span>Prioridad</span><select id="news-priority"><option value="normal">Normal</option><option value="important">Importante</option><option value="urgent">Urgente</option></select></label><label><span>Destinatarios</span><select id="news-audience-mode"><option value="all">Todo el equipo</option><option value="branch">Sucursal seleccionada</option><option value="users">Agentes seleccionados</option></select></label></div><label id="news-branch-row"><span>Sucursal</span><select id="news-branch"></select></label><label hidden="" id="news-users-row"><span>Seleccionar personas <small>Ctrl/Cmd para varios</small></span><select id="news-users" multiple="" size="7"></select></label><label><span>Imágenes, videos o documentos</span><input accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" id="news-files" multiple="" type="file"/><small>Podés adjuntar hasta 8 archivos; máximo 64 MB por archivo.</small></label><label class="check-row"><input id="news-pinned" type="checkbox"/><span><b>Fijar arriba</b><small>La noticia aparecerá primero hasta que sea eliminada.</small></span></label><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Publicar noticia</button></footer></form></dialog>
+<dialog id="presence-dialog"><div class="dialog-card presence-dialog-card"><header><div><p class="kicker">DISPONIBILIDAD</p><h3>Estado del equipo</h3><small id="presence-dialog-scope"></small></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><div class="presence-summary" id="presence-summary"></div><div class="presence-list" id="presence-list"></div><footer><button class="button primary" data-dialog-close="" type="button">Cerrar</button></footer></div></dialog>
+<dialog id="bot-rule-dialog"><form class="dialog-card small-dialog" id="bot-rule-form"><header><div><p class="kicker">BOT</p><h3>Nueva instrucción</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><input id="bot-rule-id" type="hidden"/><label><span>Nombre</span><input id="bot-rule-name" maxlength="160" placeholder="Ej.: Capturar nombre y apellido"/></label><label><span>Instrucción</span><textarea id="bot-rule-instruction" maxlength="6000" placeholder="Cuando el cliente informe su nombre y apellido, guardalo en el campo Nombre. No lo inventes si no lo dijo." rows="6"></textarea></label><label class="check-row"><input checked="" id="bot-rule-active" type="checkbox"/><span><b>Activa</b><small>El bot tendrá esta instrucción en cada conversación.</small></span></label><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Guardar</button></footer></form></dialog>
+<dialog id="custom-field-dialog"><form class="dialog-card" id="custom-field-form"><header><div><p class="kicker">DATOS</p><h3>Campo personalizado</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><input id="custom-field-id" type="hidden"/><div class="form-grid"><label><span>Ubicación</span><select id="custom-field-entity"><option value="contact">Contacto</option><option value="deal">Negociación</option><option value="product">Stock / Producto</option></select></label><label><span>Tipo</span><select id="custom-field-type"><option value="text">Texto</option><option value="number">Número</option><option value="date">Fecha</option><option value="boolean">Sí / No</option><option value="select">Lista</option></select></label></div><div class="form-grid"><label><span>Nombre del campo</span><input id="custom-field-label" maxlength="120" required=""/></label><label><span>Clave</span><input id="custom-field-key" maxlength="80" placeholder="Se genera automáticamente"/></label></div><label><span>Contexto para el bot</span><textarea id="custom-field-context" maxlength="3000" placeholder="Explicá qué significa, cuándo se debe cargar y cómo interpretarlo." rows="5"></textarea></label><label><span>Opciones <small>si es Lista, separadas por coma</small></span><input id="custom-field-options" maxlength="2000"/></label><div class="permission-box"><label class="check-row"><input checked="" id="custom-field-readable" type="checkbox"/><span><b>El bot puede leerlo</b><small>Se incluye como contexto.</small></span></label><label class="check-row"><input id="custom-field-writable" type="checkbox"/><span><b>El bot puede completarlo</b><small>Solo cuando el cliente aporta el dato explícitamente.</small></span></label><label class="check-row"><input id="custom-field-required" type="checkbox"/><span><b>Campo obligatorio</b></span></label></div><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Guardar campo</button></footer></form></dialog>
+<dialog id="campaign-dialog"><form class="dialog-card campaign-dialog" id="campaign-form"><header><div><p class="kicker">CAMPAÑA</p><h3>Nueva campaña segmentada</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><div class="form-grid"><label><span>Nombre *</span><input id="campaign-name" maxlength="160" required=""/></label><label><span>Sucursal</span><select id="campaign-branch"></select></label><label><span>Línea de WhatsApp *</span><select id="campaign-line" required=""></select><small>La campaña se enviará exclusivamente desde este número.</small></label></div><label><span>Mensaje *</span><textarea id="campaign-message" maxlength="4000" placeholder="Hola {{cliente}}, tenemos una novedad para vos…" required="" rows="6"></textarea><small>Variables: {{cliente}}, {{telefono}}, {{documento}}, {{ruc}}, {{empresa}}, {{ciudad}}, {{sucursal}}, {{responsable}} y campos personalizados.</small></label><label><span>Imagen o documento opcional</span><select id="campaign-document"><option value="">Sin adjunto</option></select><small>Los archivos se cargan previamente en Respuestas rápidas → Documentos.</small></label><div class="campaign-filter-box"><p class="kicker">SEGMENTACIÓN</p><div class="form-grid"><label><span>Ciudad contiene</span><input id="campaign-filter-city"/></label><label><span>Empresa contiene</span><input id="campaign-filter-company"/></label></div><div class="form-grid"><label><span>Documento / CI contiene</span><input id="campaign-filter-document"/></label><label><span>RUC contiene</span><input id="campaign-filter-ruc"/></label></div><div class="form-grid"><label><span>Etiqueta contiene</span><input id="campaign-filter-tag"/></label><label><span>Estado de negociación</span><select id="campaign-filter-stage"><option value="all">Cualquier estado</option><option value="new">Nuevo</option><option value="contacted">Contactado</option><option value="waiting">Espera</option><option value="won">Ganado</option><option value="lost">Perdido</option></select></label></div><div class="form-grid"><label><span>Mínimo de compras</span><input id="campaign-filter-purchases" min="0" type="number" value="0"/></label><label><span>Valor mínimo comprado (Gs.)</span><input id="campaign-filter-purchase-value" min="0" type="number" value="0"/></label></div><div class="form-grid"><label><span>Compró en últimos días</span><input id="campaign-filter-last-days" min="0" placeholder="Ej.: 90" type="number"/></label><label><span>Sin comprar hace al menos</span><input id="campaign-filter-inactive-purchase-days" min="0" placeholder="Ej.: 180" type="number"/></label></div><div class="form-grid"><label><span>Responsable</span><select id="campaign-filter-owner"><option value="all">Cualquier responsable</option></select></label><label><span>Contactó en últimos días</span><input id="campaign-filter-contact-days" min="0" placeholder="Ej.: 30" type="number"/></label></div><div class="form-grid"><label><span>Campo del contacto</span><select id="campaign-filter-custom-key"><option value="">Ninguno</option></select></label><label><span>Valor contiene</span><input id="campaign-filter-custom-value"/></label></div><div class="form-grid"><label><span>Campo de negociación</span><select id="campaign-filter-deal-custom-key"><option value="">Ninguno</option></select></label><label><span>Valor contiene</span><input id="campaign-filter-deal-custom-value"/></label></div></div><div class="campaign-preview" id="campaign-preview"><span>⌕</span><div><strong>Sin previsualizar</strong><small>Comprobá cuántos clientes cumplen los filtros antes de crear.</small></div></div><footer><button class="button ghost" id="preview-campaign-button" type="button">Previsualizar público</button><button class="button primary" type="submit">Crear campaña</button></footer></form></dialog>
+<dialog id="branch-dialog"><form class="dialog-card branch-dialog" id="branch-form">
+<header><div><p class="kicker">SUCURSAL</p><h3 id="branch-dialog-title">Nueva sucursal</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header>
+<input id="branch-id" type="hidden"/>
+<div class="form-grid"><label><span>Nombre *</span><input id="branch-name" maxlength="120" placeholder="Ej.: Sucursal Lambaré" required=""/></label><label><span>Código</span><input id="branch-code" maxlength="40" placeholder="LAMBARE"/></label></div>
+<div class="form-grid"><label><span>Ciudad</span><input id="branch-city" maxlength="120"/></label><label><span>Número de WhatsApp</span><input id="branch-phone" maxlength="40" placeholder="595981123456"/></label></div>
+<label><span>Dirección / ubicación</span><input id="branch-address" maxlength="240" placeholder="Av. Ejemplo 123, Lambaré"/></label>
+<div class="form-grid"><label><span>Ubicación para clima</span><input id="branch-weather-location" maxlength="240" placeholder="Ej.: Fernando de la Mora, Paraguay"/></label><label><span>Zona horaria</span><input id="branch-timezone" maxlength="80" value="America/Asuncion"/></label></div>
+<label id="branch-intro-row"><span>Mensaje automático al recibir una derivación</span><textarea id="branch-intro-message" maxlength="1200" rows="5"></textarea><small>Se utiliza cuando esta sucursal recibe una derivación interna. Variables: {cliente}, {sucursal}, {ubicacion}, {origen}, {interes}, {motivo}, {contexto}.</small></label>
+<label class="check-row"><input checked="" id="branch-active" type="checkbox"/><span><b>Sucursal activa</b><small>Puede recibir usuarios y transferencias.</small></span></label>
+<footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Guardar sucursal</button></footer>
+</form></dialog>
+<dialog id="transfer-dialog"><form class="dialog-card transfer-dialog" id="transfer-form">
+<header><div><p class="kicker">TRANSFERENCIA</p><h3>Transferir conversación</h3><small id="transfer-client-copy"></small></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header>
+<div class="transfer-source"><span>Origen</span><strong id="transfer-source-branch">Sucursal</strong></div>
+<label><span>Tipo de transferencia</span><select id="transfer-type"><option value="user">A un compañero de esta sucursal</option><option value="branch">A otra sucursal</option></select></label>
+<label id="transfer-user-row"><span>Compañero</span><select id="transfer-user"></select></label>
+<label hidden="" id="transfer-branch-row"><span>Sucursal destino</span><select id="transfer-branch"></select></label>
+<div hidden="" id="transfer-context-fields">
+<label><span>Número real del cliente *</span><input id="transfer-client-phone" inputmode="tel" maxlength="24" placeholder="Ej.: 595981123456"/><small>Se valida antes de derivar. Si WhatsApp entregó un identificador LID, completá aquí el teléfono real del cliente.</small></label>
+<label><span>Producto / interés <small>si aplica</small></span><input id="transfer-interest" maxlength="300" placeholder="Ej.: Impresora HP 410, cuaderno A4, servicio técnico..."/></label>
+<label><span>Motivo / resumen de la consulta</span><textarea id="transfer-reason" maxlength="600" placeholder="Ej.: Consultó disponibilidad, precio y retiro en la sucursal destino." rows="3"></textarea></label>
+<label><span>Nota interna <small>opcional</small></span><textarea id="transfer-note" maxlength="600" placeholder="Información adicional para el agente que recibirá el caso." rows="2"></textarea></label>
+</div>
+<div class="notice" id="transfer-explanation"><span>i</span><p>Al transferir dentro de la misma sucursal, el nuevo agente se vuelve responsable principal del cliente.</p></div>
+<footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" id="confirm-transfer-button" type="submit">Transferir</button></footer>
+</form></dialog>
+<dialog id="client-profile-dialog"><form class="dialog-card client-profile-dialog" id="client-profile-form">
+<header><div><p class="kicker">FICHA 360° · CLIENTE MAESTRO</p><h3 id="client-profile-title">Cliente</h3><small id="client-profile-id"></small></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header>
+<div class="v212-master-banner" id="v212-master-banner"><span class="v212-master-icon">CM</span><div><b>Cliente Maestro</b><small>Unifica números, personas de contacto, sucursales e historial sin duplicar clientes.</small></div><div class="v212-master-stats" id="v212-master-stats"></div></div>
+<div class="form-grid"><label><span>Tipo de cliente</span><select id="profile-entity-type"><option value="person">Persona</option><option value="company">Empresa / Organización</option></select></label><label><span>Nombre / Razón social</span><input id="profile-name" maxlength="120"/></label></div>
+<div class="form-grid"><label><span>Documento / CI</span><input id="profile-document" maxlength="80"/></label><label><span>RUC</span><input id="profile-ruc" maxlength="80"/></label></div>
+<div class="form-grid"><label><span>Cómo elegir sucursal en nuevas consultas</span><select id="profile-branch-choice-mode"><option value="ask_when_multiple">Preguntar si tiene varias sucursales</option><option value="prefer_last">Usar la última/preferida</option><option value="never">No preguntar</option></select></label><label class="check-row profile-optin"><input id="profile-marketing-optin" type="checkbox"/><span><b>Consentimiento para campañas</b><small>Registrar solo si el cliente autorizó comunicaciones comerciales.</small></span></label></div>
+<div class="form-grid"><label><span>Empresa</span><input id="profile-company" maxlength="160"/></label><label><span>Correo</span><input id="profile-email" maxlength="160" type="email"/></label></div>
+<div class="form-grid"><label><span>Ciudad</span><input id="profile-city" maxlength="120"/></label><label><span>Dirección</span><input id="profile-address" maxlength="240"/></label></div>
+<div class="form-grid three"><label><span>Edad</span><input id="profile-age" min="0" max="120" type="number"/></label><label><span>Fecha de nacimiento</span><input id="profile-birth-date" type="date"/></label><label><span>Cargo / profesión</span><input id="profile-job-title" maxlength="120"/></label></div>
+<div class="form-grid"><label><span>País</span><input id="profile-country" maxlength="120"/></label><label><span>Barrio / zona</span><input id="profile-neighborhood" maxlength="120"/></label></div>
+<label><span>Etiquetas <small>separadas por coma</small></span><input id="profile-tags" maxlength="500" placeholder="VIP, Mayorista, Asunción"/></label>
+<label><span>Notas internas</span><textarea id="profile-notes" maxlength="3000" rows="4"></textarea></label>
+<section class="v212-identity-grid">
+<article class="v212-identity-card"><div class="v212-section-head"><div><p class="kicker">IDENTIDAD</p><h4>Números del cliente</h4><small>Para una persona o números generales de una empresa.</small></div><span class="v212-count" id="v212-phone-count">0</span></div><div class="v212-list" id="v212-client-phones"></div><div class="v212-inline-form"><input id="v212-phone-label" maxlength="80" placeholder="Ej.: Principal, Administración"/><input id="v212-phone-number" maxlength="40" placeholder="Ej.: +595981123456"/><button class="button ghost" id="v212-add-phone" type="button">Agregar número</button></div></article>
+<article class="v212-identity-card wide"><div class="v212-section-head"><div><p class="kicker">EMPRESA</p><h4>Personas de contacto</h4><small>Cada empleado conserva su nombre, cargo y números, pero comparte el historial de la empresa.</small></div><span class="v212-count" id="v212-contact-count">0</span></div><div class="v212-contact-list" id="v212-contact-persons"></div><div class="v212-contact-form"><input id="v212-contact-name" maxlength="140" placeholder="Nombre y apellido"/><input id="v212-contact-role" maxlength="120" placeholder="Cargo / Área"/><input id="v212-contact-email" maxlength="160" placeholder="Correo opcional"/><input id="v212-contact-phones-input" maxlength="300" placeholder="Teléfonos separados por coma"/><button class="button ghost" id="v212-add-contact" type="button">Agregar contacto</button></div></article>
+<article class="v212-identity-card wide"><div class="v212-section-head"><div><p class="kicker">MULTI-SUCURSAL</p><h4>Relación comercial por sucursal</h4><small>Un solo cliente puede comprar en varias sucursales. El CRM conserva compras, responsables y preferencia por separado.</small></div><span class="v212-count" id="v212-branch-count">0</span></div><div class="v212-branch-list" id="v212-client-branches"></div><div class="v212-inline-form branches"><select id="v212-add-branch-select"></select><label class="v212-mini-check"><input id="v212-branch-preferred" type="checkbox"/> Preferida</label><button class="button ghost" id="v212-add-branch" type="button">Vincular sucursal</button></div><div class="v212-routing-note" id="v212-routing-note"></div></article>
+</section>
+<div class="profile-custom-fields"><p class="kicker">CAMPOS PERSONALIZADOS</p><div class="dynamic-fields" id="profile-custom-fields"></div></div>
+<div class="client-history"><div class="drawer-section-title"><h4>Historial local</h4><span id="client-history-count"></span></div><div id="client-history-list"></div></div>
+<div class="client-history global-client-history" id="global-client-history"><div class="drawer-section-title"><h4>Historial compartido entre sucursales</h4><span id="global-client-history-count"></span></div><div class="global-client-summary" id="global-client-summary"></div><div id="global-client-history-list"></div></div>
+<footer><button class="button ghost" data-dialog-close="" type="button">Cerrar</button><button class="button primary" type="submit">Guardar ficha</button></footer>
+</form></dialog>
+<dialog id="v212-link-master-dialog"><form class="dialog-card v212-link-master-dialog" id="v212-link-master-form">
+<header><div><p class="kicker">IDENTIDAD · CLIENTE MAESTRO</p><h3>Vincular a Cliente Maestro</h3><small>Usá esta opción cuando un empleado o un número nuevo pertenece a un cliente/empresa que ya existe.</small></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header>
+<div class="v212-link-current" id="v212-link-current"></div>
+<label><span>Cliente Maestro *</span><select id="v212-link-master-client" required=""></select><small>La conversación y el historial de este número quedarán vinculados al cliente seleccionado.</small></label>
+<label class="check-row"><input id="v212-link-company-number" type="checkbox"/><span><b>Es un número general de la empresa</b><small>Marcá esto si no pertenece a un empleado específico (por ejemplo, Recepción o Administración).</small></span></label>
+<section class="v212-link-contact-fields" id="v212-link-contact-fields">
+<div class="form-grid"><label><span>Persona de contacto *</span><input id="v212-link-contact-name" maxlength="140" placeholder="Ej.: Juan Pérez"/></label><label><span>Cargo / Área</span><input id="v212-link-contact-role" maxlength="120" placeholder="Ej.: Compras"/></label></div>
+<label><span>Correo opcional</span><input id="v212-link-contact-email" maxlength="160" type="email"/></label>
+<p class="panel-copy">Si esta persona vuelve a escribir desde este número, el CRM reconocerá automáticamente tanto al empleado como a la empresa.</p>
+</section>
+<div class="notice"><span>CM</span><p><b>No se duplica el cliente.</b> Si el número nació como un registro temporal, se reasigna al Cliente Maestro y se conserva la conversación.</p></div>
+<footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Vincular conversación</button></footer>
+</form></dialog>
+<dialog id="reply-dialog"><form class="dialog-card" id="reply-form">
+<header><div><p class="kicker">RESPUESTA RÁPIDA</p><h3 id="reply-dialog-title">Nueva respuesta</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header>
+<input id="reply-id" type="hidden"/>
+<div class="form-grid"><label><span>Título *</span><input id="reply-title" maxlength="120" required=""/></label><label><span>Atajo</span><input id="reply-shortcut" maxlength="40" placeholder="/stock"/></label></div>
+<label><span>Categoría</span><input id="reply-category" maxlength="80" value="General"/></label>
+<label><span>Texto *</span><textarea id="reply-body" maxlength="3000" required="" rows="6"></textarea></label>
+<label class="check-row"><input checked="" id="reply-active" type="checkbox"/><span><b>Respuesta activa</b><small>Aparecerá para los agentes.</small></span></label>
+<footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Guardar</button></footer>
+</form></dialog>
+<dialog id="assistant-document-dialog"><form class="dialog-card assistant-document-dialog" id="assistant-document-form">
+<header><div><p class="kicker">COPILOTO · DOCUMENTOS</p><h3 id="assistant-document-dialog-title">Cargar documento con contexto</h3><small>El archivo queda en esta instalación y el Copiloto lo recomendará cuando corresponda.</small></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header>
+<input id="assistant-document-id" type="hidden"/><label><span>Archivo <small id="assistant-document-file-required">*</small></span><input accept=".docx,.pdf,.txt,.md,.html,.htm,.csv,.json,.png,.jpg,.jpeg,.webp" id="assistant-document-file" type="file"/></label>
+<label><span>Nombre para los agentes</span><input id="assistant-document-title" maxlength="160" placeholder="Ej.: Cotización estándar, Formulario de alta, Catálogo..."/></label>
+<label><span>Contexto de uso *</span><textarea id="assistant-document-context" maxlength="6000" placeholder="Explicá para qué sirve, cuándo recomendarlo y qué información necesita el cliente. Ej.: Usar cuando el cliente solicita una cotización formal de productos de librería." required="" rows="5"></textarea></label>
+<label><span>Palabras clave</span><input id="assistant-document-tags" maxlength="1000" placeholder="cotización, presupuesto, pedido, mayorista"/></label>
+<label class="check-row"><input checked="" id="assistant-document-editable" type="checkbox"/><span><b>Plantilla inteligente</b><small>En DOCX/TXT el CRM reemplaza variables como {{cliente}}, {{pedido}} y {{solicitud}} antes de enviarlo.</small></span></label>
+<div class="notice"><span>✦</span><p>Los PDF e imágenes pueden recomendarse y enviarse, pero no se modifican. Para documentos personalizados usá DOCX o formatos de texto.</p></div>
+<footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Cargar documento</button></footer>
+</form></dialog>
+<dialog id="prepare-document-dialog"><form class="dialog-card prepare-document-dialog" id="prepare-document-form">
+<header><div><p class="kicker">DOCUMENTO PERSONALIZADO</p><h3 id="prepare-document-title">Preparar documento</h3><small id="prepare-document-copy">Revisá el contexto antes de enviarlo.</small></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header>
+<input id="prepare-document-id" type="hidden"/>
+<label><span>Datos o pedido a incorporar</span><textarea id="prepare-document-details" maxlength="5000" placeholder="Ej.: 10 resmas A4, 5 bolígrafos azules, entrega en Fernando de la Mora..." rows="6"></textarea></label>
+<label><span>Mensaje que acompañará al documento</span><textarea id="prepare-document-caption" maxlength="1000" rows="3">Te comparto el documento solicitado. Si necesitás algún ajuste, quedo atento.</textarea></label>
+<div class="document-merge-preview" id="document-merge-preview"></div>
+<footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Preparar y enviar</button></footer>
+</form></dialog>
+<dialog id="product-dialog">
+<form class="dialog-card" id="product-form">
+<header><div><p class="kicker">INVENTARIO</p><h3 id="product-dialog-title">Nuevo producto</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header>
+<input id="product-id" type="hidden"/>
+<div class="form-grid"><label><span>Nombre *</span><input id="product-name" maxlength="160" required=""/></label><label><span>Código *</span><input id="product-sku" maxlength="80" required=""/></label></div>
+<label><span>Descripción</span><textarea id="product-description" maxlength="500" rows="3"></textarea></label>
+<div class="form-grid three"><label><span>Disponible</span><input id="product-available" min="0" type="number" value="0"/></label><label><span>Stock mínimo</span><input id="product-min" min="0" type="number" value="0"/></label><label><span>Precio opcional</span><input id="product-price" min="0" step="0.01" type="number" value="0"/></label></div>
+<div class="profile-custom-fields"><p class="kicker">CAMPOS PERSONALIZADOS DE STOCK</p><div class="dynamic-fields" id="product-custom-fields"></div></div>
+<footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Guardar producto</button></footer>
+</form>
+</dialog>
+<dialog id="adjust-dialog"><form class="dialog-card small-dialog" id="adjust-form"><header><div><p class="kicker">MOVIMIENTO</p><h3>Ajustar stock</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><input id="adjust-product-id" type="hidden"/><p id="adjust-product-name"></p><label><span>Cantidad positiva o negativa</span><input id="adjust-quantity" placeholder="Ej.: 10 o -3" required="" type="number"/></label><label><span>Motivo</span><input id="adjust-note" maxlength="240" value="Ajuste manual"/></label><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Aplicar ajuste</button></footer></form></dialog>
+<dialog id="lost-dialog"><form class="dialog-card small-dialog" id="lost-form"><header><div><p class="kicker">CIERRE</p><h3>Cerrar como perdido</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><p>Seleccioná el motivo. Las reservas se devolverán automáticamente al stock.</p><label><span>Motivo *</span><select id="lost-reason" required=""></select></label><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button danger" type="submit">Cerrar negociación</button></footer></form></dialog>
+<dialog id="task-dialog"><form class="dialog-card" id="task-form"><header><div><p class="kicker">PRODUCTIVIDAD</p><h3>Nueva tarea / compromiso</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><label><span>Título *</span><input id="task-title" maxlength="240" required=""/></label><label><span>Detalle</span><textarea id="task-description" maxlength="3000" rows="4"></textarea></label><div class="form-grid"><label><span>Responsable</span><select id="task-assignee"></select></label><label><span>Prioridad</span><select id="task-priority"><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option><option value="low">Baja</option></select></label></div><label><span>Vence</span><input id="task-due" type="datetime-local"/></label><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Crear tarea</button></footer></form></dialog>
+<dialog id="objective-dialog"><form class="dialog-card small-dialog" id="objective-form"><header><div><p class="kicker">OBJETIVOS</p><h3>Nueva meta</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><label><span>Nombre *</span><input id="objective-name" maxlength="180" required=""/></label><div class="form-grid"><label><span>Métrica</span><select id="objective-metric"><option value="sales">Ventas Gs.</option><option value="wins">Negociaciones ganadas</option><option value="conversion">Conversión %</option><option value="response">Tiempo de respuesta</option><option value="contacts">Contactos</option><option value="nps">NPS</option></select></label><label><span>Meta</span><input id="objective-target" min="0" required="" type="number"/></label></div><label><span>Responsable opcional</span><select id="objective-user"><option value="">Toda la sucursal</option></select></label><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Crear objetivo</button></footer></form></dialog>
+<dialog id="approval-dialog"><form class="dialog-card small-dialog" id="approval-form"><header><div><p class="kicker">APROBACIÓN</p><h3>Solicitar aprobación</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><label><span>Solicitud *</span><input id="approval-title" maxlength="240" placeholder="Ej.: Descuento especial 8%" required=""/></label><label><span>Detalle</span><textarea id="approval-detail" maxlength="4000" rows="5"></textarea></label><label><span>Monto relacionado (Gs.)</span><input id="approval-amount" min="0" type="number"/></label><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Enviar solicitud</button></footer></form></dialog>
+<dialog id="confirm-dialog"><form class="dialog-card small-dialog" method="dialog"><header><div><p class="kicker">CONFIRMACIÓN</p><h3 id="confirm-title">¿Continuar?</h3></div></header><p id="confirm-message"></p><footer><button class="button ghost" value="cancel">Cancelar</button><button class="button danger" value="confirm">Confirmar</button></footer></form></dialog>
+<div class="call-alert" hidden="" id="call-alert"><span id="call-alert-icon">☎</span><div><b id="call-alert-title">Llamada entrante</b><small id="call-alert-detail">Cliente identificado.</small></div><button class="button ghost" id="call-alert-open" type="button">Ver cliente</button><button aria-label="Cerrar alerta" class="icon-button" id="dismiss-call-alert" type="button">×</button></div>
+<div aria-hidden="true" class="global-progress" id="global-progress"><i></i></div>
+<div aria-hidden="true" class="motion-burst-layer" id="motion-burst-layer"></div>
+<div aria-live="polite" class="toast" id="toast" popover="manual" role="status"></div>
+</body>
+</html>
