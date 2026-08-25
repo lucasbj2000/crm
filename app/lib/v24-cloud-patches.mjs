@@ -97,5 +97,14 @@ export function applyV24CloudPatches(source) {
     "bot multimedia QR",
   );
 
+  // La versión base no tiene un helper addInternalNotification. La derivación debe
+  // usar el registro de actividad ya existente en el CRM en lugar de llamar una API inexistente.
+  out = replaceOne(
+    out,
+    /addInternalNotification\(targetUser\.id, "Negociación derivada", [^;]+\);/,
+    `addActivity(data, actor.name + " derivó a " + (client?.name || deal.name) + " a " + targetUser.name + ".", "success");`,
+    "actividad interna de derivación",
+  );
+
   return out;
 }
