@@ -50,6 +50,14 @@ assert.ok(
   patched.includes('maybeReplyWithBot(deal,v24CloudBotText||text)'),
   "El bot de la API oficial debe recibir la comprensión multimedia.",
 );
+assert.ok(
+  patched.includes('const introMessageId = await sendProviderText(deal, intro);'),
+  "La presentación de derivación debe usar el proveedor activo QR/API.",
+);
+assert.ok(
+  !patched.includes('addInternalNotification('),
+  "La derivación no debe depender de un helper inexistente.",
+);
 
 await writeFile(generatedPath, patched, "utf8");
 const syntax = spawnSync(process.execPath, ["--check", generatedPath], { encoding: "utf8" });
