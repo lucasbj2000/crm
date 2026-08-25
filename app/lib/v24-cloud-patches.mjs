@@ -97,6 +97,15 @@ export function applyV24CloudPatches(source) {
     "bot multimedia QR",
   );
 
+  // El servidor base usa sendProviderText para abstraer QR, Cloud API y mock.
+  // La presentación de una derivación con cambio de línea debe usar esa misma ruta.
+  out = replaceOne(
+    out,
+    /await sendDealMessage\(deal, intro\);/,
+    `const introMessageId = await sendProviderText(deal, intro); rememberSeen(introMessageId);`,
+    "presentación de derivación por proveedor activo",
+  );
+
   // La versión base no tiene un helper addInternalNotification. La derivación debe
   // usar el registro de actividad ya existente en el CRM en lugar de llamar una API inexistente.
   out = replaceOne(
