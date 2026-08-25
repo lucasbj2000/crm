@@ -44,5 +44,8 @@ jobs:
       - name: Feature smoke
         run: node app/test/feature-smoke.mjs
 
+      - name: V24 transfer smoke
+        run: node app/test/v24-transfer-smoke.mjs
+
       - name: Master isolation
         run: node gateway/test/master-isolation.mjs
