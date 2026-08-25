@@ -10,8 +10,18 @@ const appDir = path.resolve(testDir, "..");
 const corePath = path.join(appDir, "server-core.mjs");
 const generatedPath = path.join(appDir, ".server-v24.syntax-test.mjs");
 
+function restoreGeneratedTemplates(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  assert.ok(start >= 0 && end > start, `No se encontró el bloque ${startMarker}`);
+  const block = source.slice(start, end).replaceAll("\\`", "`").replaceAll("\\${", "${");
+  return source.slice(0, start) + block + source.slice(end);
+}
+
 const source = await readFile(corePath, "utf8");
-const patched = applyV24ServerPatches(source);
+let patched = applyV24ServerPatches(source);
+patched = restoreGeneratedTemplates(patched, "async function v24TranscribeMediaAttachment", "async function maybeReplyWithBot");
+patched = restoreGeneratedTemplates(patched, "function v24ActiveObserverGrant", "app.post(\"/api/deals/:id/transfer\"");
 
 for (const marker of [
   "v24TranscribeMediaAttachment",
