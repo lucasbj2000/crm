@@ -9,7 +9,7 @@ import { createInitialData, makeId, timestamp } from '../app/lib/domain.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..');
-const storage=path.join(root,'storage');
+const storage=process.env.CRM_STORAGE_DIR?path.resolve(process.env.CRM_STORAGE_DIR):path.join(root,'storage');
 const configPath=path.join(storage,'gateway','companies.json');
 const appPath=path.join(root,'app','server.mjs');
 const publicDir=path.join(here,'public');
@@ -17,6 +17,7 @@ const gatewayPort=Number(process.env.PORT||3030);
 const gatewayHost=process.env.GATEWAY_HOST||'0.0.0.0';
 const children=new Map();
 const masterSessions=new Map();
+const internalGatewaySecret=process.env.CRM_GATEWAY_SECRET||randomBytes(48).toString('hex');
 
 const json=(res,status,body,headers={})=>{const data=Buffer.from(JSON.stringify(body));res.writeHead(status,{'content-type':'application/json; charset=utf-8','content-length':data.length,'cache-control':'no-store',...headers});res.end(data)};
 const html=(res,status,body)=>{const data=Buffer.from(body);res.writeHead(status,{'content-type':'text/html; charset=utf-8','content-length':data.length,'cache-control':'no-store'});res.end(data)};
@@ -48,15 +49,17 @@ async function waitHealth(port,ms=20000){const until=Date.now()+ms;let err;while
 async function ensureTenant(c){
   const existing=children.get(c.slug);if(existing?.proc&&!existing.proc.killed)return existing;
   await mkdir(absDataDir(c),{recursive:true});
-  const proc=spawn(process.execPath,[appPath],{cwd:path.join(root,'app'),env:{...process.env,PORT:String(c.port),WHATSAPP_MOCK:process.env.WHATSAPP_MOCK||'0',NO_OPEN:'1',WHATSBOT_HOST:'127.0.0.1',WHATSBOT_DATA_DIR:absDataDir(c),CRM_TENANT_SLUG:c.slug,CRM_PUBLIC_BASE_URL:process.env.CRM_PUBLIC_BASE_URL||''},stdio:['ignore','inherit','inherit']});
+  const proc=spawn(process.execPath,[appPath],{cwd:path.join(root,'app'),env:{...process.env,PORT:String(c.port),WHATSAPP_MOCK:process.env.WHATSAPP_MOCK||'0',NO_OPEN:'1',WHATSBOT_HOST:'127.0.0.1',WHATSBOT_DATA_DIR:absDataDir(c),CRM_TENANT_SLUG:c.slug,CRM_PUBLIC_BASE_URL:process.env.CRM_PUBLIC_BASE_URL||'',CRM_GATEWAY_SECRET:internalGatewaySecret},stdio:['ignore','inherit','inherit']});
   const state={proc,port:c.port};children.set(c.slug,state);proc.once('exit',()=>children.delete(c.slug));await waitHealth(c.port);return state;
 }
 function forwardCookieHeader(req){return req.headers.cookie||''}
-async function proxy(req,res,c,overridePath=null){
+async function proxy(req,res,c,overridePath=null,{master=false}={}){
   try{
     await ensureTenant(c);
     const targetPath=overridePath||req.url;
     const headers={...req.headers,host:`127.0.0.1:${c.port}`,'x-forwarded-host':req.headers.host||'','x-forwarded-proto':String(req.headers['x-forwarded-proto']||'http'),'x-crm-tenant':c.slug};
+    delete headers['x-crm-master-secret'];delete headers['x-crm-master-company'];
+    if(master){headers['x-crm-master-secret']=internalGatewaySecret;headers['x-crm-master-company']=c.slug;}
     delete headers['content-length'];
     const opts={hostname:'127.0.0.1',port:c.port,path:targetPath,method:req.method,headers};
     const upstream=http.request(opts,u=>{
@@ -104,10 +107,14 @@ const server=http.createServer(async(req,res)=>{
     if(p==='/api/gateway/company'&&req.method==='GET'){const code=url.searchParams.get('code');const c=companyFromCode(cfg,code);return c?json(res,200,{company:{name:c.name,slug:c.slug,branding:c.branding||{}}}):json(res,404,{error:'Empresa no encontrada.'})}
     if(p==='/api/gateway/login'&&req.method==='POST'){const b=await bodyJson(req);const c=companyFromCode(cfg,b.company);if(!c)return json(res,404,{error:'Empresa no encontrada o inactiva.'});return loginTenant(req,res,c,b.username,b.password)}
     if(p==='/api/gateway/logout'&&req.method==='POST'){res.setHeader('Set-Cookie',[cookie('crm_tenant','',0),cookie('whatsbot_session','',0)]);return json(res,200,{ok:true})}
-    if(p==='/api/gateway/master/status'){return json(res,200,{configured:Boolean(cfg.masterPasswordHash),authenticated:isMaster(req)})}
+    if(p==='/api/auth/logout'&&req.method==='POST'&&isMaster(req)){const token=parseCookies(req).crm_master;if(token)masterSessions.delete(token);res.setHeader('Set-Cookie',[cookie('crm_master','',0),cookie('crm_master_tenant','',0),cookie('crm_tenant','',0),cookie('whatsbot_session','',0)]);return json(res,200,{authenticated:false})}
+    if(p==='/api/gateway/master/status'){const cookies=parseCookies(req);const selected=isMaster(req)&&cookies.crm_master_tenant?companyFromSlug(cfg,cookies.crm_master_tenant):null;return json(res,200,{configured:Boolean(cfg.masterPasswordHash),authenticated:isMaster(req),selectedCompany:selected?{slug:selected.slug,name:selected.name}:null})}
     if(p==='/api/gateway/master/login'&&req.method==='POST'){if(!cfg.masterPasswordHash)return json(res,409,{error:'Primero configurá la contraseña maestra desde el terminal del VPS.'});const b=await bodyJson(req);if(!verifyPassword(b.password,cfg.masterPasswordHash))return json(res,401,{error:'Contraseña maestra incorrecta.'});masterCookie(res);return json(res,200,{ok:true})}
     if(p.startsWith('/api/gateway/master/')){
       if(!isMaster(req))return json(res,401,{error:'Iniciá sesión como Administrador Maestro.'});
+      if(p==='/api/gateway/master/context'&&req.method==='GET'){const selected=companyFromSlug(cfg,parseCookies(req).crm_master_tenant);return json(res,200,{master:true,selectedCompany:selected?{slug:selected.slug,name:selected.name,branding:selected.branding||{}}:null,companies:cfg.companies.filter(c=>c.active!==false).map(c=>({slug:c.slug,code:c.code,name:c.name,branding:c.branding||{},running:children.has(c.slug)}))})}
+      if(p==='/api/gateway/master/select-company'&&req.method==='POST'){const b=await bodyJson(req);const c=companyFromSlug(cfg,clean(b.slug,120));if(!c)return json(res,404,{error:'Empresa no encontrada o inactiva.'});res.setHeader('Set-Cookie',[cookie('crm_master_tenant',c.slug,28800),cookie('crm_tenant','',0),cookie('whatsbot_session','',0)]);return json(res,200,{ok:true,company:{slug:c.slug,name:c.name,branding:c.branding||{}}})}
+      if(p==='/api/gateway/master/logout'&&req.method==='POST'){const token=parseCookies(req).crm_master;if(token)masterSessions.delete(token);res.setHeader('Set-Cookie',[cookie('crm_master','',0),cookie('crm_master_tenant','',0),cookie('crm_tenant','',0),cookie('whatsbot_session','',0)]);return json(res,200,{ok:true})}
       if(p==='/api/gateway/master/companies'&&req.method==='GET')return json(res,200,{companies:cfg.companies.map(c=>({...c,running:children.has(c.slug)}))});
       if(p==='/api/gateway/master/companies'&&req.method==='POST'){
         const b=await bodyJson(req);const name=clean(b.name,180),code=slugify(b.code||b.name),slug=slugify(b.slug||b.code||b.name);if(!name||!code||!slug)return json(res,400,{error:'Ingresá empresa y código.'});if(cfg.companies.some(c=>c.code===code||c.slug===slug))return json(res,409,{error:'Ese código de empresa ya existe.'});if(String(b.adminPassword||'').length<8)return json(res,400,{error:'La contraseña inicial debe tener al menos 8 caracteres.'});const used=new Set(cfg.companies.map(c=>Number(c.port)));let port=4101;while(used.has(port))port++;
@@ -120,7 +127,9 @@ const server=http.createServer(async(req,res)=>{
       return json(res,404,{error:'Acción maestra no encontrada.'});
     }
     const tenantPath=p.match(/^\/t\/([^/]+)(\/.*)$/);if(tenantPath){const c=companyFromSlug(cfg,tenantPath[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});return proxy(req,res,c,tenantPath[2]+url.search)}
-    const cookies=parseCookies(req);const c=cookies.crm_tenant?companyFromSlug(cfg,cookies.crm_tenant):null;
+    const cookies=parseCookies(req);const masterCompany=isMaster(req)&&cookies.crm_master_tenant?companyFromSlug(cfg,cookies.crm_master_tenant):null;
+    if(masterCompany)return proxy(req,res,masterCompany,null,{master:true});
+    const c=cookies.crm_tenant?companyFromSlug(cfg,cookies.crm_tenant):null;
     if(c)return proxy(req,res,c);
     if(['/portal/','/api/public/','/api/v22/public/'].some(prefix=>p.startsWith(prefix))){if(await publicProbe(req,res,cfg.companies.filter(x=>x.active!==false)))return}
     if(p==='/api/health')return json(res,200,{ok:true,gateway:true,companies:cfg.companies.filter(x=>x.active!==false).length});

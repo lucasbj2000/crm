@@ -29,7 +29,7 @@
 <link href="/v21-6.css" rel="stylesheet"/>
 <link href="/v21-8.css" rel="stylesheet"/>
 <link href="/v21-9.css" rel="stylesheet"/>
-<script defer="" src="/app.js?v=23.0.1-ui-fix"></script>
+<script defer="" src="/app.js?v=23.1-company-context"></script>
 <script defer="" src="/v20.js"></script>
 <script defer="" src="/v20-1.js"></script>
 <script defer="" src="/v20-2.js"></script>
@@ -44,6 +44,7 @@
 <script defer="" src="/v21-9.js"></script>
 <link href="/v22.css" rel="stylesheet"/>
 <link href="/v22-3.css" rel="stylesheet"/>
+<link href="/v23-1.css" rel="stylesheet"/>
 <script defer src="/v22.js"></script>
 </head>
 <body>
@@ -64,6 +65,7 @@
 </form>
 </section>
 <div class="app-shell" hidden="" id="app-shell">
+<div class="master-company-bar" hidden id="master-company-bar"><div class="master-company-label"><span>ADMINISTRADOR MAESTRO</span><strong id="master-current-company">Empresa</strong></div><label><span>Empresa activa</span><select id="master-company-select"></select></label><div class="master-company-actions"><button type="button" data-master-view="crm">Datos</button><button type="button" data-master-view="design">Diseño</button><button type="button" data-master-view="whatsapp">Conexiones</button><a href="/master">Empresas</a></div><em>Los datos permanecen aislados; cambiar de empresa recarga la sesión completa.</em></div>
 <aside class="sidebar">
 <div class="sidebar-brand">
 <div class="brand-mark small"><img alt="Logo" hidden="" id="sidebar-brand-logo"/><span id="sidebar-brand-letter">W</span><i></i></div>
@@ -78,6 +80,9 @@
 </button>
 <button class="nav-item" data-module="branches" data-view="branches" type="button">
 <span>⌂</span><b>Sucursales</b><i id="nav-branch-count">0</i>
+</button>
+<button class="nav-item" data-module="organization" data-view="organization" type="button">
+<span>◇</span><b>Estructura</b>
 </button>
 <button class="nav-item" data-module="attendance" data-view="attendance" type="button">
 <span>◉</span><b>Marcación</b><i id="nav-available-count">0</i>
@@ -207,6 +212,11 @@
 <div class="section-heading branch-heading"><div><p>Administrá todas las <b>sucursales desde un único servidor</b>. Los usuarios ingresan por la misma IP y cada sucursal utiliza su propia sesión de WhatsApp.</p></div><button class="button primary" id="new-branch-button" type="button">＋ Agregar sucursal</button></div>
 <div class="notice branch-notice central-network-notice"><span>◎</span><p><b>Red central V15:</b> todas las sucursales comparten la misma base en este equipo servidor. Cada usuario queda asociado a una sucursal y todos sus mensajes salen por el <b>WhatsApp conectado a esa sucursal</b>. Las derivaciones entre sucursales son internas e inmediatas, sin enviar mensajes técnicos entre números.</p></div>
 <div class="branch-grid" id="branches-list"></div>
+</section>
+<section class="view" data-view-panel="organization">
+<div class="section-heading organization-heading"><div><p class="kicker">ESTRUCTURA DE LA EMPRESA</p><h2>Organigrama</h2><p>Representá directores, gerencias, jefaturas, agentes, sectores y sucursales. Cada elemento puede vincularse con un usuario o una sucursal real.</p></div><button class="button primary" id="new-organization-node" type="button">＋ Agregar elemento</button></div>
+<div class="notice organization-notice"><span>◇</span><p><b>Una estructura por empresa:</b> este organigrama pertenece únicamente a la empresa seleccionada. Los cambios no se comparten con otras empresas del servidor.</p></div>
+<article class="panel organization-panel"><div class="organization-toolbar"><div><strong id="organization-company-name">Empresa</strong><small id="organization-summary">Sin estructura configurada</small></div><button class="button ghost" id="organization-fit" type="button">Ver todo</button></div><div class="organization-canvas" id="organization-canvas"><div class="organization-empty"><span>◇</span><h3>Creá el primer nivel</h3><p>Podés comenzar con la empresa y luego agregar direcciones, sectores, sucursales y personas.</p></div></div></article>
 </section>
 <section class="view" data-view-panel="attendance">
 <div class="section-heading"><div><p class="kicker">MARCACIÓN Y DISPONIBILIDAD</p><h2>Estado de atención</h2><p>Solo los agentes marcados como <b>Disponibles</b> reciben negociaciones nuevas sin responsable. Los clientes ya asignados conservan siempre a su responsable.</p></div></div>
@@ -549,20 +559,27 @@
 <div class="drawer-backdrop" data-close-drawer=""></div>
 <section class="drawer-panel">
 <header class="drawer-header"><div><p class="kicker" id="drawer-stage">NEGOCIACIÓN</p><h3 id="drawer-name">Cliente</h3><span id="drawer-phone"></span></div><button class="icon-button close" data-close-drawer="" type="button">×</button></header>
-<div class="drawer-content">
-<div class="drawer-status-row"><div id="drawer-wait"></div><button class="toggle compact-toggle" id="deal-bot-toggle" role="switch" type="button"><i></i><span>Bot</span></button></div>
-<div class="deal-branch-strip"><span>⌂</span><div><small>Sucursal de atención</small><strong id="drawer-branch">Sucursal</strong></div></div>
-<div class="owner-card"><div><small>Responsable principal</small><strong id="drawer-owner">Sin asignar</strong></div><div class="owner-actions"><select id="drawer-owner-select"></select><button class="button ghost" id="assign-owner-button" type="button">Asignar</button></div></div>
-<div class="drawer-transfer-action"><button class="button primary wide" id="transfer-conversation-button" type="button">↔ Transferir conversación</button><small>Pasá el cliente a un compañero o a otra sucursal sin perder el historial.</small></div>
-<div class="drawer-call-actions"><button class="button dark" id="open-client-profile-button" type="button">Ficha del cliente</button><button class="button ghost" id="v212-link-master-button" type="button">Vincular a Cliente Maestro</button><a class="button ghost" id="open-whatsapp-button" rel="noreferrer" target="_blank">Abrir conversación en WhatsApp</a></div>
-<p class="call-limit-note">Las llamadas entrantes de WhatsApp se detectan y se vinculan al responsable del cliente. Esta versión no genera enlaces de llamada ni ofrece un botón de llamada saliente no soportado por la conexión QR.</p>
-<section class="drawer-section conversation-section">
+<nav class="drawer-mobile-tabs" aria-label="Secciones de la conversación"><button class="active" data-drawer-tab="conversation" type="button">Conversación</button><button data-drawer-tab="ai" type="button">✦ IA</button><button data-drawer-tab="details" type="button">Ficha</button></nav>
+<div class="drawer-content drawer-workspace">
+<main class="deal-chat-column active" data-drawer-pane="conversation">
+<section class="drawer-section conversation-section chat-only-section">
 <div class="drawer-section-title">
 <div><h4>Conversación</h4><small>Historial reciente con el cliente</small></div>
 <span class="keyboard-hint">Enter envía · Shift+Enter nueva línea</span>
 </div>
 <div class="quick-reply-bar"><select id="drawer-quick-reply"><option value="">Respuesta rápida…</option></select><button class="button ghost" id="insert-quick-reply" type="button">Insertar</button><button class="button dark" id="send-quick-reply" type="button">Enviar</button></div>
 <div class="message-list" id="drawer-messages"></div>
+<form class="message-form modern-composer" id="message-form">
+<textarea id="manual-message" placeholder="Escribí tu respuesta…" rows="1"></textarea>
+<button aria-label="Enviar mensaje" class="composer-send" type="submit"><span>➤</span></button>
+</form>
+<div class="message-tools"><button id="attach-button" type="button">＋ Adjuntar</button><button id="record-audio-button" type="button">● Audio</button><span class="composer-state">El bot automático queda pausado cuando responde un agente.</span><input hidden="" id="media-file" type="file"/></div>
+<form class="media-composer" hidden="" id="media-form"><div class="media-pending"><span id="media-pending-icon">□</span><div><strong id="media-pending-name">Archivo</strong><small id="media-pending-size"></small></div><button aria-label="Cancelar archivo" id="cancel-media-button" type="button">×</button></div><input id="media-caption" maxlength="1000" placeholder="Comentario opcional…"/><button class="button primary" type="submit">Enviar archivo</button></form>
+</section>
+</main>
+<aside class="deal-side-column">
+<section class="deal-side-pane ai-side-pane" data-drawer-pane="ai">
+<div class="deal-side-title"><div><p class="kicker">ASISTENCIA PRIVADA</p><h4>IA del agente</h4><small>Las sugerencias nunca se envían solas.</small></div><button class="toggle compact-toggle" id="deal-bot-toggle" role="switch" type="button"><i></i><span>Bot</span></button></div>
 <div class="copilot-card" hidden="" id="copilot-card">
 <div class="copilot-head">
 <div class="copilot-orb">✦</div>
@@ -581,26 +598,29 @@
 </div>
 </div>
 <div class="smart-data-card" hidden id="smart-data-card">
-  <div class="smart-data-head"><div class="smart-data-icon">✦</div><div><strong>Datos detectados en la conversación</strong><small>El Copiloto propone completar la ficha usando únicamente lo que afirmó el cliente.</small></div><button class="icon-button" id="refresh-smart-data" title="Volver a analizar el último mensaje" type="button">↻</button></div>
+  <div class="smart-data-head"><div class="smart-data-icon">✦</div><div><strong>Campos sugeridos por contexto</strong><small>Reconoce respuestas breves y normaliza valores como ciudades antes de completar la ficha.</small></div><button class="icon-button" id="refresh-smart-data" title="Volver a analizar el último mensaje" type="button">↻</button></div>
   <div class="smart-data-list" id="smart-data-list"></div>
-  <div class="smart-data-foot"><span>Los campos seguros pueden autocompletarse si la confianza es alta. CI, RUC y otros campos protegidos requieren aprobación.</span></div>
+  <div class="smart-data-foot"><span>Las respuestas interpretadas por contexto requieren aprobación. CI, RUC y otros campos protegidos nunca se completan sin revisión.</span></div>
 </div>
 <div class="agent-ai-toolbar" id="agent-ai-toolbar"><span>✦ IA</span><button data-ai-rewrite="profesional" type="button">Mejorar</button><button data-ai-rewrite="breve" type="button">Más breve</button><button data-ai-rewrite="comercial" type="button">Más comercial</button><button data-ai-rewrite="técnico y claro" type="button">Más técnico</button><button id="open-ai-center-deal" type="button">Analizar cliente</button></div>
-<form class="message-form modern-composer" id="message-form">
-<textarea id="manual-message" placeholder="Escribí tu respuesta…" rows="1"></textarea>
-<button aria-label="Enviar mensaje" class="composer-send" type="submit"><span>➤</span></button>
-</form>
-<div class="message-tools"><button id="attach-button" type="button">＋ Adjuntar</button><button id="record-audio-button" type="button">● Audio</button><span class="composer-state">El bot automático queda pausado cuando responde un agente.</span><input hidden="" id="media-file" type="file"/></div>
-<form class="media-composer" hidden="" id="media-form"><div class="media-pending"><span id="media-pending-icon">□</span><div><strong id="media-pending-name">Archivo</strong><small id="media-pending-size"></small></div><button aria-label="Cancelar archivo" id="cancel-media-button" type="button">×</button></div><input id="media-caption" maxlength="1000" placeholder="Comentario opcional…"/><button class="button primary" type="submit">Enviar archivo</button></form>
 </section>
+<section class="deal-side-pane context-side-pane" data-drawer-pane="details">
+<div class="deal-side-title"><div><p class="kicker">CONTEXTO DEL CLIENTE</p><h4>Ficha y gestión</h4></div><div id="drawer-wait"></div></div>
+<div class="deal-branch-strip"><span>⌂</span><div><small>Sucursal de atención</small><strong id="drawer-branch">Sucursal</strong></div></div>
+<div class="owner-card"><div><small>Responsable principal</small><strong id="drawer-owner">Sin asignar</strong></div><div class="owner-actions"><select id="drawer-owner-select"></select><button class="button ghost" id="assign-owner-button" type="button">Asignar</button></div></div>
+<div class="drawer-transfer-action"><button class="button primary wide" id="transfer-conversation-button" type="button">↔ Transferir conversación</button><small>Pasá el cliente a un compañero o a otra sucursal sin perder el historial.</small></div>
+<div class="drawer-call-actions"><button class="button dark" id="open-client-profile-button" type="button">Ficha del cliente</button><button class="button ghost" id="v212-link-master-button" type="button">Vincular a Cliente Maestro</button><a class="button ghost" id="open-whatsapp-button" rel="noreferrer" target="_blank">Abrir en WhatsApp</a></div>
 <section class="drawer-section" hidden="" id="coverage-section"><div class="coverage-banner"><span>!</span><div><strong>Cobertura temporal</strong><small id="coverage-copy"></small></div></div></section>
 <section class="drawer-section" id="deal-custom-fields-section"><div class="drawer-section-title"><h4>Datos personalizados</h4><small>Contacto y negociación</small></div><div class="dynamic-fields" id="drawer-custom-fields"></div><button class="button ghost" id="save-drawer-custom-fields" type="button">Guardar datos</button></section>
 <section class="drawer-section"><div class="drawer-section-title"><h4>Productos reservados</h4><button class="text-button" id="show-reserve-form" type="button">＋ Agregar</button></div><form class="reserve-form" hidden="" id="reserve-form"><select id="reserve-product"></select><input id="reserve-quantity" min="1" type="number" value="1"/><button class="button dark" type="submit">Reservar</button></form><div class="reserved-list" id="reserved-list"></div></section>
+<div class="drawer-outcome-actions"><button class="button danger-outline" id="mark-lost-button" type="button">Cerrar perdido</button><button class="button success" id="mark-won-button" type="button">✓ Marcar ganado</button></div>
+</section>
+</aside>
 </div>
-<footer class="drawer-footer"><button class="button danger-outline" id="mark-lost-button" type="button">Cerrar perdido</button><button class="button success" id="mark-won-button" type="button">✓ Marcar ganado</button></footer>
 </section>
 </aside>
 <dialog id="client-dialog"><form class="dialog-card small-dialog" id="client-form"><header><div><p class="kicker">CLIENTES</p><h3>Cargar cliente</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><label><span>Nombre</span><input id="client-name" maxlength="120" placeholder="Nombre del cliente"/></label><label><span>Número de WhatsApp *</span><input id="client-phone" maxlength="30" placeholder="Ej.: 0981 123 456" required=""/></label><label id="client-branch-row"><span>Sucursal</span><select id="client-branch"></select></label><p class="panel-copy" id="client-limit-copy"></p><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Cargar cliente</button></footer></form></dialog>
+<dialog id="organization-dialog"><form class="dialog-card" id="organization-form"><header><div><p class="kicker">ORGANIGRAMA</p><h3 id="organization-dialog-title">Nuevo elemento</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><input id="organization-node-id" type="hidden"/><div class="form-grid"><label><span>Tipo</span><select id="organization-kind"><option value="company">Empresa</option><option value="director">Director/a</option><option value="manager">Gerente</option><option value="supervisor">Jefe/a o supervisor/a</option><option value="agent">Agente</option><option value="department">Departamento</option><option value="sector">Sector</option><option value="branch">Sucursal</option><option value="other">Otro</option></select></label><label><span>Depende de</span><select id="organization-parent"><option value="">Nivel principal</option></select></label></div><label><span>Nombre del cargo, sector o unidad *</span><input id="organization-label" maxlength="160" required placeholder="Ej.: Gerencia Comercial"/></label><label><span>Descripción</span><textarea id="organization-description" maxlength="800" rows="3" placeholder="Responsabilidad o alcance de este nivel"></textarea></label><div class="form-grid"><label><span>Usuario vinculado</span><select id="organization-user"><option value="">Sin usuario</option></select></label><label><span>Sucursal vinculada</span><select id="organization-branch"><option value="">Sin sucursal</option></select></label></div><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Guardar elemento</button></footer></form></dialog>
 <dialog id="user-dialog"><form class="dialog-card" id="user-form"><header><div><p class="kicker">EQUIPO</p><h3 id="user-dialog-title">Nuevo usuario</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><input id="user-id" type="hidden"/><div class="form-grid"><label><span>Nombre *</span><input id="user-name" maxlength="120" required=""/></label><label><span>Usuario *</span><input autocomplete="off" id="user-username" maxlength="80" placeholder="Ej.: juan.perez" required="" spellcheck="false"/><small>Usá al menos 3 caracteres, sin espacios. Se permiten letras, números, punto, guion y guion bajo.</small></label></div><div class="form-grid"><label><span>Rol</span><select id="user-role"><option value="agent">Agente</option><option value="supervisor">Jefe</option><option value="manager">Gerente</option><option value="admin">Administrador</option></select></label><label><span>Límite diario de clientes</span><input id="user-client-limit" max="500" min="1" type="number" value="30"/></label></div><label><span>Sucursal de trabajo</span><select id="user-branch"></select><small>Los agentes y gerentes ingresarán directamente a la información de esta sucursal.</small></label><label><span>Contraseña <small id="user-password-note">*</small></span><input autocomplete="new-password" id="user-password" placeholder="Mínimo 8 caracteres" type="password"/></label><div class="permission-box"><p class="kicker">PERMISOS DE REPORTES</p><label class="check-row"><input id="user-branch-reports" type="checkbox"/><span><b>Reportes de su sucursal</b><small>Permite ver indicadores generales de la sucursal, además de sus métricas personales.</small></span></label><label class="check-row"><input id="user-team-reports" type="checkbox"/><span><b>Comparativo del equipo</b><small>Permite comparar responsables, carga, conversión y tiempos de atención.</small></span></label><label class="check-row"><input id="user-global-reports" type="checkbox"/><span><b>Reportes de todas las sucursales</b><small>Permite consultar el consolidado completo del servidor central.</small></span></label><label class="check-row"><input id="user-audit-reports" type="checkbox"/><span><b>Auditoría de movimientos</b><small>Permite revisar acciones de usuarios, fechas y referencias de clientes.</small></span></label><label class="check-row"><input id="user-campaign-view" type="checkbox"/><span><b>Ver campañas</b><small>Permite consultar campañas y su efectividad.</small></span></label><label class="check-row"><input id="user-campaign-manage" type="checkbox"/><span><b>Gestionar campañas</b><small>Crear, iniciar y pausar campañas de su sucursal.</small></span></label><label class="check-row"><input id="user-custom-fields-manage" type="checkbox"/><span><b>Configurar campos personalizados</b><small>Crear campos y definir qué puede interpretar el bot.</small></span></label><label class="check-row"><input id="user-news-publish" type="checkbox"/><span><b>Publicar noticias internas</b><small>Permite enviar novedades al equipo según el alcance del rol.</small></span></label></div><label class="check-row" id="user-active-row"><input checked="" id="user-active" type="checkbox"/><span><b>Usuario activo</b><small>Puede iniciar sesión y recibir clientes.</small></span></label><div aria-live="assertive" class="form-error-banner" hidden="" id="user-form-error" role="alert"></div><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" id="user-save-button" type="submit">Guardar usuario</button></footer></form></dialog>
 <dialog id="news-dialog"><form class="dialog-card news-dialog" id="news-form"><header><div><p class="kicker">NOTICIAS</p><h3>Publicar actualización</h3></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><label><span>Título *</span><input id="news-title" maxlength="180" required=""/></label><label><span>Contenido *</span><textarea id="news-body" maxlength="8000" placeholder="Escribí el aviso o actualización para el equipo…" required="" rows="7"></textarea></label><div class="form-grid"><label><span>Prioridad</span><select id="news-priority"><option value="normal">Normal</option><option value="important">Importante</option><option value="urgent">Urgente</option></select></label><label><span>Destinatarios</span><select id="news-audience-mode"><option value="all">Todo el equipo</option><option value="branch">Sucursal seleccionada</option><option value="users">Agentes seleccionados</option></select></label></div><label id="news-branch-row"><span>Sucursal</span><select id="news-branch"></select></label><label hidden="" id="news-users-row"><span>Seleccionar personas <small>Ctrl/Cmd para varios</small></span><select id="news-users" multiple="" size="7"></select></label><label><span>Imágenes, videos o documentos</span><input accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" id="news-files" multiple="" type="file"/><small>Podés adjuntar hasta 8 archivos; máximo 64 MB por archivo.</small></label><label class="check-row"><input id="news-pinned" type="checkbox"/><span><b>Fijar arriba</b><small>La noticia aparecerá primero hasta que sea eliminada.</small></span></label><footer><button class="button ghost" data-dialog-close="" type="button">Cancelar</button><button class="button primary" type="submit">Publicar noticia</button></footer></form></dialog>
 <dialog id="presence-dialog"><div class="dialog-card presence-dialog-card"><header><div><p class="kicker">DISPONIBILIDAD</p><h3>Estado del equipo</h3><small id="presence-dialog-scope"></small></div><button class="icon-button close" data-dialog-close="" type="button">×</button></header><div class="presence-summary" id="presence-summary"></div><div class="presence-list" id="presence-list"></div><footer><button class="button primary" data-dialog-close="" type="button">Cerrar</button></footer></div></dialog>

@@ -1,0 +1,68 @@
+/* V23.1 · Conversación limpia, panel lateral IA y organigrama por empresa */
+.master-company-bar{position:fixed;z-index:58;top:0;right:0;left:0;display:grid;min-height:54px;grid-template-columns:auto minmax(190px,300px) auto 1fr;align-items:center;gap:14px;padding:7px 18px;background:#111;color:#fff;box-shadow:0 4px 18px #0003}
+.master-company-label span,.master-company-label strong{display:block}.master-company-label span{color:#ff7a00;font-size:7px;font-weight:900;letter-spacing:.12em}.master-company-label strong{margin-top:2px;font-size:11px}.master-company-bar label{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px}.master-company-bar label span{color:#aaa;font-size:8px;font-weight:800}.master-company-bar select{height:36px;border:1px solid #424242;border-radius:9px;background:#202020;color:#fff;padding:0 10px}.master-company-actions{display:flex;gap:5px}.master-company-actions button,.master-company-actions a{display:inline-grid;height:33px;place-items:center;padding:0 10px;border:1px solid #454545;border-radius:8px;background:#1d1d1d;color:#fff;font-size:8px;font-weight:800;text-decoration:none;cursor:pointer}.master-company-actions button:hover,.master-company-actions a:hover{border-color:#ff7a00}.master-company-bar em{justify-self:end;color:#888;font-size:8px;font-style:normal}.master-mode .workspace{padding-top:54px}.master-mode .sidebar{top:54px;height:calc(100vh - 54px)}
+.drawer-mobile-tabs{display:none}
+.deal-drawer .drawer-panel{width:min(1240px,96vw)}
+.drawer-workspace{display:grid;grid-template-columns:minmax(520px,1fr) minmax(340px,410px);min-height:0;padding:0!important;overflow:hidden}
+.deal-chat-column{min-width:0;min-height:0;padding:18px;background:#f7f9f8}
+.chat-only-section{display:flex;height:100%;min-height:0;flex-direction:column;margin:0!important;background:#fff}
+.chat-only-section .message-list{flex:1;max-height:none;min-height:260px}
+.chat-only-section .quick-reply-bar{flex:0 0 auto}
+.chat-only-section .modern-composer,.chat-only-section .message-tools,.chat-only-section .media-composer{flex:0 0 auto}
+.deal-side-column{min-height:0;overflow-y:auto;border-left:1px solid #e1e6e3;background:#fff}
+.deal-side-pane{padding:16px}
+.deal-side-pane+.deal-side-pane{border-top:1px solid #e6e9e7}
+.deal-side-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.deal-side-title h4{margin:2px 0 0;font-size:16px}
+.deal-side-title small{display:block;margin-top:3px;color:#7d8983;font-size:9px}
+.deal-side-pane .copilot-card,.deal-side-pane .smart-data-card{margin:12px 0 0}
+.deal-side-pane .copilot-content{padding-left:14px}
+.deal-side-pane .copilot-loading{padding-left:14px}
+.deal-side-pane .agent-ai-toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.context-side-pane .drawer-section{margin-top:12px;padding:13px;border-radius:13px;box-shadow:none}
+.context-side-pane .deal-branch-strip,.context-side-pane .owner-card{margin-top:10px}
+.context-side-pane .drawer-call-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.context-side-pane .drawer-call-actions>*:last-child{grid-column:1/-1}
+.drawer-outcome-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #e6e9e7}
+
+.organization-heading{align-items:center}
+.organization-panel{padding:0!important;overflow:hidden}
+.organization-toolbar{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #e5e5e7;background:#fff}
+.organization-toolbar strong,.organization-toolbar small{display:block}.organization-toolbar small{margin-top:3px;color:#797b80;font-size:10px}
+.organization-canvas{min-height:560px;overflow:auto;padding:32px;background:radial-gradient(circle at 1px 1px,#d9dcdf 1px,transparent 1.2px);background-size:22px 22px}
+.organization-empty{display:grid;min-height:440px;place-items:center;align-content:center;text-align:center;color:#74777b}.organization-empty span{display:grid;width:54px;height:54px;place-items:center;border-radius:17px;background:#171717;color:#ff7a00;font-size:24px}.organization-empty h3{margin:13px 0 5px;color:#242529}.organization-empty p{max-width:420px;margin:0;font-size:12px}
+.organization-tree{width:max-content;min-width:100%;padding:8px 20px 40px}
+.organization-tree ul{position:relative;display:flex;justify-content:center;gap:16px;margin:0;padding:34px 0 0;list-style:none}
+.organization-tree>ul{padding-top:0}
+.organization-tree li{position:relative;display:flex;align-items:center;flex-direction:column;padding:34px 8px 0}
+.organization-tree>ul>li{padding-top:0}
+.organization-tree li::before,.organization-tree li::after{position:absolute;top:0;width:50%;height:34px;border-top:1px solid #aeb5b1;content:""}
+.organization-tree li::before{right:50%}.organization-tree li::after{left:50%;border-left:1px solid #aeb5b1}
+.organization-tree li:only-child::before,.organization-tree li:only-child::after,.organization-tree>ul>li::before,.organization-tree>ul>li::after{display:none}
+.organization-tree li:first-child::before,.organization-tree li:last-child::after{border:0}
+.organization-tree li:last-child::before{border-right:1px solid #aeb5b1;border-radius:0 8px 0 0}
+.organization-tree li:first-child::after{border-radius:8px 0 0 0}
+.organization-tree ul ul::before{position:absolute;top:0;left:50%;width:0;height:34px;border-left:1px solid #aeb5b1;content:""}
+.organization-node{position:relative;z-index:1;width:210px;min-height:112px;padding:14px;border:1px solid #dcdfe1;border-top:4px solid #7b8187;border-radius:14px;background:#fff;box-shadow:0 9px 28px #20242810;text-align:left}
+.organization-node.kind-company,.organization-node.kind-director{border-top-color:#171717}.organization-node.kind-manager{border-top-color:#ff7a00}.organization-node.kind-supervisor{border-top-color:#a55b18}.organization-node.kind-agent{border-top-color:#397352}.organization-node.kind-sector,.organization-node.kind-department{border-top-color:#526f98}.organization-node.kind-branch{border-top-color:#8654a8}
+.organization-kind{display:inline-flex;padding:3px 6px;border-radius:99px;background:#f0f1f2;color:#74777b;font-size:7px;font-weight:850;letter-spacing:.07em;text-transform:uppercase}
+.organization-node strong,.organization-node small{display:block}.organization-node strong{margin-top:8px;font-size:12px}.organization-node small{margin-top:4px;color:#70757a;font-size:9px}.organization-node p{margin:7px 0 0;color:#81858a;font-size:8px;line-height:1.4}
+.organization-node-actions{display:flex;gap:4px;position:absolute;top:8px;right:8px;opacity:0;transition:opacity .15s}.organization-node:hover .organization-node-actions{opacity:1}.organization-node-actions button{display:grid;width:25px;height:25px;place-items:center;border:1px solid #ddd;border-radius:7px;background:#fff;color:#52565a;cursor:pointer}.organization-node-actions button:hover{border-color:#ff7a00;color:#111}
+.organization-canvas.compact .organization-tree{transform:scale(.78);transform-origin:top left}
+
+body.xp-dark .deal-chat-column,body.xp-dark .drawer-workspace{background:#121212}body.xp-dark .deal-side-column,body.xp-dark .deal-side-pane{background:#171717;border-color:#2d2d2d}body.xp-dark .chat-only-section{background:#191919}body.xp-dark .deal-side-title h4{color:#f4f4f4}body.xp-dark .organization-toolbar,body.xp-dark .organization-node{background:#1c1c1c;border-color:#333;color:#f3f3f3}body.xp-dark .organization-canvas{background-color:#151515;background-image:radial-gradient(circle at 1px 1px,#343434 1px,transparent 1.2px)}
+
+@media(max-width:900px){
+  .master-company-bar{grid-template-columns:1fr 1fr;gap:7px;padding:7px}.master-company-actions{grid-column:1/-1}.master-company-bar em{display:none}.master-mode .workspace{padding-top:94px}.master-mode .sidebar{top:auto;height:calc(70px + env(safe-area-inset-bottom));padding-top:6px}
+  .deal-drawer .drawer-panel{width:100%}
+  .drawer-mobile-tabs{display:grid;grid-template-columns:repeat(3,1fr);padding:7px;border-bottom:1px solid #e2e5e3;background:#fff}
+  .drawer-mobile-tabs button{height:36px;border:0;border-radius:9px;background:transparent;color:#737a76;font-size:10px;font-weight:800}.drawer-mobile-tabs button.active{background:#171717;color:#fff}
+  .drawer-workspace{display:block;overflow-y:auto}
+  .deal-chat-column,.deal-side-pane{display:none;padding:10px}
+  .deal-chat-column.active,.deal-side-pane.active{display:block}
+  .deal-side-column{display:block;overflow:visible;border:0}
+  .chat-only-section{height:calc(100dvh - 150px)}
+  .chat-only-section .message-list{min-height:180px}
+  .organization-canvas{min-height:480px;padding:20px 8px}
+  .organization-node{width:180px}
+}

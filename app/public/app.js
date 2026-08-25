@@ -14,6 +14,7 @@ const viewCopy = {
   crm: ["NEGOCIACIONES", "Panel comercial"],
   whatsapp: ["WHATSAPP Y BOT", "Conexión y asistente"],
   branches: ["SUCURSALES", "Red central y líneas de WhatsApp"],
+  organization: ["ESTRUCTURA", "Organigrama de la empresa"],
   attendance: ["MARCACIÓN", "Disponibilidad y cobertura"],
   campaigns: ["CAMPAÑAS", "Segmentación y efectividad"],
   news: ["NOTICIAS", "Comunicación interna"],
@@ -92,6 +93,8 @@ let progressTimer = null;
 let liveActivityIndex = 0;
 let liveActivityTimer = null;
 let previousVisualSnapshot = { deals: 0, waiting: 0, won: 0, lowStock: 0, news: 0 };
+let organizationData = null;
+let masterContext = null;
 
 
 function escapeHtml(value) {
@@ -395,6 +398,8 @@ function showLogin(message = "") {
   $("#app-shell").hidden = true;
   $("#login-screen").hidden = false;
   $("#deal-drawer").classList.remove("open");
+  if($("#master-company-bar"))$("#master-company-bar").hidden=true;
+  document.body.classList.remove("master-mode");
   $("#login-error").textContent = message;
   window.setTimeout(() => $("#login-username").focus(), 30);
 }
@@ -403,6 +408,15 @@ function showApp() {
   authenticated = true;
   $("#login-screen").hidden = true;
   $("#app-shell").hidden = false;
+}
+
+async function hydrateMasterContext(){
+  const bar=$("#master-company-bar");if(!bar)return;
+  if(appState?.currentUser?.isMaster!==true){bar.hidden=true;document.body.classList.remove("master-mode");masterContext=null;return;}
+  try{masterContext=await api("/api/gateway/master/context");bar.hidden=false;document.body.classList.add("master-mode");const selected=masterContext.selectedCompany;$("#master-current-company").textContent=selected?.name||"Seleccioná una empresa";$("#master-company-select").innerHTML=(masterContext.companies||[]).map(company=>`<option value="${escapeHtml(company.slug)}">${escapeHtml(company.name)} · ${escapeHtml(company.code)}</option>`).join("");if(selected)$("#master-company-select").value=selected.slug;const security=$("#password-form")?.closest(".security-panel");if(security)security.hidden=true;}catch(error){bar.hidden=true;document.body.classList.remove("master-mode");showToast(error.message,"warning");}
+}
+async function selectMasterCompany(slug,view="crm"){
+  if(!slug)return;await api("/api/gateway/master/select-company",{method:"POST",body:JSON.stringify({slug})});window.location.assign(`/?view=${encodeURIComponent(view)}`);
 }
 
 async function api(url, options = {}) {
@@ -476,6 +490,7 @@ function switchView(view) {
   if (view === "news") renderNews();
   if (view === "ai") renderAiCenter();
   if (view === "productivity") renderProductivity();
+  if (view === "organization") void fetchOrganization();
   // Actualiza únicamente la vista recién abierta con el estado ya disponible.
   renderAll();
 }
@@ -1663,9 +1678,9 @@ async function openClientProfile() {
 }
 
 
-const moduleLabels={crm:["Negociaciones","Pipeline y conversaciones"],whatsapp:["WhatsApp y bot","Conexión de líneas y bot"],branches:["Sucursales","Red central multi-sucursal"],attendance:["Marcación","Disponibilidad y cobertura"],stock:["Stock","Inventario y reservas"],replies:["Respuestas rápidas","Biblioteca de mensajes"],documents:["Documentos inteligentes","Plantillas y archivos"],campaigns:["Campañas","Segmentación y efectividad"],news:["Noticias","Comunicación interna"],reports:["Reportes","Dashboards por permisos"],data:["Datos y respaldos","Importar, exportar y backup"],aiCenter:["Centro IA","Copiloto y análisis 360°"],productivity:["Productividad","Tareas, alertas, metas y aprobaciones"],tasks:["Tareas y compromisos","Seguimientos con vencimiento"],approvals:["Aprobaciones","Solicitudes controladas"],objectives:["Objetivos","Metas por equipo/agente"],alerts:["Alertas inteligentes","Riesgos operativos"],customFields:["Campos personalizados","Datos configurables con contexto"],botAutomation:["Automatizaciones BOT","Reglas y tratamientos"],customer360:["Ficha 360°","Historial integral del cliente"],audit:["Auditoría","Trazabilidad de movimientos"],globalSearch:["Búsqueda global","Acceso rápido a información"],quality:["Calidad","Evaluación de atención"],knowledge:["Base de conocimiento","Contexto documental"],forecasting:["Forecast","Proyección comercial"],goals:["Metas y ranking","Desempeño visible"]};
+const moduleLabels={crm:["Negociaciones","Pipeline y conversaciones"],whatsapp:["WhatsApp y bot","Conexión de líneas y bot"],branches:["Sucursales","Red central multi-sucursal"],organization:["Estructura","Organigrama, sectores y jerarquías"],attendance:["Marcación","Disponibilidad y cobertura"],stock:["Stock","Inventario y reservas"],replies:["Respuestas rápidas","Biblioteca de mensajes"],documents:["Documentos inteligentes","Plantillas y archivos"],campaigns:["Campañas","Segmentación y efectividad"],news:["Noticias","Comunicación interna"],reports:["Reportes","Dashboards por permisos"],data:["Datos y respaldos","Importar, exportar y backup"],aiCenter:["Centro IA","Copiloto y análisis 360°"],productivity:["Productividad","Tareas, alertas, metas y aprobaciones"],tasks:["Tareas y compromisos","Seguimientos con vencimiento"],approvals:["Aprobaciones","Solicitudes controladas"],objectives:["Objetivos","Metas por equipo/agente"],alerts:["Alertas inteligentes","Riesgos operativos"],customFields:["Campos personalizados","Datos configurables con contexto"],botAutomation:["Automatizaciones BOT","Reglas y tratamientos"],customer360:["Ficha 360°","Historial integral del cliente"],audit:["Auditoría","Trazabilidad de movimientos"],globalSearch:["Búsqueda global","Acceso rápido a información"],quality:["Calidad","Evaluación de atención"],knowledge:["Base de conocimiento","Contexto documental"],forecasting:["Forecast","Proyección comercial"],goals:["Metas y ranking","Desempeño visible"]};
 const aiFeatureLabels={copilotReply:["Sugerencia de respuesta","Respuesta lista para revisar"],nextBestAction:["Siguiente mejor acción","Qué debería hacer el agente"],customerSummary:["Resumen 360°","Síntesis instantánea del cliente"],dataExtraction:["Extracción de datos","Nombre, RUC, CI y campos"],askCrm:["Preguntarle al CRM","Consultas naturales sobre datos"],rewrite:["Mejorar redacción","Profesional, breve, comercial, técnico"],translation:["Traducción","Asistencia multidioma"],sentiment:["Sentimiento","Detectar satisfacción o molestia"],urgency:["Urgencia","Priorizar mensajes sensibles"],missingData:["Datos faltantes","Detectar información necesaria"],objectionCoach:["Coach de objeciones","Ayuda ante precio y dudas"],crossSell:["Venta cruzada","Oportunidades relevantes"],closeProbability:["Probabilidad de cierre","Estimación comercial explicable"],commitments:["Compromisos","Detectar promesas y seguimientos"],qualityScoring:["Calidad IA","Puntuación y coaching"],riskDetection:["Riesgos","Abandono, demora o pérdida"],knowledgeAssistant:["Conocimiento empresarial","Consultar políticas y documentos"],documentGenerator:["Documentos IA","Preparar plantillas personalizadas"],salesCoach:["Coach del agente","Recomendaciones privadas"],autoTags:["Etiquetado automático","Clasificación interna"],conversationSummary:["Resumen de conversación","No releer decenas de mensajes"],managementBrief:["Brief gerencial","Resumen ejecutivo con IA"],duplicateDetection:["Duplicados","Detectar fichas posiblemente repetidas"],smartAssignment:["Asignación inteligente","Balance y especialización"],churnRisk:["Riesgo de abandono","Clientes que dejaron de comprar"],forecasting:["Forecast IA","Proyección de ventas"]};
-function renderModuleVisibility(){const modules=appState?.modules||appState?.settings?.modules||{};$$('[data-module]').forEach(el=>{const key=el.dataset.module;el.hidden=modules[key]===false;});$$('[data-module-block]').forEach(el=>{el.hidden=modules[el.dataset.moduleBlock]===false;});if(modules[currentView]===false || (currentView==='ai'&&modules.aiCenter===false)||(currentView==='productivity'&&modules.productivity===false)||(currentView==='advanced'&&modules.advancedSuite===false)){switchView('crm');}}
+function renderModuleVisibility(){const modules=appState?.modules||appState?.settings?.modules||{};$$('[data-module]').forEach(el=>{const key=el.dataset.module;el.hidden=modules[key]===false;});const organizationNav=$('.nav-item[data-view="organization"]');if(organizationNav)organizationNav.hidden=modules.organization===false||!["admin","manager","supervisor"].includes(appState?.currentUser?.role);$$('[data-module-block]').forEach(el=>{el.hidden=modules[el.dataset.moduleBlock]===false;});if(modules[currentView]===false || (currentView==='organization'&&organizationNav?.hidden)||(currentView==='ai'&&modules.aiCenter===false)||(currentView==='productivity'&&modules.productivity===false)||(currentView==='advanced'&&modules.advancedSuite===false)){switchView('crm');}}
 function renderPlatformConfig(){const panel=$('#platform-config-panel');if(!panel)return;const admin=appState?.currentUser?.role==='admin';panel.hidden=!admin;if(!admin)return;const modules=appState.modules||appState.settings?.modules||{};const ai=appState.aiFeatures||appState.settings?.aiFeatures||{};$('#module-toggle-grid').innerHTML=Object.entries(moduleLabels).map(([key,[label,copy]])=>`<label class="module-toggle-card"><span><b>${escapeHtml(label)}</b><small>${escapeHtml(copy)}</small></span><input type="checkbox" data-module-toggle="${escapeHtml(key)}" ${modules[key]!==false?'checked':''} ${key==='settings'?'disabled':''}/><i></i></label>`).join('');$('#ai-feature-toggle-grid').innerHTML=Object.entries(aiFeatureLabels).map(([key,[label,copy]])=>`<label class="module-toggle-card ai"><span><b>${escapeHtml(label)}</b><small>${escapeHtml(copy)}</small></span><input type="checkbox" data-ai-toggle="${escapeHtml(key)}" ${ai[key]!==false?'checked':''}/><i></i></label>`).join('');const suite=appState.settings?.aiSuite||{};$('#ai-suite-enabled').value=String(suite.enabled!==false);$('#ai-proactive').value=String(suite.proactive!==false);$('#ai-confidence').value=Number(suite.confidenceThreshold||70);$('#ai-context-messages').value=Number(suite.maxContextMessages||20);$('#ai-auto-fields').checked=suite.allowAutoFieldUpdates!==false;$('#ai-auto-tags').checked=suite.allowAutoTags===true;$('#ai-human-approval').checked=suite.requireHumanApprovalForExternalActions!==false;}
 function renderAiCenter(){if(!appState)return;const deals=(appState.deals||[]).filter(d=>['new','contacted','waiting'].includes(d.stage));const select=$('#ai-deal-select');if(select){const previous=select.value||selectedDealId||deals[0]?.id||'';select.innerHTML=deals.length?deals.map(d=>`<option value="${escapeHtml(d.id)}">${escapeHtml(d.name)} · ${escapeHtml(stageLabels[d.stage]||d.stage)} · ${escapeHtml(d.ownerName||'Sin responsable')}</option>`).join(''):'<option value="">Sin negociaciones abiertas</option>';if(deals.some(d=>d.id===previous))select.value=previous;}const enabled=appState.settings?.aiSuite?.enabled!==false; if($('#ai-management-brief-panel')) $('#ai-management-brief-panel').hidden=!['admin','manager','supervisor'].includes(appState.currentUser?.role)||(appState.aiFeatures?.managementBrief===false); $('#ai-suite-status').textContent=enabled?'IA activa':'IA desactivada';$('#ai-suite-model').textContent=appState.settings?.hasApiKey?`Modelo: ${appState.settings?.model||'configurado'}`:'Modo local · cargá una API Key para análisis avanzado';const features=appState.aiFeatures||{};$('#ai-capability-grid').innerHTML=Object.entries(aiFeatureLabels).filter(([key])=>features[key]!==false).map(([key,[label,copy]])=>`<div class="ai-capability"><span>✦</span><div><b>${escapeHtml(label)}</b><small>${escapeHtml(copy)}</small></div></div>`).join('')||'<div class="ai-empty">No hay funciones IA habilitadas.</div>';if(activeAiInsight)renderAiInsight(activeAiInsight);const sc=appState.settings?.smartCapture||{},scPanel=$('#smart-capture-settings-panel');if(scPanel){scPanel.hidden=appState.currentUser?.role!=='admin';$('#smart-capture-enabled').checked=sc.enabled!==false;$('#smart-capture-auto').checked=sc.autoApplySafe!==false;$('#smart-capture-ai').checked=sc.aiExtraction!==false;$('#smart-capture-threshold').value=Number(sc.confidenceThreshold||82);$('#smart-capture-auto-threshold').value=Number(sc.autoApplyConfidence||96);}}
 function renderExperienceSettings(){
@@ -1676,6 +1691,29 @@ function renderExperienceSettings(){
 
 function renderAiInsight(insight){const grid=$('#ai-insight-grid');if(!grid)return;const list=(items)=>Array.isArray(items)&&items.length?`<ul>${items.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>`:'<small>Sin observaciones.</small>';grid.innerHTML=`<article class="ai-insight-card summary"><small>RESUMEN</small><strong>${escapeHtml(insight.summary||'Sin resumen')}</strong></article><article class="ai-insight-card"><small>SENTIMIENTO</small><strong>${escapeHtml(insight.sentiment||'neutral')}</strong><em>Urgencia: ${escapeHtml(insight.urgency||'normal')}</em></article><article class="ai-insight-card probability"><small>PROBABILIDAD DE CIERRE</small><strong>${Number(insight.closeProbability||0)}%</strong><div class="probability-bar"><i style="width:${Math.max(0,Math.min(100,Number(insight.closeProbability||0)))}%"></i></div></article><article class="ai-insight-card"><small>SIGUIENTE MEJOR ACCIÓN</small>${list(insight.nextActions)}</article><article class="ai-insight-card"><small>DATOS FALTANTES</small>${list(insight.missingData)}</article><article class="ai-insight-card"><small>RIESGOS</small>${list(insight.risks)}</article><article class="ai-insight-card"><small>OPORTUNIDADES</small>${list(insight.opportunities)}</article><article class="ai-insight-card"><small>CALIDAD</small><strong>${Number(insight.quality?.score||0)}/100</strong>${list(insight.quality?.notes)}</article>`;}
 function renderProductivity(){if(!appState)return;const alerts=appState.operationalAlerts||[],tasks=appState.tasks||[],objectives=appState.objectives||[],approvals=appState.approvals||[];$('#productivity-alert-count').textContent=alerts.length;$('#productivity-task-count').textContent=tasks.filter(t=>!['done','cancelled'].includes(t.status)).length;$('#productivity-objective-count').textContent=objectives.filter(o=>o.active!==false).length;$('#productivity-approval-count').textContent=approvals.filter(a=>a.status==='pending').length;$('#nav-task-count').textContent=tasks.filter(t=>!['done','cancelled'].includes(t.status)).length;$('#smart-alert-list').innerHTML=alerts.length?alerts.map(a=>`<button class="smart-alert ${escapeHtml(a.severity)}" type="button" ${a.dealId?`data-alert-deal="${escapeHtml(a.dealId)}"`:''}><span>${a.severity==='critical'?'!':'•'}</span><div><b>${escapeHtml(a.title)}</b><small>${escapeHtml(a.detail)}</small></div></button>`).join(''):'<div class="ai-empty">Sin alertas críticas. Operación al día.</div>';$('#task-list').innerHTML=tasks.length?tasks.map(t=>`<article class="task-card ${escapeHtml(t.priority)} ${escapeHtml(t.status)}" data-task-id="${escapeHtml(t.id)}"><div><b>${escapeHtml(t.title)}</b><small>${escapeHtml(t.assignedUserName||'Sin responsable')}${t.dueAt?` · vence ${escapeHtml(formatDate(t.dueAt))}`:''}</small></div><div class="inline-actions">${t.status!=='done'?'<button class="button ghost" data-task-action="done" type="button">✓ Completar</button>':''}<button class="icon-button" data-task-action="delete" type="button">×</button></div></article>`).join(''):'<div class="ai-empty">No hay tareas.</div>';$('#objective-list').innerHTML=objectives.length?objectives.map(o=>`<article class="objective-card"><span>◎</span><div><b>${escapeHtml(o.name)}</b><small>${escapeHtml(o.metric)} · Meta ${Number(o.target||0).toLocaleString('es-PY')}</small></div>${['admin','manager','supervisor'].includes(appState.currentUser?.role)?`<button class="icon-button" data-objective-delete="${escapeHtml(o.id)}" type="button">×</button>`:''}</article>`).join(''):'<div class="ai-empty">Sin objetivos configurados.</div>';$('#approval-list').innerHTML=approvals.length?approvals.map(a=>`<article class="approval-card ${escapeHtml(a.status)}" data-approval-id="${escapeHtml(a.id)}"><div><span>${escapeHtml(a.status==='pending'?'PENDIENTE':a.status==='approved'?'APROBADO':'RECHAZADO')}</span><b>${escapeHtml(a.title)}</b><small>${escapeHtml(a.requestedByName||'')} ${a.amount?`· ${money.format(a.amount)}`:''}</small></div>${a.status==='pending'&&['admin','manager','supervisor'].includes(appState.currentUser?.role)?'<div class="inline-actions"><button class="button primary" data-approval-action="approved" type="button">Aprobar</button><button class="button danger-outline" data-approval-action="rejected" type="button">Rechazar</button></div>':''}</article>`).join(''):'<div class="ai-empty">Sin solicitudes de aprobación.</div>';}
+
+const organizationKindLabels={company:"Empresa",director:"Dirección",manager:"Gerencia",supervisor:"Jefatura",agent:"Agente",department:"Departamento",sector:"Sector",branch:"Sucursal",other:"Otro"};
+function organizationRoots(nodes){const ids=new Set(nodes.map(node=>node.id));return nodes.filter(node=>!node.parentId||!ids.has(node.parentId));}
+function organizationLevel(parentId,nodes,seen=new Set()){
+  const children=(parentId===null?organizationRoots(nodes):nodes.filter(node=>node.parentId===parentId)).filter(node=>!seen.has(node.id));if(!children.length)return "";
+  return `<ul>${children.map(node=>{const nextSeen=new Set(seen);nextSeen.add(node.id);const details=[node.userName,node.branchName].filter(Boolean).join(" · ");return `<li><article class="organization-node kind-${escapeHtml(node.kind)}" data-organization-id="${escapeHtml(node.id)}"><span class="organization-kind">${escapeHtml(organizationKindLabels[node.kind]||"Otro")}</span><strong>${escapeHtml(node.label)}</strong>${details?`<small>${escapeHtml(details)}</small>`:""}${node.description?`<p>${escapeHtml(node.description)}</p>`:""}${organizationData?.canManage?`<div class="organization-node-actions"><button type="button" data-organization-action="add" title="Agregar dependiente">＋</button><button type="button" data-organization-action="edit" title="Editar">✎</button><button type="button" data-organization-action="delete" title="Eliminar">×</button></div>`:""}</article>${organizationLevel(node.id,nodes,nextSeen)}</li>`}).join("")}</ul>`;
+}
+function renderOrganization(){
+  const canvas=$("#organization-canvas");if(!canvas||!organizationData)return;const nodes=organizationData.nodes||[];
+  $("#organization-company-name").textContent=organizationData.company?.name||"Empresa";$("#organization-summary").textContent=nodes.length?`${nodes.length} elemento${nodes.length===1?"":"s"} en la estructura`:"Sin estructura configurada";
+  $("#new-organization-node").hidden=!organizationData.canManage;
+  canvas.innerHTML=nodes.length?`<div class="organization-tree">${organizationLevel(null,nodes)}</div>`:`<div class="organization-empty"><span>◇</span><h3>Creá el primer nivel</h3><p>Podés comenzar con la empresa y luego agregar direcciones, sectores, sucursales y personas.</p></div>`;
+}
+async function fetchOrganization(){
+  try{organizationData=await api("/api/organization");renderOrganization();}catch(error){organizationData=null;showToast(error.message,"warning");}
+}
+function organizationDescendants(id){const result=new Set();const visit=(parent)=>{for(const node of organizationData?.nodes||[]){if(node.parentId===parent&&!result.has(node.id)){result.add(node.id);visit(node.id);}}};visit(id);return result;}
+function openOrganizationDialog(node=null,parentId=""){
+  if(!organizationData?.canManage)return;$("#organization-form").reset();$("#organization-node-id").value=node?.id||"";$("#organization-dialog-title").textContent=node?"Editar elemento":"Nuevo elemento";$("#organization-kind").value=node?.kind||"company";$("#organization-label").value=node?.label||"";$("#organization-description").value=node?.description||"";
+  const blocked=node?organizationDescendants(node.id):new Set();if(node)blocked.add(node.id);const parentOptions=(organizationData.nodes||[]).filter(entry=>!blocked.has(entry.id));$("#organization-parent").innerHTML=`<option value="">Nivel principal</option>`+parentOptions.map(entry=>`<option value="${escapeHtml(entry.id)}">${escapeHtml(entry.label)} · ${escapeHtml(organizationKindLabels[entry.kind]||entry.kind)}</option>`).join("");$("#organization-parent").value=node?.parentId||parentId||"";
+  $("#organization-user").innerHTML=`<option value="">Sin usuario</option>`+(organizationData.users||[]).map(user=>`<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)} · ${escapeHtml(user.role)}</option>`).join("");$("#organization-user").value=node?.userId||"";
+  $("#organization-branch").innerHTML=`<option value="">Sin sucursal</option>`+(organizationData.branches||[]).map(branch=>`<option value="${escapeHtml(branch.id)}">${escapeHtml(branch.name)}</option>`).join("");$("#organization-branch").value=node?.branchId||"";$("#organization-dialog").showModal();
+}
 
 function renderAll() {
   if (!appState) return;
@@ -1696,6 +1734,7 @@ function renderAll() {
   if (currentView === "crm") renderBoard();
   if (currentView === "whatsapp") { renderActivity(); renderAssistantDocuments(); hydrateSettings(); renderBotAutomationSettings(); }
   if (currentView === "branches") { renderUsers(); renderBranches(); }
+  if (currentView === "organization" && organizationData) renderOrganization();
   if (currentView === "drive") renderDrive();
   if (currentView === "stock") renderStock();
   if (currentView === "replies") renderQuickReplies();
@@ -1712,7 +1751,13 @@ function renderAll() {
 
 function openDrawer(id) {
   selectedDealId = id;
+  setDrawerPane("conversation");
   renderDrawer();
+}
+
+function setDrawerPane(name="conversation") {
+  $$('[data-drawer-tab]').forEach((button)=>button.classList.toggle('active',button.dataset.drawerTab===name));
+  $$('[data-drawer-pane]').forEach((pane)=>pane.classList.toggle('active',pane.dataset.drawerPane===name));
 }
 
 function closeDrawer() {
@@ -1914,7 +1959,8 @@ $("#login-form").addEventListener("submit", async (event) => {
 });
 
 $("#logout-button").addEventListener("click", async () => {
-  try { await api("/api/auth/logout", { method: "POST" }); } finally { showLogin(); }
+  const master=appState?.currentUser?.isMaster===true;
+  try { await api("/api/auth/logout", { method: "POST" }); } finally { if(master)window.location.assign("/master");else showLogin(); }
 });
 
 
@@ -2106,6 +2152,14 @@ $('#new-objective-button')?.addEventListener('click',()=>{if(!['admin','manager'
 $('#objective-form')?.addEventListener('submit',async e=>{e.preventDefault();try{setState(await api('/api/objectives',{method:'POST',body:JSON.stringify({name:$('#objective-name').value,metric:$('#objective-metric').value,target:Number($('#objective-target').value),userId:$('#objective-user').value||null})}));$('#objective-dialog').close();}catch(error){showToast(error.message,'warning');}});
 $('#objective-list')?.addEventListener('click',async e=>{const id=e.target.closest('[data-objective-delete]')?.dataset.objectiveDelete;if(!id)return;try{setState(await api(`/api/objectives/${encodeURIComponent(id)}`,{method:'DELETE'}));}catch(error){showToast(error.message,'warning');}});
 $('#new-approval-button')?.addEventListener('click',()=>{$('#approval-form').reset();$('#approval-dialog').showModal();});$('#approval-form')?.addEventListener('submit',async e=>{e.preventDefault();try{setState(await api('/api/approvals',{method:'POST',body:JSON.stringify({title:$('#approval-title').value,detail:$('#approval-detail').value,amount:Number($('#approval-amount').value||0)})}));$('#approval-dialog').close();}catch(error){showToast(error.message,'warning');}});$('#approval-list')?.addEventListener('click',async e=>{const card=e.target.closest('[data-approval-id]'),decision=e.target.closest('[data-approval-action]')?.dataset.approvalAction;if(!card||!decision)return;try{setState(await api(`/api/approvals/${encodeURIComponent(card.dataset.approvalId)}/decision`,{method:'POST',body:JSON.stringify({decision})}));}catch(error){showToast(error.message,'warning');}});
+
+$('#new-organization-node')?.addEventListener('click',()=>openOrganizationDialog());
+$('#organization-form')?.addEventListener('submit',async event=>{event.preventDefault();const id=$('#organization-node-id').value;const payload={kind:$('#organization-kind').value,label:$('#organization-label').value,description:$('#organization-description').value,parentId:$('#organization-parent').value||null,userId:$('#organization-user').value||null,branchId:$('#organization-branch').value||null};try{await api(id?`/api/organization/nodes/${encodeURIComponent(id)}`:'/api/organization/nodes',{method:id?'PUT':'POST',body:JSON.stringify(payload)});$('#organization-dialog').close();await fetchOrganization();showToast(id?'Elemento actualizado':'Elemento agregado al organigrama');}catch(error){showToast(error.message,'warning');}});
+$('#organization-canvas')?.addEventListener('click',async event=>{const card=event.target.closest('[data-organization-id]'),action=event.target.closest('[data-organization-action]')?.dataset.organizationAction;if(!card||!action||!organizationData)return;const node=organizationData.nodes.find(entry=>entry.id===card.dataset.organizationId);if(!node)return;if(action==='add')openOrganizationDialog(null,node.id);if(action==='edit')openOrganizationDialog(node);if(action==='delete'&&await confirmAction('Eliminar elemento',`Se eliminará ${node.label}. Sus dependientes deben moverse primero.`)){try{await api(`/api/organization/nodes/${encodeURIComponent(node.id)}`,{method:'DELETE'});await fetchOrganization();showToast('Elemento eliminado');}catch(error){showToast(error.message,'warning');}}});
+$('#organization-fit')?.addEventListener('click',()=>{const canvas=$('#organization-canvas');if(!canvas)return;canvas.scrollTo({left:0,top:0,behavior:'smooth'});canvas.classList.toggle('compact');});
+$$('[data-drawer-tab]').forEach(button=>button.addEventListener('click',()=>setDrawerPane(button.dataset.drawerTab)));
+$('#master-company-select')?.addEventListener('change',event=>void selectMasterCompany(event.target.value,currentView));
+$$('[data-master-view]').forEach(button=>button.addEventListener('click',()=>switchView(button.dataset.masterView)));
 
 $$(".nav-item[data-view]").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.view)));
 $("#refresh-button").addEventListener("click", () => void poll());
@@ -3004,6 +3058,9 @@ async function boot() {
     if (!status.authenticated) return showLogin();
     showApp();
     setState(await api("/api/state"), { hydrateSettings: true });
+    await hydrateMasterContext();
+    const requestedView=new URLSearchParams(window.location.search).get("view");
+    if(requestedView&&viewCopy[requestedView])switchView(requestedView);
   } catch (error) {
     showLogin(error.message);
   }

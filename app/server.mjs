@@ -34,6 +34,7 @@ import {
   findOpenDeal,
   findProductByQuery,
   makeId,
+  normalizeCityName,
   normalizeData,
   publicData,
   recordCall,
@@ -70,6 +71,7 @@ const port = Number.parseInt(process.env.PORT || "3030", 10);
 const host = process.env.WHATSBOT_HOST || "0.0.0.0";
 const mockMode = process.env.WHATSAPP_MOCK === "1";
 const tenantSlug = cleanTenantSlug(process.env.CRM_TENANT_SLUG || "main");
+const gatewaySecret = String(process.env.CRM_GATEWAY_SECRET || "");
 const publicBaseUrl = String(process.env.CRM_PUBLIC_BASE_URL || "").trim().replace(/\/$/, "");
 function cleanTenantSlug(value){ return String(value||"main").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0,80) || "main"; }
 const maximumMediaBytes = 64 * 1024 * 1024;
@@ -110,6 +112,7 @@ if (!Array.isArray(data.automationDelayedActions)) data.automationDelayedActions
 if (!Array.isArray(data.securityAlerts)) data.securityAlerts = [];
 if (!Array.isArray(data.aiUsage)) data.aiUsage = [];
 if (!Array.isArray(data.whatsappLines)) data.whatsappLines = [];
+if (!Array.isArray(data.organizationNodes)) data.organizationNodes = [];
 if (!Array.isArray(data.automationSubflows)) data.automationSubflows = [];
 if (!Array.isArray(data.automationMemory)) data.automationMemory = [];
 if (!Array.isArray(data.crmFlows)) data.crmFlows = [];
@@ -142,7 +145,7 @@ if (!data.settings.v21Intelligence || typeof data.settings.v21Intelligence !== '
 data.settings.v21Intelligence = { enabled:true, proactiveScan:true, scanIntervalMinutes:15, observerMode:true, learningEnabled:true, autoPromiseDetection:true, qualityReviewEnabled:true, predictionEnabled:true, maxAutoClientChanges:50, maxAutoRulesPerDay:5, forbidDestructiveActions:true, minimumConfidenceForAuto:90, ...data.settings.v21Intelligence };
 
 const MODULE_DEFAULTS = {
-  crm: true, whatsapp: true, branches: true, attendance: true, stock: true,
+  crm: true, whatsapp: true, branches: true, organization: true, attendance: true, stock: true,
   replies: true, documents: true, campaigns: true, surveys: true, forms: true, news: true, reports: true,
   data: true, settings: true, aiCenter: true, productivity: true, tasks: true,
   approvals: true, objectives: true, alerts: true, customFields: true,
@@ -865,6 +868,7 @@ function normalizeSmartValue(field,value){
   if(field==="email")return cleanText(value,160).trim().toLowerCase();
   if(field==="document")return cleanText(value,80).trim();
   if(field==="ruc")return cleanText(value,80).trim().toUpperCase();
+  if(field==="city")return normalizeCityName(value);
   const limits={name:120,company:160,city:120,address:240,jobTitle:120,country:120,neighborhood:120};
   return cleanText(value,limits[field]||240).replace(/\s+/g," ").replace(/[.,;:]+$/g,"").trim();
 }
@@ -880,7 +884,7 @@ function applySmartSuggestion(suggestion,user=null,{automatic=false}={}){
   recordAuditEvent(user,automatic?"dato_cliente_autocompletado":"dato_cliente_aprobado",{dealId:suggestion.dealId,clientId:client.id,suggestionId:suggestion.id,field:suggestion.field,value:suggestion.value,confidence:suggestion.confidence,source:suggestion.source,evidence:suggestion.evidence},(findDeal(data,suggestion.dealId)||{}).branchId||primaryBranchId(),automatic?"ai":"human");
   return suggestion;
 }
-function smartCaptureCandidate({deal,field,value,evidence,confidence=90,source="local",custom=false}={}){
+function smartCaptureCandidate({deal,field,value,evidence,confidence=90,source="local",custom=false,autoEligible=true}={}){
   const cfg=smartCaptureSettings(); if(cfg.enabled===false||cfg.suggestionsEnabled===false||!deal?.clientId)return null;
   const client=findClient(data,deal.clientId); if(!client)return null;
   const def=custom?fieldDefinition(field,"contact"):null; if(custom&&(!def||def.botWritable!==true))return null;
@@ -892,11 +896,44 @@ function smartCaptureCandidate({deal,field,value,evidence,confidence=90,source="
   const suggestion={id:makeId("datasuggestion"),dealId:deal.id,clientId:client.id,entityType:custom?"custom":"client",contactPersonId:null,field:fieldKey,fieldLabel:custom?def.label:smartFieldLabel(fieldKey),value:clean,evidence:cleanText(evidence,600),confidence:Math.max(0,Math.min(100,Number(confidence)||0)),source,status:"pending",conflict:hasCurrent,autoApplied:false,previousValue:current??null,createdAt:timestamp(),updatedAt:timestamp(),appliedAt:null,appliedByUserId:null,appliedByName:""};
   data.clientDataSuggestions.push(suggestion); if(data.clientDataSuggestions.length>3000)data.clientDataSuggestions.splice(0,data.clientDataSuggestions.length-3000);
   const autoFields=new Set(Array.isArray(cfg.autoApplyFields)?cfg.autoApplyFields:[]),protectedFields=new Set(Array.isArray(cfg.protectedFields)?cfg.protectedFields:[]);
-  const canAuto=cfg.autoApplySafe!==false&&!suggestion.conflict&&Number(suggestion.confidence)>=Number(cfg.autoApplyConfidence||96)&&((custom&&def?.botWritable===true)||autoFields.has(fieldKey))&&!protectedFields.has(fieldKey);
+  const canAuto=autoEligible!==false&&cfg.autoApplySafe!==false&&!suggestion.conflict&&Number(suggestion.confidence)>=Number(cfg.autoApplyConfidence||96)&&((custom&&def?.botWritable===true)||autoFields.has(fieldKey))&&!protectedFields.has(fieldKey);
   if(canAuto)applySmartSuggestion(suggestion,null,{automatic:true}); return suggestion;
 }
+function latestFieldQuestion(deal){
+  const messages=deal?.messages||[];let incomingIndex=-1;
+  for(let index=messages.length-1;index>=0;index--){if(messages[index]?.direction==="incoming"&&messages[index]?.text){incomingIndex=index;break;}}
+  if(incomingIndex<1)return "";
+  for(let index=incomingIndex-1;index>=0;index--){const message=messages[index];if(message?.direction==="outgoing"&&message?.text)return cleanText(message.text,1200);}
+  return "";
+}
+const CONTEXTUAL_FIELD_QUESTIONS = [
+  {field:"city", question:/\b(ciudad|localidad|de\s+qu[eé]\s+ciudad|d[oó]nde\s+viv|zona\s+(?:te\s+)?encontr)/i, valid:(value)=>/^[\p{L}][\p{L}\s.'-]{1,79}$/u.test(value)&&value.split(/\s+/).length<=6},
+  {field:"neighborhood", question:/\b(barrio|zona\s+de\s+residencia)\b/i, valid:(value)=>/^[\p{L}0-9][\p{L}0-9\s.'-]{1,79}$/u.test(value)},
+  {field:"email", question:/\b(correo|e-?mail)\b/i, valid:(value)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)},
+  {field:"document", question:/\b(c[eé]dula|documento|n[uú]mero\s+de\s+ci|\bci\b)\b/i, valid:(value)=>/^[0-9][0-9.\-\s]{3,18}$/.test(value)},
+  {field:"ruc", question:/\bruc\b/i, valid:(value)=>/^[0-9][0-9.\-\s]{3,18}(?:-[0-9A-Z])?$/i.test(value)},
+  {field:"name", question:/\b(c[oó]mo\s+te\s+llam|tu\s+nombre|nombre\s+(?:y\s+apellido|completo))\b/i, valid:(value)=>/^[\p{L}][\p{L}\s.'-]{1,99}$/u.test(value)&&value.split(/\s+/).length<=6},
+  {field:"company", question:/\b(empresa|raz[oó]n\s+social)\b/i, valid:(value)=>value.length>=2&&value.length<=120},
+  {field:"jobTitle", question:/\b(cargo|profesi[oó]n|ocupaci[oó]n)\b/i, valid:(value)=>/^[\p{L}][\p{L}\s/'-]{1,79}$/u.test(value)},
+  {field:"country", question:/\b(pa[ií]s|nacionalidad)\b/i, valid:(value)=>/^[\p{L}][\p{L}\s.'-]{1,79}$/u.test(value)},
+  {field:"age", question:/\b(edad|cu[aá]ntos\s+a[nñ]os)\b/i, valid:(value)=>/^\d{1,3}(?:\s*a[nñ]os?)?$/.test(value)},
+  {field:"birthDate", question:/\b(fecha\s+de\s+nacimiento|cu[aá]ndo\s+naciste)\b/i, valid:(value)=>/^(?:\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}|\d{4}-\d{2}-\d{2})$/.test(value)},
+  {field:"address", question:/\b(direcci[oó]n|domicilio)\b/i, valid:(value)=>value.length>=4&&value.length<=180},
+];
+function contextualSmartCaptureMatch(deal,text){
+  const raw=cleanText(text,600).replace(/\s+/g," ").trim(),question=latestFieldQuestion(deal);if(!raw||!question||/[?¿]/.test(raw)||raw.split(/\s+/).length>18)return null;
+  const rule=CONTEXTUAL_FIELD_QUESTIONS.find((entry)=>entry.question.test(question)&&entry.valid(raw));if(!rule)return null;
+  const value=rule.field==="age"?raw.replace(/\D/g,""):raw;
+  return {rule,raw,value,question};
+}
+function contextualSmartCaptureSuggestions(deal,text){
+  const match=contextualSmartCaptureMatch(deal,text);if(!match)return [];
+  const {rule,raw,value}=match;
+  const suggestion=smartCaptureCandidate({deal,field:rule.field,value,evidence:raw,confidence:99,source:"local",autoEligible:false});
+  return suggestion?[suggestion]:[];
+}
 function localSmartCaptureSuggestions(deal,text){
-  const raw=cleanText(text,6000); if(!raw||smartCaptureSettings().enabled===false)return []; const out=[]; const add=(field,value,evidence,confidence=96)=>{const x=smartCaptureCandidate({deal,field,value,evidence,confidence,source:"local"});if(x)out.push(x);}; let m;
+  const raw=cleanText(text,6000); if(!raw||smartCaptureSettings().enabled===false)return []; const out=[...contextualSmartCaptureSuggestions(deal,raw)]; const add=(field,value,evidence,confidence=96)=>{const x=smartCaptureCandidate({deal,field,value,evidence,confidence,source:"local"});if(x&&!out.some((entry)=>entry.id===x.id))out.push(x);}; let m;
   m=raw.match(/\b(?:mi\s+)?(?:correo|email|e-mail)\s*(?:es|:|=)?\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})\b/i)||raw.match(/\b([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})\b/i); if(m)add("email",m[1],m[0],99);
   m=raw.match(/\b(?:mi\s+)?(?:ci|c[ií]|c[eé]dula|documento)\s*(?:n(?:ro|º|°)?\.?|es|:|=)?\s*([0-9][0-9.\-\s]{4,18})\b/i); if(m)add("document",m[1],m[0],99);
   m=raw.match(/\b(?:mi\s+)?ruc\s*(?:n(?:ro|º|°)?\.?|es|:|=)?\s*([0-9][0-9.\-\s]{4,18}(?:-[0-9A-Z])?)\b/i); if(m)add("ruc",m[1],m[0],99);
@@ -916,14 +953,14 @@ function localSmartCaptureSuggestions(deal,text){
   }
   return out;
 }
-function smartCaptureLikelyHasData(text){const raw=cleanText(text,3000).toLocaleLowerCase("es");if(!raw)return false;const terms=["mi ciudad","vivo en","resido en","tengo "," años","mi edad","ci ","cédula","cedula","documento","ruc","correo","email","dirección","direccion","fecha de nacimiento","nací","naci","mi empresa","trabajo en","mi cargo","mi barrio","mi país","mi pais","mi nombre","me llamo"];if(terms.some(t=>raw.includes(t)))return true;return (data.customFieldDefinitions||[]).some(f=>f.active!==false&&f.entity==="contact"&&f.botWritable===true&&[f.label,f.key].map(v=>String(v||"").trim().toLocaleLowerCase("es")).filter(Boolean).some(v=>raw.includes(v)));}
+function smartCaptureLikelyHasData(text,deal=null){const raw=cleanText(text,3000).toLocaleLowerCase("es");if(!raw)return false;if(deal&&contextualSmartCaptureMatch(deal,text))return true;const terms=["mi ciudad","vivo en","resido en","tengo "," años","mi edad","ci ","cédula","cedula","documento","ruc","correo","email","dirección","direccion","fecha de nacimiento","nací","naci","mi empresa","trabajo en","mi cargo","mi barrio","mi país","mi pais","mi nombre","me llamo"];if(terms.some(t=>raw.includes(t)))return true;return (data.customFieldDefinitions||[]).some(f=>f.active!==false&&f.entity==="contact"&&f.botWritable===true&&[f.label,f.key].map(v=>String(v||"").trim().toLocaleLowerCase("es")).filter(Boolean).some(v=>raw.includes(v)));}
 async function aiSmartCaptureSuggestions(deal,text){
-  const cfg=smartCaptureSettings(); if(cfg.enabled===false||cfg.aiExtraction===false||!data.settings.apiKey||!aiFeatureEnabled("dataExtraction")||!smartCaptureLikelyHasData(text))return []; const client=findClient(data,deal.clientId);if(!client)return [];
+  const cfg=smartCaptureSettings(); if(cfg.enabled===false||cfg.aiExtraction===false||!data.settings.apiKey||!aiFeatureEnabled("dataExtraction")||!smartCaptureLikelyHasData(text,deal))return []; const client=findClient(data,deal.clientId);if(!client)return [];
   const custom=(data.customFieldDefinitions||[]).filter(f=>f.active!==false&&f.entity==="contact"&&f.botWritable===true).map(f=>({key:f.key,label:f.label,type:f.type,options:f.options||[],context:f.context||""}));
-  const input={message:cleanText(text,6000),current:{name:client.name,document:client.document,ruc:client.ruc,email:client.email,company:client.company,city:client.city,address:client.address,age:client.age||null,birthDate:client.birthDate||"",jobTitle:client.jobTitle||"",country:client.country||"",neighborhood:client.neighborhood||"",customFields:client.customFields||{}},allowedFields:Object.entries(SMART_CAPTURE_FIELDS).map(([key,v])=>({key,label:v.label})),customFields:custom};
+  const input={previousQuestion:latestFieldQuestion(deal),message:cleanText(text,6000),current:{name:client.name,document:client.document,ruc:client.ruc,email:client.email,company:client.company,city:client.city,address:client.address,age:client.age||null,birthDate:client.birthDate||"",jobTitle:client.jobTitle||"",country:client.country||"",neighborhood:client.neighborhood||"",customFields:client.customFields||{}},allowedFields:Object.entries(SMART_CAPTURE_FIELDS).map(([key,v])=>({key,label:v.label})),customFields:custom};
   try{const out=await requestOpenAiText({instructions:"Extraé únicamente datos que el cliente afirma explícitamente sobre sí mismo o su ficha. No infieras ni adivines. Si hay ambigüedad, no extraigas. Devolvé SOLO JSON válido: {suggestions:[{field,value,evidence,confidence,custom}]}. evidence debe ser un fragmento literal del mensaje. confidence 0-100. Para campos personalizados usá exactamente la key recibida y custom=true.",input,maxOutputTokens:850,json:true});const arr=Array.isArray(out.json?.suggestions)?out.json.suggestions:[],created=[];for(const item of arr.slice(0,12)){const evidence=cleanText(item?.evidence,600);if(!evidence||!cleanText(text,6000).toLocaleLowerCase("es").includes(evidence.toLocaleLowerCase("es")))continue;const x=smartCaptureCandidate({deal,field:cleanText(item?.field,120),value:item?.value,evidence,confidence:Number(item?.confidence)||85,source:"ai",custom:item?.custom===true});if(x)created.push(x);}return created;}catch(error){addLog(`Captura inteligente: ${cleanText(error.message,220)}`,"warning");return [];}
 }
-function captureIncomingClientData(deal,text,{allowAi=true}={}){if(!deal||!text||smartCaptureSettings().enabled===false)return;localSmartCaptureSuggestions(deal,text);if(allowAi&&smartCaptureLikelyHasData(text))void aiSmartCaptureSuggestions(deal,text).then(async(created)=>{if(created.length)await store.save();}).catch(()=>{});}
+function captureIncomingClientData(deal,text,{allowAi=true}={}){if(!deal||!text||smartCaptureSettings().enabled===false)return;localSmartCaptureSuggestions(deal,text);if(allowAi&&smartCaptureLikelyHasData(text,deal))void aiSmartCaptureSuggestions(deal,text).then(async(created)=>{if(created.length)await store.save();}).catch(()=>{});}
 function publicSmartSuggestions(dealId){return (data.clientDataSuggestions||[]).filter(x=>x.dealId===dealId&&["pending","applied"].includes(x.status)).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).slice(0,30).map(x=>({...x}));}
 
 function activeBotInstructionsText() {
@@ -1301,7 +1338,7 @@ function stateResponse(request = null) {
     superAutomation: user?.role === "admin" ? { settings:{...data.settings.superAutomation}, stageLabels:{...data.settings.stageLabels}, rules:(data.automationRules||[]).slice(0,500), waits:(data.automationWaits||[]).filter((entry)=>entry.status==="waiting").slice(0,200), executions:(data.automationExecutions||[]).slice(0,200), runtime:{lastError:superAutomationRuntime.lastError||null,lastRunAt:superAutomationRuntime.lastRunAt||null} } : undefined,
     adminGuide: user?.role === "admin" ? { ...data.settings.adminGuide } : { enabled:false },
     aiGovernance: user?.role === "admin" ? { ...data.settings.aiGovernance } : { autonomyDefault:data.settings.aiGovernance?.autonomyDefault||3,maxExternalAutonomy:data.settings.aiGovernance?.maxExternalAutonomy||3 },
-    currentUser: user ? { id: user.id, username: user.username, name: user.name, role: user.role, branchId: user.branchId || null, branchName: getBranch(user.branchId)?.name || "Administración general", whatsappLineIds: whatsappLineIdsForUser(user.id), clientDailyLimit: Number(user.clientDailyLimit || 0), attendance: { ...(user.attendance || { status: "offline" }) }, permissions: { ...reportPermissions(user), campaignView: user.role === "admin" || ["manager", "supervisor"].includes(user.role) || user.permissions?.campaignView === true, campaignManage: user.role === "admin" || user.permissions?.campaignManage === true, customFieldsManage: user.role === "admin" || user.permissions?.customFieldsManage === true, attendanceManage: user.role === "admin" || ["manager", "supervisor"].includes(user.role) || user.permissions?.attendanceManage === true, newsPublish: canPublishNews(user) } } : undefined,
+    currentUser: user ? { id: user.id, username: user.username, name: user.name, role: user.role, isMaster: user.isMaster === true, branchId: user.branchId || null, branchName: getBranch(user.branchId)?.name || "Administración general", whatsappLineIds: whatsappLineIdsForUser(user.id), clientDailyLimit: Number(user.clientDailyLimit || 0), attendance: { ...(user.attendance || { status: "offline" }) }, permissions: { ...reportPermissions(user), campaignView: user.role === "admin" || ["manager", "supervisor"].includes(user.role) || user.permissions?.campaignView === true, campaignManage: user.role === "admin" || user.permissions?.campaignManage === true, customFieldsManage: user.role === "admin" || user.permissions?.customFieldsManage === true, attendanceManage: user.role === "admin" || ["manager", "supervisor"].includes(user.role) || user.permissions?.attendanceManage === true, newsPublish: canPublishNews(user) } } : undefined,
   };
 }
 
@@ -4426,12 +4463,23 @@ function currentSession(request) {
   return { token, session, user };
 }
 
+function gatewayMasterUser(request) {
+  if (!gatewaySecret) return null;
+  const remote = String(request.socket?.remoteAddress || "");
+  if (!["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(remote)) return null;
+  if (cleanTenantSlug(request.headers["x-crm-master-company"] || "") !== tenantSlug) return null;
+  const supplied = Buffer.from(String(request.headers["x-crm-master-secret"] || ""));
+  const expected = Buffer.from(gatewaySecret);
+  if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return null;
+  return { id: `master_${tenantSlug}`, username: "master", name: "Administrador Maestro", role: "admin", branchId: null, active: true, isMaster: true, clientDailyLimit: 0, permissions: { ownReports: true, branchReports: true, teamReports: true, globalReports: true, auditReports: true, campaignView: true, campaignManage: true, customFieldsManage: true, attendanceManage: true, newsPublish: true }, attendance: { status: "active" } };
+}
+
 function currentUser(request) {
-  return currentSession(request)?.user || null;
+  return gatewayMasterUser(request) || currentSession(request)?.user || null;
 }
 
 function isAuthenticated(request) {
-  return Boolean(currentSession(request));
+  return Boolean(currentUser(request));
 }
 
 function requireAdmin(request, response, next) {
@@ -6258,7 +6306,7 @@ const MODULE_API_RULES = [
   [/^\/api\/products(?:\/|$)/, "stock"], [/^\/api\/branches(?:\/|$)/, "branches"],
   [/^\/api\/reports(?:\/|$)/, "reports"], [/^\/api\/quick-replies(?:\/|$)/, "replies"],
   [/^\/api\/assistant\/documents(?:\/|$)/, "documents"], [/^\/api\/tasks(?:\/|$)/, "tasks"],
-  [/^\/api\/objectives(?:\/|$)/, "objectives"], [/^\/api\/approvals(?:\/|$)/, "approvals"],
+  [/^\/api\/objectives(?:\/|$)/, "objectives"], [/^\/api\/approvals(?:\/|$)/, "approvals"], [/^\/api\/organization(?:\/|$)/, "organization"],
 ];
 app.use((request,response,next)=>{
   if(!request.path.startsWith("/api/") || request.path.startsWith("/api/platform/") || request.path==="/api/state" || request.path.startsWith("/api/auth/") || request.path==="/api/health") return next();
@@ -6275,7 +6323,7 @@ app.get("/api/health", (_request, response) => {
 app.get("/api/auth/status", (request, response) => {
   response.setHeader("Cache-Control", "no-store");
   const user = currentUser(request);
-  response.json({ authenticated: Boolean(user), user: user ? { id: user.id, username: user.username, name: user.name, role: user.role, branchId: user.branchId || null, branchName: getBranch(user.branchId)?.name || "Administración general", permissions: { ...reportPermissions(user) } } : null });
+  response.json({ authenticated: Boolean(user), user: user ? { id: user.id, username: user.username, name: user.name, role: user.role, isMaster: user.isMaster === true, branchId: user.branchId || null, branchName: getBranch(user.branchId)?.name || "Administración general", permissions: { ...reportPermissions(user) } } : null });
 });
 
 app.post("/api/auth/login", (request, response) => {
@@ -6401,6 +6449,79 @@ app.use("/api", (request, response, next) => {
     void store.save();
   });
   return next();
+});
+
+
+const ORGANIZATION_KINDS = new Set(["company", "director", "manager", "supervisor", "agent", "department", "sector", "branch", "other"]);
+function organizationNodePayload(node) {
+  const user = node.userId ? data.users.find((entry) => entry.id === node.userId) : null;
+  const branch = node.branchId ? getBranch(node.branchId) : null;
+  return { ...node, userName: user?.name || "", username: user?.username || "", branchName: branch?.name || "" };
+}
+function sanitizeOrganizationNode(input = {}, current = null) {
+  const node = {
+    ...(current || {}),
+    parentId: Object.prototype.hasOwnProperty.call(input, "parentId") ? (cleanText(input.parentId, 160) || null) : (current?.parentId || null),
+    kind: ORGANIZATION_KINDS.has(input.kind) ? input.kind : (current?.kind || "other"),
+    label: Object.prototype.hasOwnProperty.call(input, "label") ? cleanText(input.label, 160) : cleanText(current?.label, 160),
+    description: Object.prototype.hasOwnProperty.call(input, "description") ? cleanText(input.description, 800) : cleanText(current?.description, 800),
+    userId: Object.prototype.hasOwnProperty.call(input, "userId") ? (cleanText(input.userId, 160) || null) : (current?.userId || null),
+    branchId: Object.prototype.hasOwnProperty.call(input, "branchId") ? (cleanText(input.branchId, 160) || null) : (current?.branchId || null),
+    order: Number.isFinite(Number(input.order)) ? Number(input.order) : Number(current?.order || 0),
+    active: Object.prototype.hasOwnProperty.call(input, "active") ? input.active !== false : current?.active !== false,
+  };
+  if (!node.label) throw new Error("Ingresá el nombre del cargo, sector o sucursal.");
+  if (node.parentId && !(data.organizationNodes || []).some((entry) => entry.id === node.parentId && entry.active !== false)) throw new Error("El nivel superior seleccionado no existe.");
+  if (node.userId && !data.users.some((entry) => entry.id === node.userId && entry.active !== false)) throw new Error("El usuario seleccionado no existe o está inactivo.");
+  if (node.branchId && !getBranch(node.branchId)) throw new Error("La sucursal seleccionada no existe.");
+  return node;
+}
+function organizationCreatesCycle(nodeId, parentId) {
+  let cursor = parentId; const visited = new Set();
+  while (cursor) {
+    if (cursor === nodeId || visited.has(cursor)) return true;
+    visited.add(cursor);
+    cursor = (data.organizationNodes || []).find((entry) => entry.id === cursor)?.parentId || null;
+  }
+  return false;
+}
+
+app.get("/api/organization", requireManagerOrAdmin, (request, response) => {
+  const nodes = (data.organizationNodes || []).filter((node) => node.active !== false).sort((a, b) => Number(a.order || 0) - Number(b.order || 0)).map(organizationNodePayload);
+  response.setHeader("Cache-Control", "no-store");
+  response.json({
+    company: { slug: tenantSlug, name: data.settings.branding?.systemName || "Empresa" },
+    nodes,
+    users: data.users.filter((user) => user.active !== false).map((user) => ({ id: user.id, name: user.name, username: user.username, role: user.role, branchId: user.branchId || null })),
+    branches: data.branches.filter((branch) => branch.active !== false).map((branch) => ({ id: branch.id, name: branch.name, city: branch.city || "" })),
+    canManage: request.currentUser.role === "admin",
+  });
+});
+app.post("/api/organization/nodes", requireAdmin, async (request, response, next) => {
+  try {
+    const node = { id: makeId("org"), ...sanitizeOrganizationNode(request.body || {}), createdAt: timestamp(), updatedAt: timestamp() };
+    data.organizationNodes.push(node);
+    recordAuditEvent(request.currentUser, "organigrama_nodo_creado", { nodeId: node.id, kind: node.kind, label: node.label, parentId: node.parentId }, node.branchId || primaryBranchId());
+    await store.save(); response.status(201).json({ node: organizationNodePayload(node) });
+  } catch (error) { next(error); }
+});
+app.put("/api/organization/nodes/:id", requireAdmin, async (request, response, next) => {
+  try {
+    const current = data.organizationNodes.find((node) => node.id === request.params.id && node.active !== false); if (!current) throw new Error("Elemento del organigrama no encontrado.");
+    const updated = sanitizeOrganizationNode(request.body || {}, current); if (organizationCreatesCycle(current.id, updated.parentId)) throw new Error("No podés ubicar un elemento debajo de sí mismo o de uno de sus dependientes.");
+    Object.assign(current, updated, { updatedAt: timestamp() });
+    recordAuditEvent(request.currentUser, "organigrama_nodo_actualizado", { nodeId: current.id, kind: current.kind, label: current.label, parentId: current.parentId }, current.branchId || primaryBranchId());
+    await store.save(); response.json({ node: organizationNodePayload(current) });
+  } catch (error) { next(error); }
+});
+app.delete("/api/organization/nodes/:id", requireAdmin, async (request, response, next) => {
+  try {
+    const index = data.organizationNodes.findIndex((node) => node.id === request.params.id && node.active !== false); if (index < 0) throw new Error("Elemento del organigrama no encontrado.");
+    if (data.organizationNodes.some((node) => node.active !== false && node.parentId === request.params.id)) return response.status(409).json({ error: "Antes de eliminar este elemento, mové o eliminá sus dependientes." });
+    const [node] = data.organizationNodes.splice(index, 1);
+    recordAuditEvent(request.currentUser, "organigrama_nodo_eliminado", { nodeId: node.id, kind: node.kind, label: node.label }, node.branchId || primaryBranchId());
+    await store.save(); response.json({ ok: true });
+  } catch (error) { next(error); }
 });
 
 

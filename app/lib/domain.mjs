@@ -58,6 +58,65 @@ export function cleanText(value, max = 4000) {
   return String(value ?? "").trim().slice(0, max);
 }
 
+const PARAGUAY_CITY_NAMES = [
+  "Asunción", "Areguá", "Capiatá", "Fernando de la Mora", "Guarambaré", "Itá", "Itauguá", "J. Augusto Saldívar",
+  "Lambaré", "Limpio", "Luque", "Mariano Roque Alonso", "Nueva Italia", "Ñemby", "San Antonio", "San Lorenzo",
+  "Villa Elisa", "Ypané", "Ypacaraí", "Villeta", "Caacupé", "Altos", "Arroyos y Esteros", "Atyrá", "Caraguatay",
+  "Emboscada", "Eusebio Ayala", "Isla Pucú", "Itacurubí de la Cordillera", "Juan de Mena", "Loma Grande", "Mbocayaty del Yhaguy",
+  "Nueva Colombia", "Piribebuy", "Primero de Marzo", "San Bernardino", "Santa Elena", "Tobatí", "Valenzuela", "Caaguazú",
+  "Coronel Oviedo", "Doctor Cecilio Báez", "Doctor J. Eulogio Estigarribia", "José Domingo Ocampos", "La Pastora", "Mariscal López",
+  "Nueva Londres", "Raúl Arsenio Oviedo", "Repatriación", "R. I. 3 Corrales", "San Joaquín", "San José de los Arroyos",
+  "Santa Rosa del Mbutuy", "Simón Bolívar", "Tres de Febrero", "Vaquería", "Yhú", "Ciudad del Este", "Presidente Franco",
+  "Hernandarias", "Minga Guazú", "Minga Porã", "Juan León Mallorquín", "Doctor Juan Eulogio Estigarribia", "Iruña", "Itakyry",
+  "Los Cedrales", "Naranjal", "Ñacunday", "Santa Rita", "Santa Rosa del Monday", "San Alberto", "San Cristóbal", "Tavapy",
+  "Encarnación", "Cambyretá", "Capitán Miranda", "Carmen del Paraná", "Coronel Bogado", "Fram", "General Artigas", "Hohenau",
+  "Jesús", "La Paz", "Leandro Oviedo", "Mayor Otaño", "Natalio", "Nueva Alborada", "Obligado", "Pirapó", "San Cosme y Damián",
+  "San Juan del Paraná", "San Pedro del Paraná", "Tomás Romero Pereira", "Trinidad", "Bella Vista", "Pedro Juan Caballero",
+  "Capitán Bado", "Zanja Pytã", "Concepción", "Horqueta", "Loreto", "San Lázaro", "Yby Yaú", "San Pedro de Ycuamandiyú",
+  "Antequera", "Choré", "General Elizardo Aquino", "Guayaibí", "Itacurubí del Rosario", "Lima", "Nueva Germania", "Santa Rosa del Aguaray",
+  "Tacuatí", "Unión", "25 de Diciembre", "Villa del Rosario", "General Resquín", "San Estanislao", "Pilar", "Alberdi", "Ayolas",
+  "San Ignacio", "San Juan Bautista", "Santa Rosa", "Villa Florida", "Villarrica", "Caazapá", "Paraguarí", "Carapeguá",
+  "Acahay", "Quiindy", "Yaguarón", "Filadelfia", "Loma Plata", "Mariscal Estigarribia", "Fuerte Olimpo", "Bahía Negra",
+];
+
+function cityLookupKey(value) {
+  return cleanText(value, 120)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+const PARAGUAY_CITY_LOOKUP = new Map(PARAGUAY_CITY_NAMES.map((name) => [cityLookupKey(name), name]));
+const PARAGUAY_CITY_ALIASES = new Map([
+  ["cde", "Ciudad del Este"],
+  ["ciudaddeleste", "Ciudad del Este"],
+  ["mra", "Mariano Roque Alonso"],
+  ["marianoroquealonso", "Mariano Roque Alonso"],
+  ["fdo", "Fernando de la Mora"],
+  ["fernandodelamora", "Fernando de la Mora"],
+  ["pjc", "Pedro Juan Caballero"],
+  ["pedrojuancaballero", "Pedro Juan Caballero"],
+  ["sanlo", "San Lorenzo"],
+  ["sanlorenzo", "San Lorenzo"],
+  ["mcalestigarribia", "Mariscal Estigarribia"],
+]);
+
+/** Devuelve una ciudad con escritura canónica para evitar variantes por mayúsculas, tildes o espacios. */
+export function normalizeCityName(value) {
+  const raw = cleanText(value, 120).replace(/\s+/g, " ").replace(/[.,;:]+$/g, "").trim();
+  if (!raw) return "";
+  const key = cityLookupKey(raw);
+  const known = PARAGUAY_CITY_ALIASES.get(key) || PARAGUAY_CITY_LOOKUP.get(key);
+  if (known) return known;
+  const lowerWords = new Set(["de", "del", "la", "las", "los", "y"]);
+  return raw.toLocaleLowerCase("es").split(/([\s-]+)/).map((part, index) => {
+    if (!part || /^[\s-]+$/.test(part)) return part;
+    if (index > 0 && lowerWords.has(part)) return part;
+    return part.charAt(0).toLocaleUpperCase("es") + part.slice(1);
+  }).join("");
+}
+
 
 function identityPhoneDigits(value = "") {
   return String(value || "").replace(/\D/g, "");
@@ -262,6 +321,7 @@ export function createInitialData(now = Date.now()) {
       createdAt: timestamp(now),
     },
     branches: [],
+    organizationNodes: [],
     transfers: [],
     users: [],
     clientLoads: [],
@@ -391,7 +451,7 @@ export function normalizeData(input, now = Date.now()) {
         ruc: cleanText(client.ruc, 80),
         email: cleanText(client.email, 160),
         company: cleanText(client.company, 160),
-        city: cleanText(client.city, 120),
+        city: normalizeCityName(client.city),
         address: cleanText(client.address, 240),
         age: Math.max(0, Math.min(120, Number(client.age) || 0)),
         birthDate: /^\d{4}-\d{2}-\d{2}$/.test(String(client.birthDate || "")) ? String(client.birthDate) : "",
@@ -550,6 +610,19 @@ export function normalizeData(input, now = Date.now()) {
     },
     version: 22.3,
     branches: Array.isArray(data.branches) ? data.branches : [],
+    organizationNodes: Array.isArray(data.organizationNodes) ? data.organizationNodes.map((node, index) => ({
+      id: node.id || makeId("org"),
+      parentId: cleanText(node.parentId, 160) || null,
+      kind: ["company", "director", "manager", "supervisor", "agent", "department", "sector", "branch", "other"].includes(node.kind) ? node.kind : "other",
+      label: cleanText(node.label, 160) || "Posición",
+      description: cleanText(node.description, 800),
+      userId: cleanText(node.userId, 160) || null,
+      branchId: cleanText(node.branchId, 160) || null,
+      order: Number.isFinite(Number(node.order)) ? Number(node.order) : index,
+      active: node.active !== false,
+      createdAt: node.createdAt || timestamp(now),
+      updatedAt: node.updatedAt || node.createdAt || timestamp(now),
+    })) : [],
     transfers: Array.isArray(data.transfers) ? data.transfers : [],
     users: Array.isArray(data.users) ? data.users.map((user) => ({ branchId: null, permissions: { ownReports: true, branchReports: false, teamReports: false, globalReports: false, auditReports: false, ...(user.permissions || {}) }, ...user, permissions: { ownReports: true, branchReports: false, teamReports: false, globalReports: false, auditReports: false, ...(user.permissions || {}) } })) : [],
     clientLoads: Array.isArray(data.clientLoads) ? data.clientLoads : [],
@@ -775,7 +848,7 @@ export function updateClient(data, clientId, input = {}, now = Date.now()) {
   for (const field of ["name", "document", "ruc", "email", "company", "city", "address", "jobTitle", "country", "neighborhood", "notes"]) {
     if (typeof input[field] === "string") {
       const limits = { name: 120, document: 80, ruc: 80, email: 160, company: 160, city: 120, address: 240, jobTitle: 120, country: 120, neighborhood: 120, notes: 3000 };
-      client[field] = cleanText(input[field], limits[field]);
+      client[field] = field === "city" ? normalizeCityName(input[field]) : cleanText(input[field], limits[field]);
     }
   }
   if (input.age !== undefined && input.age !== null && String(input.age).trim() !== "") client.age = Math.max(0, Math.min(120, Math.trunc(Number(input.age) || 0)));

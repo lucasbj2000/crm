@@ -76,6 +76,21 @@ try{
   assert(agentProfile.negotiations.some((deal)=>deal.id===crossBranchDeal.id),"El agente no puede abrir la ficha del contacto asignado por conexión.");
   cookie=adminCookie;
 
+  await api("/api/mock/outgoing",{method:"POST",body:{dealId:automaticallyRouted.id,text:"¿En qué ciudad vivís?"}});
+  state=await api("/api/mock/incoming",{method:"POST",body:{phone:"595982345678",text:"sanlorenzo",lineId:secondLine.id}});
+  const citySuggestions=await api(`/api/deals/${encodeURIComponent(automaticallyRouted.id)}/data-suggestions`);
+  const citySuggestion=citySuggestions.suggestions.find((suggestion)=>suggestion.field==="city"&&suggestion.value==="San Lorenzo");
+  assert(citySuggestion?.status==="pending"&&!citySuggestion.autoApplied,"La respuesta contextual no generó una recomendación revisable de ciudad canónica.");
+  const appliedCity=await api(`/api/deals/${encodeURIComponent(automaticallyRouted.id)}/data-suggestions/${encodeURIComponent(citySuggestion.id)}/apply`,{method:"POST",body:{}});
+  assert(appliedCity.state.clients.find((client)=>client.id===automaticallyRouted.clientId)?.city==="San Lorenzo","La ciudad aprobada no quedó normalizada como San Lorenzo.");
+
+  const rootNode=await api("/api/organization/nodes",{method:"POST",body:{kind:"company",label:"Empresa de prueba"}});
+  const managerNode=await api("/api/organization/nodes",{method:"POST",body:{kind:"manager",label:"Gerencia Comercial",parentId:rootNode.node.id,userId:agent.id,branchId:primaryBranch.id}});
+  const organization=await api("/api/organization");
+  assert(organization.nodes.some((node)=>node.id===rootNode.node.id),"No se creó el nivel principal del organigrama.");
+  assert(organization.nodes.find((node)=>node.id===managerNode.node.id)?.parentId===rootNode.node.id,"La jerarquía del organigrama no se conservó.");
+  assert(organization.nodes.find((node)=>node.id===managerNode.node.id)?.userName==="Agente Multilínea Editado","El organigrama no vinculó al usuario seleccionado.");
+
   const created=await api("/api/forms",{method:"POST",body:{name:"Formulario integral de prueba",description:"Encuesta y registro independiente",formType:"custom",branchId:primaryBranch.id,lineId:secondLine.id,publicAccess:true,collectIdentity:"optional",theme:{primaryColor:"#171717",accentColor:"#FF7A00"},deliveryMode:"web_link",trigger:{type:"manual"},questions:[{id:"q1",text:"¿Qué probabilidad hay de que nos recomiendes?",type:"nps",required:true},{id:"q2",text:"¿Qué servicios te interesan?",type:"checkbox",required:true,options:[{id:"o1",label:"Ventas",value:"ventas"},{id:"o2",label:"Soporte",value:"soporte"}]},{id:"q3",text:"Tu teléfono",type:"phone",required:false},{id:"q4",text:"Acepto el uso de mis respuestas",type:"consent",required:true}]}});
   assert(created.form?.id,"La API no confirmó la creación del formulario.");
   assert(created.form.formType==="custom","No se guardó el tipo de formulario.");
@@ -104,7 +119,7 @@ try{
   assert(publicPage.ok&&publicHtml.includes('../form-public.js'),"La página pública del formulario no está disponible.");
   assert(new URL('../form-public.js',`${base}${created.form.sharePath}`).pathname==='/t/main/form-public.js',"Los recursos del formulario no resuelven dentro de la ruta de empresa.");
 
-  console.log("OK · líneas globales multiagente, asignación desde usuarios y formularios públicos verificados.");
+  console.log("OK · líneas multiagente, captura contextual normalizada, organigrama y formularios públicos verificados.");
 } finally {
   child.kill("SIGTERM");
   await new Promise((resolve)=>{child.once("exit",resolve);setTimeout(resolve,3000).unref();});
