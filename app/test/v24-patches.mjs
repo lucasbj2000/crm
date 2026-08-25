@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { applyV24ServerPatches } from "../lib/v24-server-patches.mjs";
 import { applyV24CloudPatches } from "../lib/v24-cloud-patches.mjs";
+import { applyV241ServerPatches } from "../lib/v24-1-server-patches.mjs";
 
 const testDir = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(testDir, "..");
@@ -22,6 +23,7 @@ function restoreGeneratedTemplates(source, startMarker, endMarker) {
 const source = await readFile(corePath, "utf8");
 let patched = applyV24ServerPatches(source);
 patched = applyV24CloudPatches(patched);
+patched = applyV241ServerPatches(patched);
 patched = restoreGeneratedTemplates(patched, "async function v24TranscribeMediaAttachment", "async function maybeReplyWithBot");
 patched = restoreGeneratedTemplates(patched, "function v24ActiveObserverGrant", "app.post(\"/api/deals/:id/transfer\"");
 
@@ -58,6 +60,14 @@ assert.ok(
   !patched.includes('addInternalNotification('),
   "La derivación no debe depender de un helper inexistente.",
 );
+assert.ok(
+  patched.includes('if (rawJid === "status@broadcast" || rawJid.endsWith("@broadcast")) continue;'),
+  "Los estados/broadcast de WhatsApp deben descartarse antes de canonicalizar el participante.",
+);
+assert.ok(
+  patched.indexOf('if (rawJid === "status@broadcast" || rawJid.endsWith("@broadcast")) continue;') < patched.indexOf('const jid = await canonicalClientJidFromMessage(item, branchId);'),
+  "El filtro de estados debe ejecutarse antes de convertir participant a chat directo.",
+);
 
 await writeFile(generatedPath, patched, "utf8");
 const syntax = spawnSync(process.execPath, ["--check", generatedPath], { encoding: "utf8" });
@@ -66,4 +76,4 @@ if (syntax.status !== 0) {
   process.stderr.write(syntax.stderr || syntax.stdout || "Falló node --check\n");
   process.exit(syntax.status || 1);
 }
-console.log("V24 patches QR + Cloud API OK");
+console.log("V24/V24.1 patches QR + Cloud API + status filter OK");
