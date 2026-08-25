@@ -31,6 +31,7 @@ jobs:
         run: |
           node --check app/server.mjs
           node --check app/lib/v24-server-patches.mjs
+          node --check app/lib/v24-cloud-patches.mjs
           node --check app/public/app.js
           node --check app/public/v22.js
           node --check app/public/v24.js
