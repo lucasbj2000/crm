@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - "feat/**"
+      - "fix/**"
 
 permissions:
   contents: read
@@ -32,14 +33,19 @@ jobs:
           node --check app/server.mjs
           node --check app/lib/v24-server-patches.mjs
           node --check app/lib/v24-cloud-patches.mjs
+          node --check app/lib/v24-1-server-patches.mjs
           node --check app/public/app.js
           node --check app/public/v22.js
           node --check app/public/v24.js
+          node --check app/public/v24-1.js
           node --check gateway/gateway.mjs
           node --check gateway/setup-master.mjs
 
-      - name: Validate V24 patch anchors
+      - name: Validate V24/V24.1 patch anchors
         run: node app/test/v24-patches.mjs
+
+      - name: Validate V24.1 UI contracts
+        run: node app/test/v24-1-ui.mjs
 
       - name: Feature smoke
         run: node app/test/feature-smoke.mjs
