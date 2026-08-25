@@ -1,0 +1,51 @@
+name: CRM V24 checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - "feat/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci --omit=dev
+
+      - name: Syntax checks
+        run: |
+          node --check app/server.mjs
+          node --check app/lib/v24-server-patches.mjs
+          node --check app/lib/v24-cloud-patches.mjs
+          node --check app/public/app.js
+          node --check app/public/v22.js
+          node --check app/public/v24.js
+          node --check gateway/gateway.mjs
+          node --check gateway/setup-master.mjs
+
+      - name: Validate V24 patch anchors
+        run: node app/test/v24-patches.mjs
+
+      - name: Feature smoke
+        run: node app/test/feature-smoke.mjs
+
+      - name: V24 transfer smoke
+        run: node app/test/v24-transfer-smoke.mjs
+
+      - name: Master isolation
+        run: node gateway/test/master-isolation.mjs
