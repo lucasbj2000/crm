@@ -66,6 +66,9 @@ jobs:
       - name: Validate V25.4 contacts and admin delete
         run: node app/test/v25-4-admin-contacts.mjs
 
+      - name: Validate V25.4.2 compact delete UI
+        run: node app/test/v25-4-2-compact-delete.mjs
+
       - name: Validate V25 master/login UI
         run: node gateway/test/v25-master-ui.mjs
 

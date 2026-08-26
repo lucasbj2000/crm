@@ -1,0 +1,7 @@
+.v2541-compact-delete{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 auto!important;width:auto!important;min-width:0!important;min-height:34px;padding:7px 11px!important;border:1px solid #e4b8b4!important;border-radius:9px!important;background:transparent!important;color:#a64a43!important;font-size:9px!important;font-weight:800!important;box-shadow:none!important;white-space:nowrap}
+.v2541-compact-delete:hover{background:#fff7f6!important;border-color:#d99690!important;color:#913b35!important;transform:none!important}
+.v2541-compact-delete[hidden]{display:none!important}
+.drawer-call-actions .v2541-compact-delete,.drawer-outcome-actions .v2541-compact-delete{margin-left:auto}
+#client-profile-form>footer .v2541-compact-delete{margin-right:auto}
+#v2541-deal-admin-bar,#v2541-client-admin-bar{display:none!important}
+@media(max-width:600px){.v2541-compact-delete{min-height:36px;padding:7px 10px!important;font-size:9px!important}.drawer-call-actions .v2541-compact-delete{margin-left:0}#client-profile-form>footer .v2541-compact-delete{margin-right:0}}

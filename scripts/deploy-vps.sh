@@ -66,7 +66,7 @@ fi
 ln -s "$STORAGE_TARGET" "$STAGE/storage"
 chmod +x "$STAGE/start-vps.sh" "$STAGE/scripts/deploy-vps.sh"
 
-echo "=== INSTALANDO Y PROBANDO V25.4.1 ==="
+echo "=== INSTALANDO Y PROBANDO V25.4.2 ==="
 (
   cd "$STAGE/app"
   npm ci --omit=dev
@@ -95,6 +95,7 @@ node "$STAGE/app/test/v24-1-ui.mjs"
 node "$STAGE/app/test/v25-ui.mjs"
 node "$STAGE/app/test/v25-3-navigation-responsive.mjs"
 node "$STAGE/app/test/v25-4-admin-contacts.mjs"
+node "$STAGE/app/test/v25-4-2-compact-delete.mjs"
 node "$STAGE/app/test/feature-smoke.mjs"
 node "$STAGE/app/test/v25-message-smoke.mjs"
 node "$STAGE/app/test/v24-transfer-smoke.mjs"

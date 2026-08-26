@@ -14,7 +14,7 @@ const core = await readFile(path.join(app, "server-core.mjs"), "utf8");
 const patched = applyV254ServerPatches(core);
 const ui = await readFile(path.join(app, "public", "v25-4.js"), "utf8");
 const hotfix = await readFile(path.join(app, "public", "v25-4-1.js"), "utf8");
-const css = await readFile(path.join(app, "public", "v25-4.css"), "utf8");
+const css = await readFile(path.join(app, "public", "v25-4-2.css"), "utf8");
 const loader = await readFile(path.join(app, "public", "v22.js"), "utf8");
 const sw = await readFile(path.join(app, "public", "sw.js"), "utf8");
 
@@ -39,19 +39,21 @@ for (const marker of [
 for (const marker of [
   '/api/auth/status',
   'serverRole === "admin"',
-  'v2541-deal-admin-bar',
-  'v2541-client-admin-bar',
+  'makeCompactButton',
+  '.drawer-call-actions',
+  '#client-profile-form',
   'Eliminar negociación',
-  'Eliminar ficha completa',
+  'Eliminar ficha',
   'data-v2541-delete-deal',
   'data-v2541-delete-client',
   '/api/deals/${encodeURIComponent(dealId)}',
   '/api/clients/${encodeURIComponent(clientId)}?cascade=1',
-]) assert.ok(hotfix.includes(marker), `Falta hotfix V25.4.1: ${marker}`);
+]) assert.ok(hotfix.includes(marker), `Falta hotfix V25.4.2: ${marker}`);
 
-assert.ok(css.includes(".v254-contact-layout") && css.includes(".v2541-admin-bar") && css.includes("@media(max-width:600px)"), "Contactos/acciones admin V25.4.1 no tienen layout responsive.");
-assert.ok(loader.includes('/v25-4.css?v=25.4.1') && loader.includes('/v25-4.js?v=25.4') && loader.includes('/v25-4-1.js?v=25.4.1'), "El loader no carga V25.4.1.");
-assert.ok(sw.includes('whatsbot-mobile-v25-4-1-production-shell') && sw.includes('/v25-4-1.js'), "El service worker no renueva V25.4.1.");
+assert.ok(!hotfix.includes('bar.className = "v2541-admin-bar"'), "V25.4.2 volvió a crear una barra administrativa grande.");
+assert.ok(css.includes(".v2541-compact-delete") && css.includes("width:auto!important") && css.includes("@media(max-width:600px)"), "La eliminación V25.4.2 no mantiene un botón compacto responsive.");
+assert.ok(loader.includes('/v25-4-2.css?v=25.4.2') && loader.includes('/v25-4.js?v=25.4') && loader.includes('/v25-4-1.js?v=25.4.2'), "El loader no carga V25.4.2.");
+assert.ok(sw.includes('whatsbot-mobile-v25-4-2-production-shell') && sw.includes('/v25-4-2.css') && sw.includes('/v25-4-1.js'), "El service worker no renueva V25.4.2.");
 
 const dir = await mkdtemp(path.join(tmpdir(), "crm-v254-delete-"));
 const port = 5900 + Math.floor(Math.random() * 200);
@@ -102,9 +104,9 @@ try {
   const agentCookie = await login("agent");
 
   const adminStatus = await api(adminCookie, "/api/auth/status");
-  assert.equal(adminStatus.payload?.user?.role, "admin", "auth/status no identifica correctamente al administrador para V25.4.1.");
+  assert.equal(adminStatus.payload?.user?.role, "admin", "auth/status no identifica correctamente al administrador para V25.4.2.");
   const agentStatus = await api(agentCookie, "/api/auth/status");
-  assert.equal(agentStatus.payload?.user?.role, "agent", "auth/status no identifica correctamente al agente para V25.4.1.");
+  assert.equal(agentStatus.payload?.user?.role, "agent", "auth/status no identifica correctamente al agente para V25.4.2.");
 
   const initialState = (await api(adminCookie, "/api/state")).payload;
   const lineId = initialState.whatsappLines?.[0]?.id;
@@ -138,7 +140,7 @@ try {
   assert.equal(state.clients.some((client) => client.id === secondDeal.clientId), false, "La ficha sigue presente luego del borrado total.");
   assert.equal(state.deals.some((deal) => deal.clientId === secondDeal.clientId), false, "Quedaron negociaciones huérfanas tras eliminar la ficha.");
 
-  console.log("OK · V25.4.1 Contactos + visibilidad admin + eliminación segura validada.");
+  console.log("OK · V25.4.2 Contactos + eliminación compacta y segura validada.");
 } finally {
   child.kill("SIGTERM");
   await new Promise((resolve) => { child.once("exit", resolve); setTimeout(resolve, 3000).unref(); });
