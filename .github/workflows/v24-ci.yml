@@ -34,12 +34,14 @@ jobs:
           node --check app/lib/v24-server-patches.mjs
           node --check app/lib/v24-cloud-patches.mjs
           node --check app/lib/v24-1-server-patches.mjs
+          node --check app/lib/v25-4-server-patches.mjs
           node --check app/public/app.js
           node --check app/public/v22.js
           node --check app/public/v24.js
           node --check app/public/v24-1.js
           node --check app/public/v25-2-1.js
           node --check app/public/v25-3.js
+          node --check app/public/v25-4.js
           node --check app/public/v25.js
           node --check gateway/gateway.mjs
           node --check gateway/lib/v25-gateway-patches.mjs
@@ -59,6 +61,9 @@ jobs:
 
       - name: Validate V25.3 navigation and responsive
         run: node app/test/v25-3-navigation-responsive.mjs
+
+      - name: Validate V25.4 contacts and admin delete
+        run: node app/test/v25-4-admin-contacts.mjs
 
       - name: Validate V25 master/login UI
         run: node gateway/test/v25-master-ui.mjs
