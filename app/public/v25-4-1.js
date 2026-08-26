@@ -88,47 +88,53 @@
     }
   }
 
-  function makeButton(id, text, dataset = {}) {
+  function makeCompactButton(id, text, dataset = {}) {
     const button = document.createElement("button");
     if (id) button.id = id;
     button.type = "button";
-    button.className = "button danger-outline v254-admin-delete v2541-admin-delete";
+    button.className = "button ghost v2541-compact-delete";
     button.textContent = text;
     Object.assign(button.dataset, dataset);
     return button;
   }
 
+  function removeLegacyBars() {
+    q("#v2541-deal-admin-bar")?.remove();
+    q("#v2541-client-admin-bar")?.remove();
+  }
+
   function ensureDrawerAction() {
     const drawer = q("#deal-drawer");
     if (!drawer) return;
-    let bar = q("#v2541-deal-admin-bar");
-    if (!bar) {
-      bar = document.createElement("div");
-      bar.id = "v2541-deal-admin-bar";
-      bar.className = "v2541-admin-bar";
-      bar.innerHTML = '<div><strong>Administración</strong><small>Acciones permanentes sobre esta negociación</small></div>';
-      bar.appendChild(makeButton("v2541-delete-current-deal", "Eliminar negociación"));
-      const workspace = q(".drawer-workspace", drawer) || q(".drawer-panel", drawer) || drawer;
-      workspace.prepend(bar);
+    removeLegacyBars();
+
+    let button = q("#v2541-delete-current-deal");
+    const actions = q(".drawer-call-actions", drawer) || q(".drawer-outcome-actions", drawer);
+    if (actions && !button) {
+      button = makeCompactButton("v2541-delete-current-deal", "Eliminar negociación");
+      actions.appendChild(button);
     }
-    bar.hidden = !isAdmin();
+    if (button) button.hidden = !isAdmin();
+
+    const old = q("#v254-delete-current-deal");
+    if (old) old.hidden = true;
   }
 
   function ensureProfileAction() {
     const form = q("#client-profile-form");
     if (!form) return;
-    let bar = q("#v2541-client-admin-bar");
-    if (!bar) {
-      bar = document.createElement("div");
-      bar.id = "v2541-client-admin-bar";
-      bar.className = "v2541-admin-bar v2541-profile-admin";
-      bar.innerHTML = '<div><strong>Administración de ficha</strong><small>La eliminación total también borra sus negociaciones vinculadas después de confirmar.</small></div>';
-      bar.appendChild(makeButton("v2541-delete-current-client", "Eliminar ficha completa"));
-      const header = q("header", form);
-      if (header?.nextSibling) form.insertBefore(bar, header.nextSibling);
-      else form.prepend(bar);
+    removeLegacyBars();
+
+    let button = q("#v2541-delete-current-client");
+    const footer = q("footer", form);
+    if (footer && !button) {
+      button = makeCompactButton("v2541-delete-current-client", "Eliminar ficha");
+      footer.insertBefore(button, footer.firstChild);
     }
-    bar.hidden = !isAdmin();
+    if (button) button.hidden = !isAdmin();
+
+    const old = q("#v254-delete-current-client");
+    if (old) old.hidden = true;
   }
 
   function ensureContactActions() {
@@ -137,19 +143,20 @@
     const activeClientId = q("[data-v254-client-id].active")?.dataset.v254ClientId || "";
     const profileActions = q(".v254-profile-actions", detail);
     if (profileActions && activeClientId && !q("[data-v2541-delete-client]", profileActions)) {
-      profileActions.appendChild(makeButton("", "Eliminar ficha completa", { v2541DeleteClient: activeClientId }));
+      profileActions.appendChild(makeCompactButton("", "Eliminar ficha", { v2541DeleteClient: activeClientId }));
     }
     for (const card of detail.querySelectorAll("[data-v254-deal-card]")) {
       const dealId = card.dataset.v254DealCard;
       const actions = q(".v254-negotiation-actions", card);
       if (actions && dealId && !q("[data-v2541-delete-deal]", actions)) {
-        actions.appendChild(makeButton("", "Eliminar", { v2541DeleteDeal: dealId }));
+        actions.appendChild(makeCompactButton("", "Eliminar", { v2541DeleteDeal: dealId }));
       }
     }
     for (const button of detail.querySelectorAll("[data-v2541-delete-client],[data-v2541-delete-deal]")) button.hidden = !isAdmin();
   }
 
   function sync() {
+    removeLegacyBars();
     ensureDrawerAction();
     ensureProfileAction();
     ensureContactActions();
