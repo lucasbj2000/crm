@@ -43,9 +43,12 @@ jobs:
           node --check app/public/v25-3.js
           node --check app/public/v25-4.js
           node --check app/public/v25-4-1.js
+          node --check app/public/v25-5.js
           node --check app/public/v25.js
           node --check gateway/gateway.mjs
           node --check gateway/lib/v25-gateway-patches.mjs
+          node --check gateway/lib/v25-5-gateway-patches.mjs
+          node --check gateway/public/master-v25-5.js
           node --check gateway/v25-gateway.mjs
           node --check gateway/setup-master.mjs
           bash -n start-vps.sh
@@ -69,8 +72,14 @@ jobs:
       - name: Validate V25.4.2 compact delete UI
         run: node app/test/v25-4-2-compact-delete.mjs
 
+      - name: Validate V25.5 PWA install
+        run: node app/test/v25-5-pwa.mjs
+
       - name: Validate V25 master/login UI
         run: node gateway/test/v25-master-ui.mjs
+
+      - name: Validate V25.5 master personnel reassignment
+        run: node gateway/test/v25-5-master-personnel.mjs
 
       - name: Feature smoke
         run: node app/test/feature-smoke.mjs

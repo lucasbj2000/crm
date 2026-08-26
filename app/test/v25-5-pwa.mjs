@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const here=path.dirname(fileURLToPath(import.meta.url));
+const app=path.resolve(here,'..');
+const js=await readFile(path.join(app,'public','v25-5.js'),'utf8');
+const css=await readFile(path.join(app,'public','v25-5.css'),'utf8');
+const loader=await readFile(path.join(app,'public','v22.js'),'utf8');
+const sw=await readFile(path.join(app,'public','sw.js'),'utf8');
+const manifest=JSON.parse(await readFile(path.join(app,'public','manifest.webmanifest'),'utf8'));
+for(const marker of ['beforeinstallprompt','display-mode: standalone','v255-mobile-install-app','Agregar a pantalla de inicio','Instalar aplicación','navigator.serviceWorker.register'])assert.ok(js.includes(marker),`Falta PWA V25.5: ${marker}`);
+assert.ok(css.includes('.v255-mobile-install')&&css.includes('@media(max-width:900px)'),'No existe botón móvil responsive.');
+assert.ok(loader.includes('/v25-5.css?v=25.5')&&loader.includes('/v25-5.js?v=25.5'),'Loader no carga V25.5.');
+assert.ok(sw.includes('whatsbot-mobile-v25-5-production-shell')&&sw.includes('/v25-5.js')&&sw.includes('/v25-5.css'),'Service worker no cachea V25.5.');
+assert.equal(manifest.display,'standalone');assert.equal(manifest.scope,'/');assert.equal(manifest.start_url,'/');assert.equal(manifest.id,'/');assert.equal(manifest.orientation,'any');
+assert.ok(Array.isArray(manifest.icons)&&manifest.icons.some(x=>x.sizes==='192x192')&&manifest.icons.some(x=>x.sizes==='512x512'),'Manifest sin íconos instalables.');
+console.log('OK · V25.5 PWA desktop + móvil validada.');
