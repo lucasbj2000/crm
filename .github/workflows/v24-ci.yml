@@ -1,4 +1,4 @@
-name: CRM V24 checks
+name: CRM V25 production checks
 
 on:
   pull_request:
@@ -14,7 +14,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
 
@@ -38,8 +38,13 @@ jobs:
           node --check app/public/v22.js
           node --check app/public/v24.js
           node --check app/public/v24-1.js
+          node --check app/public/v25.js
           node --check gateway/gateway.mjs
+          node --check gateway/lib/v25-gateway-patches.mjs
+          node --check gateway/v25-gateway.mjs
           node --check gateway/setup-master.mjs
+          bash -n start-vps.sh
+          bash -n scripts/deploy-vps.sh
 
       - name: Validate V24/V24.1 patch anchors
         run: node app/test/v24-patches.mjs
@@ -47,11 +52,26 @@ jobs:
       - name: Validate V24.1 UI contracts
         run: node app/test/v24-1-ui.mjs
 
+      - name: Validate V25 conversation UI
+        run: node app/test/v25-ui.mjs
+
+      - name: Validate V25 master/login UI
+        run: node gateway/test/v25-master-ui.mjs
+
       - name: Feature smoke
         run: node app/test/feature-smoke.mjs
+
+      - name: V25 message smoke
+        run: node app/test/v25-message-smoke.mjs
 
       - name: V24 transfer smoke
         run: node app/test/v24-transfer-smoke.mjs
 
-      - name: Master isolation
+      - name: Validate Gateway V25 patch anchors
+        run: node gateway/test/v25-gateway-patches.mjs
+
+      - name: Master isolation legacy
         run: node gateway/test/master-isolation.mjs
+
+      - name: V25 control plane and strict isolation
+        run: node gateway/test/v25-control-plane.mjs

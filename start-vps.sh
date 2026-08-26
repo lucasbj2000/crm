@@ -8,4 +8,4 @@ if [ -f "$ROOT/.env" ]; then
 fi
 export PORT="${PORT:-3030}"
 export GATEWAY_HOST="${GATEWAY_HOST:-0.0.0.0}"
-exec node "$ROOT/gateway/gateway.mjs"
+exec node "$ROOT/gateway/v25-gateway.mjs"
