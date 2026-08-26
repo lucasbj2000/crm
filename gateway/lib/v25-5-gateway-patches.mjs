@@ -20,6 +20,35 @@ function v255StopTenant(company){
   const running=children.get(company.slug);
   if(running?.proc&&!running.proc.killed){running.proc.kill('SIGTERM');children.delete(company.slug);}
 }
+async function v255DeleteTenantCompany(cfg,company,input){
+  const expected=String(company.code||company.slug||'').trim().toLowerCase();
+  const confirmation=clean(input?.confirmCode,120).toLowerCase();
+  if(!confirmation||confirmation!==expected){
+    const error=new Error('Escribí el código de la empresa para confirmar la eliminación.');
+    error.code='COMPANY_CONFIRM_REQUIRED';
+    throw error;
+  }
+  v255StopTenant(company);
+  const dataDir=absDataDir(company);
+  const archiveRoot=path.join(storage,'deleted-tenants');
+  await mkdir(archiveRoot,{recursive:true});
+  const stamp=new Date().toISOString().replace(/[:.]/g,'-')+'-'+Date.now();
+  const archiveName=company.slug+'-'+stamp;
+  const archivePath=path.join(archiveRoot,archiveName);
+  const {rename}=await import('node:fs/promises');
+  let moved=false;
+  try{
+    try{await rename(dataDir,archivePath);moved=true;}catch(error){if(error?.code!=='ENOENT')throw error;}
+    const previous=cfg.companies;
+    cfg.companies=previous.filter(x=>x.slug!==company.slug);
+    try{await saveConfig(cfg);}catch(error){
+      cfg.companies=previous;
+      if(moved)await rename(archivePath,dataDir).catch(()=>{});
+      throw error;
+    }
+  }catch(error){throw error;}
+  return {ok:true,deletedCompany:{id:company.id,slug:company.slug,code:company.code,name:company.name},archived:moved,archiveName:moved?archiveName:null};
+}
 function v255OperationalScalarKey(key){
   return /(?:owner|assignee|assigned|responsible|responsable|observer|participant|watcher)(?:User)?Id$/i.test(key)
     || ['assignedTo','responsibleId','responsableId','ownerId','assigneeId'].includes(key);
@@ -104,6 +133,7 @@ async function v255DeleteTenantUser(company,userId,input){
 const routes = String.raw`
       const v255CreateUser=p.match(new RegExp('^/api/gateway/master/companies/([^/]+)/users$'));if(v255CreateUser&&req.method==='POST'){const c=companyFromSlug(cfg,v255CreateUser[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});const b=await bodyJson(req);try{return json(res,201,await v255CreateTenantUser(c,b))}catch(e){return json(res,400,{error:e.message})}}
       const v255DeleteUser=p.match(new RegExp('^/api/gateway/master/companies/([^/]+)/users/([^/]+)$'));if(v255DeleteUser&&req.method==='DELETE'){const c=companyFromSlug(cfg,v255DeleteUser[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});const b=await bodyJson(req);try{return json(res,200,await v255DeleteTenantUser(c,decodeURIComponent(v255DeleteUser[2]),b))}catch(e){return json(res,e.code==='REASSIGN_REQUIRED'?409:400,{error:e.message,reassignRequired:e.code==='REASSIGN_REQUIRED',references:e.references||{}})}}
+      const v255DeleteCompany=p.match(new RegExp('^/api/gateway/master/companies/([^/]+)$'));if(v255DeleteCompany&&req.method==='DELETE'){const c=cfg.companies.find(x=>x.slug===v255DeleteCompany[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});const b=await bodyJson(req);try{return json(res,200,await v255DeleteTenantCompany(cfg,c,b))}catch(e){return json(res,400,{error:e.message,confirmationRequired:e.code==='COMPANY_CONFIRM_REQUIRED',expectedCode:e.code==='COMPANY_CONFIRM_REQUIRED'?(c.code||c.slug):undefined})}}
 `;
 
 export function applyV255GatewayPatches(source){
@@ -112,7 +142,7 @@ export function applyV255GatewayPatches(source){
   const routeAnchor="      const v25Overview=p.match(new RegExp('^/api/gateway/master/companies/([^/]+)/overview$'));if(v25Overview&&req.method==='GET'){const c=companyFromSlug(cfg,v25Overview[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});const d=await v25ReadTenantData(c);return json(res,200,v25TenantSummary(c,d));}";
   patched=replaceOnce(patched,routeAnchor,routes+routeAnchor,'rutas personal');
   const masterRoute="    if(p==='/master'||p==='/master/'){return html(res,200,await readFile(path.join(publicDir,'master-v25.html'),'utf8'))}";
-  const enhancedMaster="    if(p==='/master-v25-5.css'&&req.method==='GET'){const b=await readFile(path.join(publicDir,'master-v25-5.css'));res.writeHead(200,{'content-type':'text/css; charset=utf-8','content-length':b.length,'cache-control':'no-store'});return res.end(b)}\n    if(p==='/master-v25-5.js'&&req.method==='GET'){const b=await readFile(path.join(publicDir,'master-v25-5.js'));res.writeHead(200,{'content-type':'application/javascript; charset=utf-8','content-length':b.length,'cache-control':'no-store'});return res.end(b)}\n    if(p==='/master'||p==='/master/'){let page=await readFile(path.join(publicDir,'master-v25.html'),'utf8');page=page.replace('</head>','<link rel=\"stylesheet\" href=\"/master-v25-5.css?v=25.5\"></head>').replace('</body>','<script src=\"/master-v25-5.js?v=25.5\"></script></body>');return html(res,200,page)}";
+  const enhancedMaster="    if(p==='/master-v25-5.css'&&req.method==='GET'){const b=await readFile(path.join(publicDir,'master-v25-5.css'));res.writeHead(200,{'content-type':'text/css; charset=utf-8','content-length':b.length,'cache-control':'no-store'});return res.end(b)}\n    if(p==='/master-v25-5.js'&&req.method==='GET'){const b=await readFile(path.join(publicDir,'master-v25-5.js'));res.writeHead(200,{'content-type':'application/javascript; charset=utf-8','content-length':b.length,'cache-control':'no-store'});return res.end(b)}\n    if(p==='/master-v25-5-1.js'&&req.method==='GET'){const b=await readFile(path.join(publicDir,'master-v25-5-1.js'));res.writeHead(200,{'content-type':'application/javascript; charset=utf-8','content-length':b.length,'cache-control':'no-store'});return res.end(b)}\n    if(p==='/master'||p==='/master/'){let page=await readFile(path.join(publicDir,'master-v25.html'),'utf8');page=page.replace('</head>','<link rel=\"stylesheet\" href=\"/master-v25-5.css?v=25.5.1\"></head>').replace('</body>','<script src=\"/master-v25-5.js?v=25.5\"></script><script src=\"/master-v25-5-1.js?v=25.5.1\"></script></body>');return html(res,200,page)}";
   patched=replaceOnce(patched,masterRoute,enhancedMaster,'assets master V25.5');
   return patched;
 }

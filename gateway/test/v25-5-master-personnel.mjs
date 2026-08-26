@@ -37,7 +37,8 @@ try{
   await wait();
   const login=await req('/api/gateway/master/login',{method:'POST',body:{password}});assert.equal(login.r.ok,true,'No autenticó Master V25.5');
   const cookie=String(login.r.headers.get('set-cookie')||'').split(';')[0];assert.ok(cookie.includes('crm_master='));
-  const master=await req('/master',{cookie});assert.match(master.text,/master-v25-5\.js\?v=25\.5/);assert.match(master.text,/master-v25-5\.css\?v=25\.5/);
+  const master=await req('/master',{cookie});assert.match(master.text,/master-v25-5\.js\?v=25\.5/);assert.match(master.text,/master-v25-5-1\.js\?v=25\.5\.1/);assert.match(master.text,/master-v25-5\.css\?v=25\.5\.1/);
+  const deleteCompanyUi=await readFile(path.join(gateway,'public','master-v25-5-1.js'),'utf8');assert.match(deleteCompanyUi,/data-v2551-delete-company/);assert.match(deleteCompanyUi,/Eliminar empresa/);assert.match(deleteCompanyUi,/confirmCode/);
   const created=await req('/api/gateway/master/companies/alpha/users',{method:'POST',cookie,body:{name:'Nuevo Agente',username:'nuevo',password:'12345678',role:'agent'}});assert.equal(created.r.status,201);assert.equal(created.payload.user.username,'nuevo');
   const removed=await req('/api/gateway/master/companies/alpha/users/user_agent',{method:'DELETE',cookie,body:{transferToUserId:'user_admin'}});assert.equal(removed.r.ok,true,JSON.stringify(removed.payload));assert.equal(removed.payload.transferredTo.id,'user_admin');
   const saved=JSON.parse(await readFile(path.join(tenant,'whatsbot-crm.json'),'utf8'));
@@ -47,5 +48,15 @@ try{
   assert.equal(saved.tasks[0].assigneeUserId,'user_admin','Tarea no reasignada');
   assert.equal(saved.deals[0].messages[0].userId,'user_agent','Se alteró autoría histórica de mensajes');
   const lastAdmin=await req('/api/gateway/master/companies/alpha/users/user_admin',{method:'DELETE',cookie,body:{transferToUserId:created.payload.user.id}});assert.equal(lastAdmin.r.status,400,'Permitió borrar último administrador');
-  console.log('OK · V25.5 Master personal + reasignación segura validada.');
+
+  const wrongDelete=await req('/api/gateway/master/companies/alpha',{method:'DELETE',cookie,body:{confirmCode:'equivocado'}});assert.equal(wrongDelete.r.status,400,'Eliminó empresa con código incorrecto');assert.equal(wrongDelete.payload.confirmationRequired,true,'No pidió confirmación fuerte para eliminar empresa');
+  const configBefore=JSON.parse(await readFile(path.join(storage,'gateway','companies.json'),'utf8'));assert.equal(configBefore.companies.some(x=>x.slug==='alpha'),true,'La empresa desapareció con confirmación incorrecta');
+  assert.ok(await readFile(path.join(tenant,'whatsbot-crm.json'),'utf8'),'La base se movió con confirmación incorrecta');
+
+  const deleted=await req('/api/gateway/master/companies/alpha',{method:'DELETE',cookie,body:{confirmCode:'alpha'}});assert.equal(deleted.r.ok,true,JSON.stringify(deleted.payload));assert.equal(deleted.payload.deletedCompany.slug,'alpha');assert.equal(deleted.payload.archived,true,'La empresa no conservó respaldo recuperable');assert.match(deleted.payload.archiveName,/^alpha-/);
+  const configAfter=JSON.parse(await readFile(path.join(storage,'gateway','companies.json'),'utf8'));assert.equal(configAfter.companies.some(x=>x.slug==='alpha'),false,'La empresa sigue listada luego de eliminarla');
+  await assert.rejects(()=>readFile(path.join(tenant,'whatsbot-crm.json'),'utf8'),/ENOENT/,'La base original no fue retirada de su tenant');
+  const archived=JSON.parse(await readFile(path.join(storage,'deleted-tenants',deleted.payload.archiveName,'whatsbot-crm.json'),'utf8'));assert.equal(archived.deals[0].ownerUserId,'user_admin','El respaldo perdió la última asignación válida');assert.equal(archived.deals[0].messages[0].userId,'user_agent','El respaldo alteró el historial');
+
+  console.log('OK · V25.5.1 Master personal + eliminación recuperable de empresa validada.');
 }finally{child.kill('SIGTERM');await new Promise(resolve=>{child.once('exit',resolve);setTimeout(resolve,2500).unref()});await rm(dir,{recursive:true,force:true});}

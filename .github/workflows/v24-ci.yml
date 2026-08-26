@@ -49,6 +49,7 @@ jobs:
           node --check gateway/lib/v25-gateway-patches.mjs
           node --check gateway/lib/v25-5-gateway-patches.mjs
           node --check gateway/public/master-v25-5.js
+          node --check gateway/public/master-v25-5-1.js
           node --check gateway/v25-gateway.mjs
           node --check gateway/setup-master.mjs
           bash -n start-vps.sh
@@ -78,7 +79,7 @@ jobs:
       - name: Validate V25 master/login UI
         run: node gateway/test/v25-master-ui.mjs
 
-      - name: Validate V25.5 master personnel reassignment
+      - name: Validate V25.5.1 master personnel and company deletion
         run: node gateway/test/v25-5-master-personnel.mjs
 
       - name: Feature smoke
