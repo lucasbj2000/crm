@@ -8,23 +8,39 @@ const app = path.resolve(here, "..");
 const js = await readFile(path.join(app, "public", "v25.js"), "utf8");
 const css = await readFile(path.join(app, "public", "v25.css"), "utf8");
 const loader = await readFile(path.join(app, "public", "v22.js"), "utf8");
+const sw = await readFile(path.join(app, "public", "sw.js"), "utf8");
+const legacy = await readFile(path.join(app, "public", "app.js"), "utf8");
 
 for (const marker of [
-  "v25-whatsapp-inbox",
-  "v25-chat",
-  "#crm-board [data-deal-id]",
+  "v252-whatsapp-shell",
+  "v252-pending-badge",
+  "PENDIENTE",
+  "Ficha cliente",
+  "Herramientas completas",
+  "RESPUESTA RECOMENDADA",
+  "AUTOCOMPLETADO DE CAMPOS",
+  "/copilot-suggestion",
+  "/data-suggestions",
   "/api/deals/${encodeURIComponent(deal.id)}/message",
-  "Responder clientes desde WhatsApp y bot",
-  "La sesión venció",
-  "Abrir conversación",
-  "decorateDealCards",
-]) {
-  assert.ok(js.includes(marker), `Falta contrato V25 UI: ${marker}`);
-}
+  "openClientProfileFromInbox",
+  "openLegacyTools",
+  "Abrir ficha y conversación",
+]) assert.ok(js.includes(marker), `Falta contrato V25.2 UI: ${marker}`);
 
-assert.ok(!js.includes('e.target.closest("button,a,input,select,textarea")'), "La tarjeta sigue bloqueándose por ser un botón.");
-assert.ok(js.includes('event.target.closest("a,input,select,textarea,[data-v25-ignore-open]")'), "No existe el filtro correcto para controles internos.");
-assert.ok(css.includes(".v25-chat-panel") && css.includes(".v25-open-label") && css.includes("@media(max-width:820px)"), "El centro V25.1 no tiene adaptación móvil o indicador de apertura.");
-assert.ok(loader.includes('/v25.js?v=25.1') && loader.includes('/v25.css?v=25.1'), "El loader no fuerza la carga de V25.1.");
+assert.ok(!js.includes("stopImmediatePropagation"), "V25.2 no debe bloquear el listener original de Negociaciones.");
+assert.ok(!js.includes("installNegotiationOpen"), "V25.2 no debe reemplazar el drawer completo con un capturador propio.");
 
-console.log("OK · tarjetas y Centro de Conversaciones V25.1 validados.");
+for (const legacyMarker of [
+  "function openDrawer(id)",
+  "async function openClientProfile()",
+  "function renderDrawerQuickReplies",
+  "async function fetchCopilotSuggestion",
+  "function renderSmartDataSuggestions",
+  "/api/clients/${encodeURIComponent(deal.clientId)}/profile",
+]) assert.ok(legacy.includes(legacyMarker), `Se perdió una herramienta legacy requerida: ${legacyMarker}`);
+
+assert.ok(css.includes(".v252-shell") && css.includes(".v252-row.pending") && css.includes(".v252-message.pending") && css.includes("@media(max-width:680px)"), "La bandeja V25.2 no tiene diseño WhatsApp, pendientes rojos o adaptación móvil.");
+assert.ok(loader.includes('/v25.js?v=25.2') && loader.includes('/v25.css?v=25.2'), "El loader no fuerza V25.2.");
+assert.ok(sw.includes('whatsbot-mobile-v25-2-production-shell'), "El service worker no renueva la caché V25.2.");
+
+console.log("OK · V25.2 conserva herramientas completas y bandeja WhatsApp validada.");
