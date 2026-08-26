@@ -66,7 +66,7 @@ fi
 ln -s "$STORAGE_TARGET" "$STAGE/storage"
 chmod +x "$STAGE/start-vps.sh" "$STAGE/scripts/deploy-vps.sh"
 
-echo "=== INSTALANDO Y PROBANDO ==="
+echo "=== INSTALANDO Y PROBANDO V25 ==="
 (
   cd "$STAGE/app"
   npm ci --omit=dev
@@ -74,12 +74,26 @@ echo "=== INSTALANDO Y PROBANDO ==="
 
 node --check "$STAGE/app/server.mjs"
 node --check "$STAGE/app/lib/domain.mjs"
-node --check "$STAGE/gateway/gateway.mjs"
-node --check "$STAGE/gateway/setup-master.mjs"
 node --check "$STAGE/app/public/app.js"
+node --check "$STAGE/app/public/v22.js"
+node --check "$STAGE/app/public/v24.js"
+node --check "$STAGE/app/public/v24-1.js"
+node --check "$STAGE/app/public/v25.js"
 node --check "$STAGE/app/public/sw.js"
+node --check "$STAGE/gateway/gateway.mjs"
+node --check "$STAGE/gateway/lib/v25-gateway-patches.mjs"
+node --check "$STAGE/gateway/v25-gateway.mjs"
+node --check "$STAGE/gateway/setup-master.mjs"
+
+node "$STAGE/app/test/v24-patches.mjs"
+node "$STAGE/app/test/v24-1-ui.mjs"
+node "$STAGE/app/test/v25-ui.mjs"
 node "$STAGE/app/test/feature-smoke.mjs"
+node "$STAGE/app/test/v25-message-smoke.mjs"
+node "$STAGE/app/test/v24-transfer-smoke.mjs"
+node "$STAGE/gateway/test/v25-gateway-patches.mjs"
 node "$STAGE/gateway/test/master-isolation.mjs"
+node "$STAGE/gateway/test/v25-control-plane.mjs"
 
 rollback_crm() {
   set +e
@@ -136,4 +150,5 @@ echo "Commit activo: $ACTUAL_SHA"
 echo "Storage conservado: $STORAGE_TARGET"
 echo "Respaldo conservado: $BACKUP"
 pm2 describe "$PROCESS" | sed -n '1,45p'
-echo "ABRIR: https://$DOMAIN/"
+echo "CRM EMPRESAS: https://$DOMAIN/login"
+echo "ADMIN MAESTRO: https://$DOMAIN/master"
