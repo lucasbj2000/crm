@@ -42,6 +42,7 @@ jobs:
           node --check app/public/v25-2-1.js
           node --check app/public/v25-3.js
           node --check app/public/v25-4.js
+          node --check app/public/v25-4-1.js
           node --check app/public/v25.js
           node --check gateway/gateway.mjs
           node --check gateway/lib/v25-gateway-patches.mjs
