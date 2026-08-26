@@ -7,6 +7,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const app = path.resolve(here, "..");
 const js = await readFile(path.join(app, "public", "v25.js"), "utf8");
 const css = await readFile(path.join(app, "public", "v25.css"), "utf8");
+const guard = await readFile(path.join(app, "public", "v25-2-1.js"), "utf8");
 const loader = await readFile(path.join(app, "public", "v22.js"), "utf8");
 const sw = await readFile(path.join(app, "public", "sw.js"), "utf8");
 const legacy = await readFile(path.join(app, "public", "app.js"), "utf8");
@@ -40,7 +41,9 @@ for (const legacyMarker of [
 ]) assert.ok(legacy.includes(legacyMarker), `Se perdió una herramienta legacy requerida: ${legacyMarker}`);
 
 assert.ok(css.includes(".v252-shell") && css.includes(".v252-row.pending") && css.includes(".v252-message.pending") && css.includes("@media(max-width:680px)"), "La bandeja V25.2 no tiene diseño WhatsApp, pendientes rojos o adaptación móvil.");
-assert.ok(loader.includes('/v25.js?v=25.2') && loader.includes('/v25.css?v=25.2'), "El loader no fuerza V25.2.");
-assert.ok(sw.includes('whatsbot-mobile-v25-2-production-shell'), "El service worker no renueva la caché V25.2.");
+assert.ok(guard.includes('target?.id === "crm-board"') && guard.includes("isRecursiveBoardWatch") && guard.includes("if (isRecursiveBoardWatch) return"), "V25.2.1 no protege contra el loop del MutationObserver del tablero.");
+assert.ok(loader.indexOf('/v25-2-1.js?v=25.2.1') < loader.indexOf('/v25.js?v=25.2.1'), "El guard V25.2.1 debe cargarse antes que V25.");
+assert.ok(loader.includes('/v25.css?v=25.2.1'), "El loader no fuerza V25.2.1.");
+assert.ok(sw.includes('whatsbot-mobile-v25-2-1-production-shell') && sw.includes('/v25-2-1.js'), "El service worker no renueva la caché V25.2.1.");
 
-console.log("OK · V25.2 conserva herramientas completas y bandeja WhatsApp validada.");
+console.log("OK · V25.2.1 conserva herramientas y bloquea el loop del tablero.");
