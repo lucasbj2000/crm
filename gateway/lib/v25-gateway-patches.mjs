@@ -38,7 +38,7 @@ function v25TenantSummary(company,data){
 async function v25TenantSessionValid(company,req){
   try{
     await ensureTenant(company);
-    const r=await fetch(`http://127.0.0.1:${company.port}/api/state`,{headers:{cookie:req.headers.cookie||''},redirect:'manual',signal:AbortSignal.timeout(2500)});
+    const r=await fetch('http://127.0.0.1:'+company.port+'/api/state',{headers:{cookie:req.headers.cookie||''},redirect:'manual',signal:AbortSignal.timeout(2500)});
     return r.ok;
   }catch{return false;}
 }
@@ -70,19 +70,19 @@ async function v25UpdateTenantLogo(cfg,company,input){
   if(!match)throw new Error('Seleccioná un logo PNG, JPG o WEBP.');
   const buffer=Buffer.from(match[2],'base64');if(!buffer.length||buffer.length>2*1024*1024)throw new Error('El logo debe pesar como máximo 2 MB.');
   const ext=match[1]==='image/png'?'.png':match[1]==='image/webp'?'.webp':'.jpg';
-  const fileName=`master-logo${ext}`;const dir=path.join(absDataDir(company),'branding');await mkdir(dir,{recursive:true});await writeFile(path.join(dir,fileName),buffer);
+  const fileName='master-logo'+ext;const dir=path.join(absDataDir(company),'branding');await mkdir(dir,{recursive:true});await writeFile(path.join(dir,fileName),buffer);
   const data=await v25ReadTenantData(company);data.settings.branding=data.settings.branding&&typeof data.settings.branding==='object'?data.settings.branding:{};data.settings.branding.logoFileName=fileName;
   company.branding={...(company.branding||{}),logoFileName:fileName};await writeFile(path.join(absDataDir(company),'whatsbot-crm.json'),JSON.stringify(data),{mode:0o600});await saveConfig(cfg);
   const running=children.get(company.slug);if(running?.proc&&!running.proc.killed){running.proc.kill('SIGTERM');children.delete(company.slug);}
-  return {ok:true,logoUrl:`/t/${company.slug}/api/branding/logo`};
+  return {ok:true,logoUrl:'/t/'+company.slug+'/api/branding/logo'};
 }
 `;
 
 const masterRoutes = String.raw`
-      const v25Overview=p.match(/^\/api\/gateway\/master\/companies\/([^/]+)\/overview$/);if(v25Overview&&req.method==='GET'){const c=companyFromSlug(cfg,v25Overview[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});const d=await v25ReadTenantData(c);return json(res,200,v25TenantSummary(c,d));}
-      const v25Control=p.match(/^\/api\/gateway\/master\/companies\/([^/]+)\/control$/);if(v25Control&&req.method==='PUT'){const c=companyFromSlug(cfg,v25Control[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});const b=await bodyJson(req);return json(res,200,await v25UpdateTenantControl(cfg,c,b));}
-      const v25Logo=p.match(/^\/api\/gateway\/master\/companies\/([^/]+)\/logo$/);if(v25Logo&&req.method==='POST'){const c=companyFromSlug(cfg,v25Logo[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});const raw=await readBody(req,3*1024*1024);const b=raw.length?JSON.parse(raw.toString('utf8')):{};return json(res,200,await v25UpdateTenantLogo(cfg,c,b));}
-      const v25Backup=p.match(/^\/api\/gateway\/master\/companies\/([^/]+)\/backup$/);if(v25Backup&&req.method==='GET'){const c=companyFromSlug(cfg,v25Backup[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});const d=await v25ReadTenantData(c);const out=Buffer.from(JSON.stringify(d,null,2));res.writeHead(200,{'content-type':'application/json; charset=utf-8','content-length':out.length,'content-disposition':`attachment; filename="${c.slug}-backup.json"`,'cache-control':'no-store'});res.end(out);return;}
+      const v25Overview=p.match(new RegExp('^/api/gateway/master/companies/([^/]+)/overview$'));if(v25Overview&&req.method==='GET'){const c=companyFromSlug(cfg,v25Overview[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});const d=await v25ReadTenantData(c);return json(res,200,v25TenantSummary(c,d));}
+      const v25Control=p.match(new RegExp('^/api/gateway/master/companies/([^/]+)/control$'));if(v25Control&&req.method==='PUT'){const c=companyFromSlug(cfg,v25Control[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});const b=await bodyJson(req);return json(res,200,await v25UpdateTenantControl(cfg,c,b));}
+      const v25Logo=p.match(new RegExp('^/api/gateway/master/companies/([^/]+)/logo$'));if(v25Logo&&req.method==='POST'){const c=companyFromSlug(cfg,v25Logo[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});const raw=await readBody(req,3*1024*1024);const b=raw.length?JSON.parse(raw.toString('utf8')):{};return json(res,200,await v25UpdateTenantLogo(cfg,c,b));}
+      const v25Backup=p.match(new RegExp('^/api/gateway/master/companies/([^/]+)/backup$'));if(v25Backup&&req.method==='GET'){const c=companyFromSlug(cfg,v25Backup[1]);if(!c)return json(res,404,{error:'Empresa no encontrada.'});const d=await v25ReadTenantData(c);const out=Buffer.from(JSON.stringify(d,null,2));res.writeHead(200,{'content-type':'application/json; charset=utf-8','content-length':out.length,'content-disposition':'attachment; filename="'+c.slug+'-backup.json"','cache-control':'no-store'});res.end(out);return;}
 `;
 
 export function applyV25GatewayPatches(source){
