@@ -43,6 +43,8 @@ jobs:
           node --check gateway/lib/v25-gateway-patches.mjs
           node --check gateway/v25-gateway.mjs
           node --check gateway/setup-master.mjs
+          bash -n start-vps.sh
+          bash -n scripts/deploy-vps.sh
 
       - name: Validate V24/V24.1 patch anchors
         run: node app/test/v24-patches.mjs
@@ -52,6 +54,9 @@ jobs:
 
       - name: Validate V25 conversation UI
         run: node app/test/v25-ui.mjs
+
+      - name: Validate V25 master/login UI
+        run: node gateway/test/v25-master-ui.mjs
 
       - name: Feature smoke
         run: node app/test/feature-smoke.mjs
