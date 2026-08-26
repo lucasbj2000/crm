@@ -1,4 +1,4 @@
-const CACHE = "whatsbot-mobile-v25-production-shell";
+const CACHE = "whatsbot-mobile-v25-2-production-shell";
 const SHELL = ["/", "/styles.css", "/v20.css", "/v20-1.css", "/v20-2.css", "/v20-3.css", "/v21.css", "/v21-1.css", "/v21-2.css", "/v21-3.css", "/v21-4.css", "/v21-5.css", "/v21-6.css",
   "/v21-8.css", "/app.js", "/v20.js", "/v20-1.js", "/v20-2.js", "/v20-3.js", "/v21.js", "/v21-1.js", "/v21-2.js", "/v21-3.js", "/v21-4.js", "/v21-6.js",
   "/v21-7.js", "/v22.css", "/v23-1.css", "/v22.js", "/v24.css", "/v24.js", "/v24-1.css", "/v24-1.js", "/v25.css", "/v25.js", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];

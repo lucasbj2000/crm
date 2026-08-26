@@ -14,6 +14,6 @@
   };
   addCss("/v24.css?v=24.0");
   addCss("/v24-1.css?v=24.1");
-  addCss("/v25.css?v=25.1");
-  addScript("/v22-core.js?v=22-core", () => addScript("/v24.js?v=24.0", () => addScript("/v24-1.js?v=24.1", () => addScript("/v25.js?v=25.1"))));
+  addCss("/v25.css?v=25.2");
+  addScript("/v22-core.js?v=22-core", () => addScript("/v24.js?v=24.0", () => addScript("/v24-1.js?v=24.1", () => addScript("/v25.js?v=25.2"))));
 })();
