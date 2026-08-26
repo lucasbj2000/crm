@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { applyV24ServerPatches } from "./lib/v24-server-patches.mjs";
 import { applyV24CloudPatches } from "./lib/v24-cloud-patches.mjs";
 import { applyV241ServerPatches } from "./lib/v24-1-server-patches.mjs";
+import { applyV254ServerPatches } from "./lib/v25-4-server-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -21,6 +22,7 @@ const source = await readFile(corePath, "utf8");
 let patched = applyV24ServerPatches(source);
 patched = applyV24CloudPatches(patched);
 patched = applyV241ServerPatches(patched);
+patched = applyV254ServerPatches(patched);
 patched = restoreGeneratedTemplates(patched, "async function v24TranscribeMediaAttachment", "async function maybeReplyWithBot");
 patched = restoreGeneratedTemplates(patched, "function v24ActiveObserverGrant", "app.post(\"/api/deals/:id/transfer\"");
 await writeFile(generatedPath, patched, "utf8");

@@ -44,7 +44,7 @@ for (const marker of [
 assert.ok(loader.includes('/v25-3.css?v=25.3'), "El loader no carga el responsive V25.3.");
 assert.ok(loader.includes('/v25-3.js?v=25.3'), "El loader no carga la navegación V25.3.");
 assert.ok(loader.indexOf('/v24-1.js?v=24.1') < loader.indexOf('/v25-3.js?v=25.3'), "V25.3 debe instalar el ancla después de la reparación V24.1.");
-assert.ok(sw.includes('whatsbot-mobile-v25-3-production-shell'), "El service worker no renueva caché a V25.3.");
+assert.ok(sw.includes('whatsbot-mobile-v25-') && sw.includes('-production-shell'), "El service worker dejó de versionar la caché de producción.");
 assert.ok(sw.includes('/v25-3.css') && sw.includes('/v25-3.js'), "El shell offline no incluye V25.3.");
 
 console.log("OK · V25.3 restaura negociación/ficha y fuerza responsive global.");
