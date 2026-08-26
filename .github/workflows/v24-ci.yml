@@ -38,6 +38,8 @@ jobs:
           node --check app/public/v22.js
           node --check app/public/v24.js
           node --check app/public/v24-1.js
+          node --check app/public/v25-2-1.js
+          node --check app/public/v25-3.js
           node --check app/public/v25.js
           node --check gateway/gateway.mjs
           node --check gateway/lib/v25-gateway-patches.mjs
@@ -54,6 +56,9 @@ jobs:
 
       - name: Validate V25 conversation UI
         run: node app/test/v25-ui.mjs
+
+      - name: Validate V25.3 navigation and responsive
+        run: node app/test/v25-3-navigation-responsive.mjs
 
       - name: Validate V25 master/login UI
         run: node gateway/test/v25-master-ui.mjs
