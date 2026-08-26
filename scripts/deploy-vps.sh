@@ -66,7 +66,7 @@ fi
 ln -s "$STORAGE_TARGET" "$STAGE/storage"
 chmod +x "$STAGE/start-vps.sh" "$STAGE/scripts/deploy-vps.sh"
 
-echo "=== INSTALANDO Y PROBANDO V25.5 ==="
+echo "=== INSTALANDO Y PROBANDO V25.5.1 ==="
 (
   cd "$STAGE/app"
   npm ci --omit=dev
@@ -90,6 +90,7 @@ node --check "$STAGE/gateway/gateway.mjs"
 node --check "$STAGE/gateway/lib/v25-gateway-patches.mjs"
 node --check "$STAGE/gateway/lib/v25-5-gateway-patches.mjs"
 node --check "$STAGE/gateway/public/master-v25-5.js"
+node --check "$STAGE/gateway/public/master-v25-5-1.js"
 node --check "$STAGE/gateway/v25-gateway.mjs"
 node --check "$STAGE/gateway/setup-master.mjs"
 
