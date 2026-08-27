@@ -5,6 +5,7 @@ import { applyV24ServerPatches } from "./lib/v24-server-patches.mjs";
 import { applyV24CloudPatches } from "./lib/v24-cloud-patches.mjs";
 import { applyV241ServerPatches } from "./lib/v24-1-server-patches.mjs";
 import { applyV254ServerPatches } from "./lib/v25-4-server-patches.mjs";
+import { applyV256SecurityPatches } from "./lib/v25-6-security-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -25,5 +26,6 @@ patched = applyV241ServerPatches(patched);
 patched = applyV254ServerPatches(patched);
 patched = restoreGeneratedTemplates(patched, "async function v24TranscribeMediaAttachment", "async function maybeReplyWithBot");
 patched = restoreGeneratedTemplates(patched, "function v24ActiveObserverGrant", "app.post(\"/api/deals/:id/transfer\"");
+patched = applyV256SecurityPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);

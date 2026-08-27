@@ -19,6 +19,7 @@
   addCss("/v25-4.css?v=25.4.1");
   addCss("/v25-4-2.css?v=25.4.2");
   addCss("/v25-5.css?v=25.5");
+  addCss("/v25-6.css?v=25.6");
   addScript("/v22-core.js?v=22-core", () =>
     addScript("/v24.js?v=24.0", () =>
       addScript("/v24-1.js?v=24.1", () =>
@@ -27,7 +28,9 @@
             addScript("/v25.js?v=25.2.1", () =>
               addScript("/v25-4.js?v=25.4", () =>
                 addScript("/v25-4-1.js?v=25.4.2", () =>
-                  addScript("/v25-5.js?v=25.5")
+                  addScript("/v25-5.js?v=25.5", () =>
+                    addScript("/v25-6.js?v=25.6")
+                  )
                 )
               )
             )
