@@ -21,6 +21,7 @@ assert.equal(syntax.status,0,`El servidor generado V25.8 debe ser JavaScript vá
 
 const loader=await readFile(path.join(appDir,"public","v25-7.js"),"utf8");
 const ui=await readFile(path.join(appDir,"public","v25-8.js"),"utf8");
+const pdfBridge=await readFile(path.join(appDir,"public","v25-8-1.js"),"utf8");
 const css=await readFile(path.join(appDir,"public","v25-8.css"),"utf8");
 const sw=await readFile(path.join(appDir,"public","sw.js"),"utf8");
 
@@ -35,7 +36,8 @@ assert.match(patched,/campaignView/,"Debe respetar permisos de campañas.");
 assert.match(patched,/canViewSurveys/,"Debe respetar permisos de formularios.");
 
 assert.match(loader,/v25-8\.css\?v=2580/,"V25.7 debe cargar estilos V25.8.");
-assert.match(loader,/v25-8\.js\?v=2580/,"V25.7 debe cargar la UI V25.8.");
+assert.match(loader,/v25-8-1\.js\?v=2581/,"V25.7 debe cargar el puente PDF V25.8.1.");
+assert.match(loader,/v25-8\.js\?v=2581/,"V25.7 debe forzar una versión fresca de la UI V25.8.");
 assert.match(loader,/installV258ApiCompatibility/,"Debe normalizar cuerpos JSON antes de usar la API histórica.");
 assert.match(loader,/JSON\.stringify\(next\.body\)/,"Los objetos de V25.8 deben enviarse como JSON real.");
 assert.match(ui,/Preguntar a la IA/,"Debe existir bloque de preguntas IA.");
@@ -44,9 +46,19 @@ assert.match(ui,/data-v258-campaign-report/,"Cada campaña debe poder abrir su r
 assert.match(ui,/form-report-dialog/,"El reporte de formularios debe enriquecerse.");
 assert.match(ui,/brandFromState/,"El PDF debe reutilizar branding de la empresa.");
 assert.match(ui,/window\.print\(\)/,"El PDF debe usar una vista corporativa imprimible sin dependencias externas.");
+
+assert.match(pdfBridge,/createElement\("iframe"\)/,"V25.8.1 debe imprimir mediante un iframe temporal.");
+assert.match(pdfBridge,/frame\.contentWindow/,"El reporte debe escribirse en el iframe sin abrir una pestaña.");
+assert.match(pdfBridge,/normalizedUrl === \"\"/,"El puente solo debe interceptar la ventana vacía usada por PDF.");
+assert.match(pdfBridge,/normalizedTarget === \"_blank\"/,"El puente debe limitarse al patrón exacto del generador PDF.");
+assert.match(pdfBridge,/noopener/,"El puente debe reconocer la apertura segura de V25.8.");
+assert.match(pdfBridge,/noreferrer/,"El puente debe reconocer la apertura segura de V25.8.");
+assert.match(pdfBridge,/afterprint/,"El iframe temporal debe limpiarse después de imprimir.");
+assert.match(pdfBridge,/return nativeOpen\(url, target, features\)/,"Las demás ventanas del CRM deben conservar el comportamiento nativo.");
+
 assert.match(css,/\.v258-report-ai-panel/,"Debe existir panel visual de reportes IA.");
 assert.match(css,/@media\(max-width:760px\)/,"La experiencia debe adaptarse a mobile.");
-assert.match(sw,/whatsbot-mobile-v25-8-production-shell/,"La caché PWA debe renovarse a V25.8.");
-assert.match(sw,/\/v25-8\.css/);assert.match(sw,/\/v25-8\.js/);
+assert.match(sw,/whatsbot-mobile-v25-8-1-production-shell/,"La caché PWA debe renovarse a V25.8.1.");
+assert.match(sw,/\/v25-8\.css/);assert.match(sw,/\/v25-8\.js/);assert.match(sw,/\/v25-8-1\.js/);
 
-console.log("OK · V25.8 reportes IA, campañas/formularios, servidor generado y PDF corporativo validados.");
+console.log("OK · V25.8.1 reportes IA, campañas/formularios, servidor generado y PDF sin about:blank validados.");
