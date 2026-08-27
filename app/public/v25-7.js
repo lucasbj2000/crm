@@ -58,9 +58,16 @@
       link.dataset.v258 = "1";
       document.head.appendChild(link);
     }
+    if (!document.querySelector("script[data-v2581]")) {
+      const hotfix = document.createElement("script");
+      hotfix.src = "/v25-8-1.js?v=2581";
+      hotfix.async = false;
+      hotfix.dataset.v2581 = "1";
+      document.head.appendChild(hotfix);
+    }
     if (!document.querySelector("script[data-v258]")) {
       const script = document.createElement("script");
-      script.src = "/v25-8.js?v=2580";
+      script.src = "/v25-8.js?v=2581";
       script.async = false;
       script.dataset.v258 = "1";
       document.head.appendChild(script);
