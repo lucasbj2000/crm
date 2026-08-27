@@ -49,6 +49,23 @@
     window.api = wrapped;
   }
 
+  function loadV259Assets() {
+    if (!document.querySelector("link[data-v259]")) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "/v25-9.css?v=2590";
+      link.dataset.v259 = "1";
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector("script[data-v259]")) {
+      const script = document.createElement("script");
+      script.src = "/v25-9.js?v=2590";
+      script.async = false;
+      script.dataset.v259 = "1";
+      document.head.appendChild(script);
+    }
+  }
+
   function loadV258Assets() {
     installV258ApiCompatibility();
     if (!document.querySelector("link[data-v258]")) {
@@ -72,6 +89,7 @@
       script.dataset.v258 = "1";
       document.head.appendChild(script);
     }
+    loadV259Assets();
   }
 
   installLegacySelectorCompatibility();

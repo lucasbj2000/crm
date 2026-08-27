@@ -1,0 +1,62 @@
+import assert from "node:assert/strict";
+import { readFile, writeFile, unlink } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { applyV257FormPatches } from "../lib/v25-7-form-patches.mjs";
+import { applyV256SecurityPatches } from "../lib/v25-6-security-patches.mjs";
+import { applyV258ReportAiPatches } from "../lib/v25-8-report-ai-patches.mjs";
+import { applyV259SupportPatches } from "../lib/v25-9-support-patches.mjs";
+
+const here=path.dirname(fileURLToPath(import.meta.url));
+const appDir=path.resolve(here,"..");
+const core=await readFile(path.join(appDir,"server-core.mjs"),"utf8");
+let patched=applyV257FormPatches(core);
+patched=applyV256SecurityPatches(patched);
+patched=applyV258ReportAiPatches(patched);
+patched=applyV259SupportPatches(patched);
+const generatedCheck=path.join(appDir,".v25-9-syntax-check.mjs");
+await writeFile(generatedCheck,patched,"utf8");
+const syntax=spawnSync(process.execPath,["--check",generatedCheck],{encoding:"utf8"});
+await unlink(generatedCheck).catch(()=>{});
+assert.equal(syntax.status,0,`El servidor generado V25.9 debe ser JavaScript válido. ${syntax.stderr||syntax.stdout||""}`);
+
+const loader=await readFile(path.join(appDir,"public","v25-7.js"),"utf8");
+const ui=await readFile(path.join(appDir,"public","v25-9.js"),"utf8");
+const css=await readFile(path.join(appDir,"public","v25-9.css"),"utf8");
+const sw=await readFile(path.join(appDir,"public","sw.js"),"utf8");
+
+assert.match(patched,/\/api\/support\/tickets/,"Debe existir una API de tickets de soporte.");
+assert.match(patched,/\/api\/support\/tickets\/:id\/messages/,"Debe existir conversación de seguimiento.");
+assert.match(patched,/\/api\/support\/tickets\/:id\/attachments/,"Debe existir carga bidireccional de adjuntos.");
+assert.match(patched,/express\.raw\(\{ type: \"\*\/\*\", limit: \"25mb\" \}\)/,"Los adjuntos deben tener límite explícito de 25 MB.");
+assert.match(patched,/\/api\/support\/attachments\/:id/,"Los adjuntos deben servirse por una ruta protegida.");
+assert.match(patched,/v259SupportCanRead/,"Cada ticket debe comprobar permisos de lectura.");
+assert.match(patched,/v259SupportIsStaff/,"Debe distinguir personal de soporte autorizado.");
+assert.match(patched,/participantUserIds/,"Los tickets deben soportar participantes adicionales.");
+assert.match(patched,/seenBy/,"Debe existir seguimiento de leídos/no leídos.");
+assert.match(patched,/userAgent:cleanText/,"El contexto debe guardar información técnica del dispositivo.");
+assert.match(patched,/entityType:/,"El contexto debe identificar el tipo de entidad reportada.");
+assert.match(patched,/if \(!v259SupportCanRead\(ticket, user\)\) continue;/,"Los archivos solo deben localizarse dentro de tickets accesibles.");
+assert.match(patched,/Solo soporte puede agregar participantes/,"Solo soporte debe poder agregar personas a un caso.");
+
+assert.match(loader,/v25-9\.css\?v=2590/,"La capa principal debe cargar estilos V25.9.");
+assert.match(loader,/v25-9\.js\?v=2590/,"La capa principal debe cargar la UI V25.9.");
+assert.match(ui,/v259-support-button/,"Debe existir un botón de soporte siempre disponible.");
+assert.match(ui,/function captureContext\(\)/,"Debe capturarse el contexto al crear el caso.");
+assert.match(ui,/selectedDealId/,"El contexto debe reconocer una negociación abierta.");
+assert.match(ui,/currentView/,"El contexto debe guardar el módulo actual.");
+assert.match(ui,/openDrawer\(context\.entityId\)/,"Soporte debe poder volver directamente a la negociación reportada.");
+assert.match(ui,/data-v259-go-context/,"Debe existir una acción visible para ir al punto reportado.");
+assert.match(ui,/data-v259-add-participant/,"Soporte debe poder agregar participantes.");
+assert.match(ui,/data-v259-remove-participant/,"Soporte debe poder quitar participantes.");
+assert.match(ui,/\/api\/support\/tickets\/\$\{encodeURIComponent\(ticketId\)\}\/attachments/,"La UI debe cargar archivos dentro del ticket.");
+assert.match(ui,/25\*1024\*1024/,"La UI debe impedir archivos mayores a 25 MB.");
+assert.match(ui,/v259-support-badge/,"El botón debe mostrar respuestas pendientes sin ocupar más interfaz.");
+assert.match(css,/\.v259-support-button/,"Debe existir diseño discreto para el botón fijo.");
+assert.match(css,/\.v259-support-panel/,"Debe existir panel lateral de soporte.");
+assert.match(css,/@media\(max-width:760px\)/,"Soporte debe ser usable en celular.");
+assert.match(sw,/whatsbot-mobile-v25-9-production-shell/,"La caché PWA debe renovarse a V25.9.");
+assert.match(sw,/\/v25-9\.css/);assert.match(sw,/\/v25-9\.js/);
+
+console.log("OK · V25.9 soporte contextual, archivos, participantes y acceso directo validados.");

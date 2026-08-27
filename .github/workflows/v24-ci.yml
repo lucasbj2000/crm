@@ -38,6 +38,7 @@ jobs:
           node --check app/lib/v25-6-security-patches.mjs
           node --check app/lib/v25-7-form-patches.mjs
           node --check app/lib/v25-8-report-ai-patches.mjs
+          node --check app/lib/v25-9-support-patches.mjs
           node --check app/public/app.js
           node --check app/public/v22.js
           node --check app/public/v24.js
@@ -51,6 +52,7 @@ jobs:
           node --check app/public/v25-7.js
           node --check app/public/v25-8.js
           node --check app/public/v25-8-1.js
+          node --check app/public/v25-9.js
           node --check app/public/form-public.js
           node --check app/public/v25.js
           node --check gateway/gateway.mjs
@@ -93,6 +95,9 @@ jobs:
 
       - name: Validate V25.8.1 AI reports and corporate PDF
         run: node app/test/v25-8-ai-reports.mjs
+
+      - name: Validate V25.9 contextual support
+        run: node app/test/v25-9-support.mjs
 
       - name: Validate V25 master/login UI
         run: node gateway/test/v25-master-ui.mjs
