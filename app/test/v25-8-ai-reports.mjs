@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile, unlink } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyV257FormPatches } from "../lib/v25-7-form-patches.mjs";
@@ -12,6 +13,12 @@ const core=await readFile(path.join(appDir,"server-core.mjs"),"utf8");
 let patched=applyV257FormPatches(core);
 patched=applyV256SecurityPatches(patched);
 patched=applyV258ReportAiPatches(patched);
+const generatedCheck=path.join(appDir,".v25-8-syntax-check.mjs");
+await writeFile(generatedCheck,patched,"utf8");
+const syntax=spawnSync(process.execPath,["--check",generatedCheck],{encoding:"utf8"});
+await unlink(generatedCheck).catch(()=>{});
+assert.equal(syntax.status,0,`El servidor generado V25.8 debe ser JavaScript válido. ${syntax.stderr||syntax.stdout||""}`);
+
 const loader=await readFile(path.join(appDir,"public","v25-7.js"),"utf8");
 const ui=await readFile(path.join(appDir,"public","v25-8.js"),"utf8");
 const css=await readFile(path.join(appDir,"public","v25-8.css"),"utf8");
@@ -29,6 +36,8 @@ assert.match(patched,/canViewSurveys/,"Debe respetar permisos de formularios.");
 
 assert.match(loader,/v25-8\.css\?v=2580/,"V25.7 debe cargar estilos V25.8.");
 assert.match(loader,/v25-8\.js\?v=2580/,"V25.7 debe cargar la UI V25.8.");
+assert.match(loader,/installV258ApiCompatibility/,"Debe normalizar cuerpos JSON antes de usar la API histórica.");
+assert.match(loader,/JSON\.stringify\(next\.body\)/,"Los objetos de V25.8 deben enviarse como JSON real.");
 assert.match(ui,/Preguntar a la IA/,"Debe existir bloque de preguntas IA.");
 assert.match(ui,/Descargar PDF/,"Debe existir descarga/impresión PDF corporativa.");
 assert.match(ui,/data-v258-campaign-report/,"Cada campaña debe poder abrir su reporte.");
@@ -40,4 +49,4 @@ assert.match(css,/@media\(max-width:760px\)/,"La experiencia debe adaptarse a mo
 assert.match(sw,/whatsbot-mobile-v25-8-production-shell/,"La caché PWA debe renovarse a V25.8.");
 assert.match(sw,/\/v25-8\.css/);assert.match(sw,/\/v25-8\.js/);
 
-console.log("OK · V25.8 reportes IA, campañas/formularios y PDF corporativo validados.");
+console.log("OK · V25.8 reportes IA, campañas/formularios, servidor generado y PDF corporativo validados.");
