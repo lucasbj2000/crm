@@ -39,7 +39,7 @@ try{
   const cookie=String(login.r.headers.get('set-cookie')||'').split(';')[0];assert.ok(cookie.includes('crm_master='));
   const master=await req('/master',{cookie});assert.match(master.text,/master-v25-5\.js\?v=25\.5/);assert.match(master.text,/master-v25-5-1\.js\?v=25\.5\.1/);assert.match(master.text,/master-v25-5\.css\?v=25\.5\.1/);
   const deleteCompanyUi=await readFile(path.join(gateway,'public','master-v25-5-1.js'),'utf8');assert.match(deleteCompanyUi,/data-v2551-delete-company/);assert.match(deleteCompanyUi,/Eliminar empresa/);assert.match(deleteCompanyUi,/confirmCode/);
-  const created=await req('/api/gateway/master/companies/alpha/users',{method:'POST',cookie,body:{name:'Nuevo Agente',username:'nuevo',password:'12345678',role:'agent'}});assert.equal(created.r.status,201);assert.equal(created.payload.user.username,'nuevo');
+  const created=await req('/api/gateway/master/companies/alpha/users',{method:'POST',cookie,body:{name:'Nuevo Agente',username:'nuevo',password:'Nuev0-Agente-2026!',role:'agent'}});assert.equal(created.r.status,201);assert.equal(created.payload.user.username,'nuevo');
   const removed=await req('/api/gateway/master/companies/alpha/users/user_agent',{method:'DELETE',cookie,body:{transferToUserId:'user_admin'}});assert.equal(removed.r.ok,true,JSON.stringify(removed.payload));assert.equal(removed.payload.transferredTo.id,'user_admin');
   const saved=JSON.parse(await readFile(path.join(tenant,'whatsbot-crm.json'),'utf8'));
   assert.equal(saved.users.some(x=>x.id==='user_agent'),false,'Usuario eliminado sigue en users');
