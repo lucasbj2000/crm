@@ -7,6 +7,7 @@ import { applyV241ServerPatches } from "./lib/v24-1-server-patches.mjs";
 import { applyV254ServerPatches } from "./lib/v25-4-server-patches.mjs";
 import { applyV257FormPatches } from "./lib/v25-7-form-patches.mjs";
 import { applyV256SecurityPatches } from "./lib/v25-6-security-patches.mjs";
+import { applyV258ReportAiPatches } from "./lib/v25-8-report-ai-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -29,5 +30,6 @@ patched = restoreGeneratedTemplates(patched, "async function v24TranscribeMediaA
 patched = restoreGeneratedTemplates(patched, "function v24ActiveObserverGrant", "app.post(\"/api/deals/:id/transfer\"");
 patched = applyV257FormPatches(patched);
 patched = applyV256SecurityPatches(patched);
+patched = applyV258ReportAiPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
