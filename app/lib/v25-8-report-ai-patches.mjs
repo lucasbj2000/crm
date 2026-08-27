@@ -36,12 +36,25 @@ function v258CompactCampaignReport(campaign){
 }
 function v258LocalInsight(scope,context){
   if(scope==="campaign"){
-    const m=context.metrics||{};return `• Resultado: ${m.sent||0} enviados, ${m.replied||0} respuestas (${m.responseRate||0}%) y ${m.converted||0} conversiones (${m.conversionRate||0}%).\n• Entrega: ${m.failed||0} fallidos y ${m.pending||0} pendientes.\n• Lectura: ${Number(m.responseRate||0)>=20?"la campaña muestra buena interacción":"la respuesta es baja y conviene revisar mensaje, segmento y momento de envío"}.\n• Acción: compará el contenido y el público con las campañas de mejor tasa antes del próximo envío.`;
+    const m=context.metrics||{};
+    return "• Resultado: "+(m.sent||0)+" enviados, "+(m.replied||0)+" respuestas ("+(m.responseRate||0)+"%) y "+(m.converted||0)+" conversiones ("+(m.conversionRate||0)+"%).\\n"+
+      "• Entrega: "+(m.failed||0)+" fallidos y "+(m.pending||0)+" pendientes.\\n"+
+      "• Lectura: "+(Number(m.responseRate||0)>=20?"la campaña muestra buena interacción":"la respuesta es baja y conviene revisar mensaje, segmento y momento de envío")+".\\n"+
+      "• Acción: compará el contenido y el público con las campañas de mejor tasa antes del próximo envío.";
   }
   if(scope==="form"){
-    const s=context.summary||{};const answered=(context.questions||[]).filter(q=>Number(q.totalAnswers||0)>0).length;return `• Participación: ${s.completed||0} completados de ${s.sent||0} envíos (${s.completionRate||0}%).\n• Cobertura: ${answered} preguntas recibieron respuestas.\n• Lectura: ${Number(s.completionRate||0)>=60?"la finalización es saludable":"hay abandono relevante; revisá longitud, claridad y orden de preguntas"}.\n• Acción: priorizá las preguntas con menor respuesta y los comentarios repetidos.`;
+    const s=context.summary||{};const answered=(context.questions||[]).filter(q=>Number(q.totalAnswers||0)>0).length;
+    return "• Participación: "+(s.completed||0)+" completados de "+(s.sent||0)+" envíos ("+(s.completionRate||0)+"%).\\n"+
+      "• Cobertura: "+answered+" preguntas recibieron respuestas.\\n"+
+      "• Lectura: "+(Number(s.completionRate||0)>=60?"la finalización es saludable":"hay abandono relevante; revisá longitud, claridad y orden de preguntas")+".\\n"+
+      "• Acción: priorizá las preguntas con menor respuesta y los comentarios repetidos.";
   }
-  const s=context.summary||{};return `• Comercial: ${s.newClients||0} clientes nuevos, ${s.won||0} ganadas y ${s.conversionRate||0}% de conversión.\n• Ventas: ${Number(s.salesValue||0).toLocaleString("es-PY")} Gs. confirmados.\n• Servicio: primera respuesta promedio ${s.averageFirstResponseMinutes||0} min y SLA ≤15 min de ${s.sla15Rate||0}%.\n• Operación: ${s.open||0} abiertas, ${s.waiting||0} esperando respuesta y ${s.availableAgents||0} agentes disponibles.\n• Acción: priorizá esperas, oportunidades estancadas y el segmento con peor conversión.`;
+  const s=context.summary||{};
+  return "• Comercial: "+(s.newClients||0)+" clientes nuevos, "+(s.won||0)+" ganadas y "+(s.conversionRate||0)+"% de conversión.\\n"+
+    "• Ventas: "+Number(s.salesValue||0).toLocaleString("es-PY")+" Gs. confirmados.\\n"+
+    "• Servicio: primera respuesta promedio "+(s.averageFirstResponseMinutes||0)+" min y SLA ≤15 min de "+(s.sla15Rate||0)+"%.\\n"+
+    "• Operación: "+(s.open||0)+" abiertas, "+(s.waiting||0)+" esperando respuesta y "+(s.availableAgents||0)+" agentes disponibles.\\n"+
+    "• Acción: priorizá esperas, oportunidades estancadas y el segmento con peor conversión.";
 }
 app.post("/api/ai/report-insight", async(request,response,next)=>{try{
   const user=currentUser(request);if(!user)return response.status(401).json({error:"Sesión requerida."});if(data.settings.aiSuite?.enabled===false)return response.status(403).json({error:"La IA está desactivada para esta empresa."});
