@@ -1,4 +1,5 @@
 (() => {
+  "use strict";
   const app=document.getElementById("form-app");
   const path=location.pathname;
   const tenantMatch=path.match(/^\/t\/([^/]+)\/(forms?|form)\/([^/]+)/);
@@ -12,15 +13,65 @@
   let singleValue="";
   const multipleValues=new Set();
   const escapeHtml=(value)=>String(value??"").replace(/[&<>"']/g,(char)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
-  const setTheme=(company={})=>{document.documentElement.style.setProperty("--form-primary",company.primaryColor||"#171717");document.documentElement.style.setProperty("--form-accent",company.accentColor||"#FF7A00");};
-  const brand=(company,copy="Formulario seguro")=>`<div class="brand"><span class="brand-mark">CRM</span><div><b>${escapeHtml(company?.name||"CRM")}</b><small>${escapeHtml(copy)}</small></div></div>`;
+  const assetUrl=(value)=>{const url=String(value||"");if(!url)return "";if(tenant&&url.startsWith("/api/"))return `/t/${encodeURIComponent(tenant)}${url}`;return url;};
+
+  function setTheme(company={}){
+    const root=document.documentElement;
+    const vars={
+      "--form-primary":company.primaryColor||"#171717",
+      "--form-accent":company.accentColor||"#FF7A00",
+      "--form-bg":company.backgroundColor||"#F3F3F4",
+      "--form-surface":company.surfaceColor||"#FFFFFF",
+      "--form-text":company.textColor||"#1B1B1D",
+      "--form-muted":company.mutedColor||"#6F7178",
+      "--form-line":company.borderColor||"#E1E2E6",
+      "--form-button":company.buttonColor||company.primaryColor||"#171717",
+      "--form-button-text":company.buttonTextColor||"#FFFFFF",
+      "--form-radius":`${Math.max(0,Math.min(40,Number(company.radius)||20))}px`,
+    };
+    Object.entries(vars).forEach(([key,value])=>root.style.setProperty(key,value));
+  }
+
+  function cover(company={}){
+    const url=assetUrl(company.coverUrl);
+    return url?`<div class="form-cover"><img src="${escapeHtml(url)}" alt="Imagen de portada"></div>`:"";
+  }
+
+  function brand(company,copy="Formulario seguro"){
+    const logo=assetUrl(company?.logoUrl);
+    const name=company?.brandName||company?.name||"CRM";
+    return `<div class="brand">${logo?`<span class="brand-logo"><img src="${escapeHtml(logo)}" alt="${escapeHtml(name)}"></span>`:`<span class="brand-mark">CRM</span>`}<div><b>${escapeHtml(name)}</b><small>${escapeHtml(copy)}</small></div></div>`;
+  }
+
+  function renderBlocks(blocks=[],screen="all"){
+    return (Array.isArray(blocks)?blocks:[]).filter((block)=>!block.showOn||block.showOn==="all"||block.showOn===screen).map((block)=>{
+      const align=["left","center","right"].includes(block.align)?block.align:"left";
+      const size=["small","medium","large","xl"].includes(block.size)?block.size:"medium";
+      const cls=`visual-block ${escapeHtml(block.type||"text")} align-${align} size-${size}`;
+      if(block.type==="title")return `<h2 class="${cls}">${escapeHtml(block.text)}</h2>`;
+      if(block.type==="subtitle")return `<h3 class="${cls}">${escapeHtml(block.text)}</h3>`;
+      if(block.type==="separator")return `<div class="${cls}" aria-hidden="true"><i></i></div>`;
+      if(block.type==="spacer")return `<div class="${cls}" aria-hidden="true"></div>`;
+      if(block.type==="image"){
+        const url=assetUrl(block.url);if(!url)return "";
+        return `<figure class="${cls}"><img src="${escapeHtml(url)}" alt="${escapeHtml(block.alt||block.text||"Imagen")}">${block.text?`<figcaption>${escapeHtml(block.text)}</figcaption>`:""}</figure>`;
+      }
+      if(block.type==="button"){
+        if(!block.href)return `<div class="${cls}"><span class="visual-button disabled">${escapeHtml(block.text||"Botón")}</span></div>`;
+        return `<div class="${cls}"><a class="visual-button" href="${escapeHtml(block.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(block.text||"Abrir")}</a></div>`;
+      }
+      return `<p class="${cls}">${escapeHtml(block.text)}</p>`;
+    }).join("");
+  }
+
+  const footer=(company={})=>company.footerText?`<footer class="form-footer">${escapeHtml(company.footerText)}</footer>`:"";
   const showError=(message)=>{const error=document.getElementById("form-error");if(error)error.textContent=message||"";};
 
   function renderLanding(definition){
     const company=definition.company||{},form=definition.form||{};setTheme(company);document.title=form.name||"Formulario";
     const identity=form.collectIdentity||"optional";
     const identityFields=identity==="anonymous"?"":`<div class="identity"><div class="identity-grid"><label class="field wide"><span>Nombre${identity==="required"?' *':''}</span><input class="input" id="visitor-name" maxlength="160" autocomplete="name" ${identity==="required"?'required':''}></label><label class="field"><span>Teléfono</span><input class="input" id="visitor-phone" type="tel" maxlength="30" autocomplete="tel"></label><label class="field"><span>Correo</span><input class="input" id="visitor-email" type="email" maxlength="240" autocomplete="email"></label></div><div class="identity-note">${identity==="required"?'El nombre es necesario para identificar la respuesta.':'Estos datos son opcionales; también podés responder de forma anónima.'}</div></div>`;
-    app.innerHTML=`${brand(company,"Formulario independiente")}<h1>${escapeHtml(form.name)}</h1><p>${escapeHtml(form.description||form.introMessage||"")}</p><div class="identity-note">${Number(form.questionCount||0)} campo${Number(form.questionCount||0)===1?'':'s'} para completar</div>${identityFields}<label class="honeypot" aria-hidden="true">Sitio web<input id="visitor-website" tabindex="-1" autocomplete="off"></label><div class="actions"><button class="button primary" id="start-form" type="button">Comenzar</button></div><div class="error" id="form-error"></div>`;
+    app.innerHTML=`${cover(company)}<div class="form-inner">${brand(company,"Formulario independiente")}<h1>${escapeHtml(form.name)}</h1><p class="form-description">${escapeHtml(form.description||form.introMessage||"")}</p>${renderBlocks(form.designBlocks,"landing")}<div class="identity-note">${Number(form.questionCount||0)} campo${Number(form.questionCount||0)===1?'':'s'} para completar</div>${identityFields}<label class="honeypot" aria-hidden="true">Sitio web<input id="visitor-website" tabindex="-1" autocomplete="off"></label><div class="actions"><button class="button primary" id="start-form" type="button">${escapeHtml(company.startButtonLabel||"Comenzar")}</button></div><div class="error" id="form-error"></div>${footer(company)}</div>`;
     document.getElementById("start-form")?.addEventListener("click",startPublicForm);
   }
 
@@ -40,11 +91,11 @@
   function renderSession(){
     const company=payload.company||{},form=payload.form||{},session=payload.session||{};setTheme(company);document.title=form.name||"Formulario";
     if(session.status==="completed"){
-      app.innerHTML=`<div class="done"><span class="brand-mark">✓</span><h1>Formulario completado</h1><p>${escapeHtml(form.closingMessage||"Gracias por completar el formulario.")}</p></div>`;return;
+      app.innerHTML=`${cover(company)}<div class="form-inner"><div class="done"><span class="brand-mark">✓</span><h1>Formulario completado</h1><p>${escapeHtml(form.closingMessage||"Gracias por completar el formulario.")}</p>${renderBlocks(form.designBlocks,"completed")}</div>${footer(company)}</div>`;return;
     }
-    const question=payload.question;if(!question){app.innerHTML=`${brand(company)}<h1>Formulario no disponible</h1><p>No encontramos una pregunta pendiente.</p>`;return;}
+    const question=payload.question;if(!question){app.innerHTML=`<div class="form-inner">${brand(company)}<h1>Formulario no disponible</h1><p>No encontramos una pregunta pendiente.</p></div>`;return;}
     const progress=Math.round((Number(session.answered||0)/Math.max(1,Number(session.total||1)))*100);
-    app.innerHTML=`${brand(company)}<h1>${escapeHtml(form.name)}</h1><p>${escapeHtml(form.description||"")}</p><div class="progress" style="--progress:${progress}%"><i></i></div><h2 class="question">${escapeHtml(question.text)}${question.required?'<span class="required"> *</span>':''}</h2>${fieldMarkup(question)}<div class="actions"><button class="button primary" id="next-question" type="button">Continuar</button></div><div class="error" id="form-error"></div>`;
+    app.innerHTML=`${cover(company)}<div class="form-inner">${brand(company)}<h1>${escapeHtml(form.name)}</h1><p class="form-description">${escapeHtml(form.description||"")}</p>${renderBlocks(form.designBlocks,"questions")}${company.showProgress===false?"":`<div class="progress" style="--progress:${progress}%"><i></i></div>`}<h2 class="question">${escapeHtml(question.text)}${question.required?'<span class="required"> *</span>':''}</h2>${fieldMarkup(question)}<div class="actions"><button class="button primary" id="next-question" type="button">${escapeHtml(company.nextButtonLabel||"Continuar")}</button></div><div class="error" id="form-error"></div>${footer(company)}</div>`;
     document.querySelectorAll("[data-option]").forEach((button)=>button.addEventListener("click",()=>{if(question.type==="checkbox"){button.classList.toggle("selected");if(button.classList.contains("selected"))multipleValues.add(button.dataset.option);else multipleValues.delete(button.dataset.option);}else{document.querySelectorAll("[data-option]").forEach((entry)=>entry.classList.remove("selected"));button.classList.add("selected");singleValue=button.dataset.option||"";}}));
     document.getElementById("next-question")?.addEventListener("click",submitAnswer);
     document.getElementById("answer")?.focus({preventScroll:true});
@@ -65,7 +116,7 @@
       if(!token)throw new Error("El enlace del formulario no es válido.");
       if(kind==="forms")return renderLanding(await request(`${apiBase}/public/form-definitions/${encodeURIComponent(token)}`));
       sessionApi=`${apiBase}/public/forms/${encodeURIComponent(token)}`;payload=await request(sessionApi);renderSession();
-    }catch(error){app.innerHTML=`<h1>No disponible</h1><p>${escapeHtml(error.message||"El formulario no existe o expiró.")}</p>`;}
+    }catch(error){app.innerHTML=`<div class="form-inner"><h1>No disponible</h1><p>${escapeHtml(error.message||"El formulario no existe o expiró.")}</p></div>`;}
   }
   init();
 })();

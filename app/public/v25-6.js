@@ -4,6 +4,23 @@
   let menuButton = null;
   let overlay = null;
 
+  function loadV257Assets() {
+    if (!document.querySelector("link[data-v257]")) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "/v25-7.css?v=25.7";
+      link.dataset.v257 = "1";
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector("script[data-v257]")) {
+      const script = document.createElement("script");
+      script.src = "/v25-7.js?v=25.7";
+      script.async = false;
+      script.dataset.v257 = "1";
+      document.head.appendChild(script);
+    }
+  }
+
   function appHeight() {
     const height = Math.round(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 0);
     if (height > 0) document.documentElement.style.setProperty("--v256-app-height", `${height}px`);
@@ -74,6 +91,7 @@
   }
 
   function install() {
+    loadV257Assets();
     ensureMobileMenu();
     markViewport();
     document.querySelector(".sidebar")?.addEventListener("click", (event) => {
