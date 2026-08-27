@@ -39,7 +39,7 @@ assert.match(css,/grid-template-columns:1fr!important/,"Los grids deben colapsar
 
 assert.match(publicJs,/renderBlocks/,"El formulario público debe renderizar bloques visuales.");
 assert.match(publicJs,/company\.coverUrl/,"El formulario público debe mostrar portada.");
-assert.match(publicJs,/company\.logoUrl/,"El formulario público debe mostrar logo.");
+assert.match(publicJs,/company\?\.logoUrl|company\.logoUrl/,"El formulario público debe mostrar logo.");
 assert.match(publicCss,/--form-button-text/,"El formulario público debe respetar colores personalizados.");
 assert.match(sw,/whatsbot-mobile-v25-7-production-shell/,"La caché PWA debe renovarse a V25.7.");
 assert.match(sw,/\/v25-7\.css/);assert.match(sw,/\/v25-7\.js/);
