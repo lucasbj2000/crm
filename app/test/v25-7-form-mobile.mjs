@@ -8,7 +8,8 @@ const here=path.dirname(fileURLToPath(import.meta.url));
 const appDir=path.resolve(here,"..");
 const core=await readFile(path.join(appDir,"server-core.mjs"),"utf8");
 const patched=applyV257FormPatches(core);
-const ui=await readFile(path.join(appDir,"public","v25-7.js"),"utf8");
+const loader=await readFile(path.join(appDir,"public","v25-7.js"),"utf8");
+const ui=await readFile(path.join(appDir,"public","v25-7-core.js"),"utf8");
 const css=await readFile(path.join(appDir,"public","v25-7.css"),"utf8");
 const publicJs=await readFile(path.join(appDir,"public","form-public.js"),"utf8");
 const publicCss=await readFile(path.join(appDir,"public","form-public.css"),"utf8");
@@ -20,6 +21,12 @@ assert.match(patched,/buttonTextColor: sanitizeFormColor/,"El servidor debe pers
 assert.match(patched,/\/api\/forms\/assets/,"Debe existir carga aislada de imágenes del formulario.");
 assert.match(patched,/\/api\/public\/form-assets\/:fileName/,"Los assets deben tener una ruta pública controlada.");
 assert.match(patched,/formAssetsDirectory=path\.join\(dataDirectory,"form-assets"\)/,"Los assets deben vivir dentro del almacenamiento del tenant.");
+
+assert.match(loader,/v25-7-core\.js\?v=2571/,"El cargador seguro debe iniciar el núcleo V25.7.");
+assert.match(loader,/isUnsafeGlobalObserver/,"El hotfix debe identificar el observador global peligroso.");
+assert.match(loader,/target === document\.body/,"El bloqueo debe limitarse al observador del body.");
+assert.match(loader,/filter\.includes\("class"\)/,"El hotfix debe reconocer la observación masiva de clases.");
+assert.doesNotMatch(loader,/observe\(document\.body,\{subtree:true,childList:true,attributes:true/,"El cargador no debe reinstalar el observador global peligroso.");
 
 assert.match(ui,/DISEÑO VISUAL · V25\.7/,"Debe existir el diseñador visual.");
 assert.match(ui,/data-v257-add="title"/,"Debe permitir títulos.");
@@ -41,7 +48,7 @@ assert.match(publicJs,/renderBlocks/,"El formulario público debe renderizar blo
 assert.match(publicJs,/company\.coverUrl/,"El formulario público debe mostrar portada.");
 assert.match(publicJs,/company\?\.logoUrl|company\.logoUrl/,"El formulario público debe mostrar logo.");
 assert.match(publicCss,/--form-button-text/,"El formulario público debe respetar colores personalizados.");
-assert.match(sw,/whatsbot-mobile-v25-7-production-shell/,"La caché PWA debe renovarse a V25.7.");
-assert.match(sw,/\/v25-7\.css/);assert.match(sw,/\/v25-7\.js/);
+assert.match(sw,/whatsbot-mobile-v25-7-1-production-shell/,"La caché PWA debe renovarse a V25.7.1.");
+assert.match(sw,/\/v25-7\.css/);assert.match(sw,/\/v25-7\.js/);assert.match(sw,/\/v25-7-core\.js/);
 
-console.log("OK · V25.7 diseñador visual de formularios + mobile first validados.");
+console.log("OK · V25.7.1 diseñador visual + mobile first + protección anti-freeze validados.");
