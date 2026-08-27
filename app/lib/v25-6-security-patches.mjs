@@ -123,6 +123,10 @@ export function applyV256SecurityPatches(source) {
     'cookie de sesión segura');
 
   patched = replaceAllRequired(patched,
+    'if (password.length < 8 || password.length > 128) throw new Error("La nueva contraseña debe tener entre 8 y 128 caracteres.");',
+    'const v256PasswordError = v256PasswordIssue(password); if (v256PasswordError) throw new Error(v256PasswordError);',
+    'política de cambio de contraseña propia');
+  patched = replaceAllRequired(patched,
     'if (password.length < 8 || password.length > 128) throw new Error("La contraseña debe tener entre 8 y 128 caracteres.");',
     'const v256PasswordError = v256PasswordIssue(password); if (v256PasswordError) throw new Error(v256PasswordError);',
     'política de contraseña');
