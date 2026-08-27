@@ -50,6 +50,7 @@ jobs:
           node --check app/public/v25-6.js
           node --check app/public/v25-7.js
           node --check app/public/v25-8.js
+          node --check app/public/v25-8-1.js
           node --check app/public/form-public.js
           node --check app/public/v25.js
           node --check gateway/gateway.mjs
@@ -90,7 +91,7 @@ jobs:
       - name: Validate V25.7 form designer and mobile first
         run: node app/test/v25-7-form-mobile.mjs
 
-      - name: Validate V25.8 AI reports and corporate PDF
+      - name: Validate V25.8.1 AI reports and corporate PDF
         run: node app/test/v25-8-ai-reports.mjs
 
       - name: Validate V25 master/login UI
