@@ -35,6 +35,23 @@
     }
   }
 
+  function loadV258Assets() {
+    if (!document.querySelector("link[data-v258]")) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "/v25-8.css?v=2580";
+      link.dataset.v258 = "1";
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector("script[data-v258]")) {
+      const script = document.createElement("script");
+      script.src = "/v25-8.js?v=2580";
+      script.async = false;
+      script.dataset.v258 = "1";
+      document.head.appendChild(script);
+    }
+  }
+
   installLegacySelectorCompatibility();
 
   function loadCore() {
@@ -42,6 +59,7 @@
     script.src = "/v25-7-core.js?v=2572";
     script.async = false;
     script.dataset.v257Core = "1";
+    script.onload = loadV258Assets;
     script.onerror = () => console.error("V25.7.2: no se pudo cargar el núcleo de interfaz.");
     document.head.appendChild(script);
   }
@@ -92,7 +110,10 @@
   const restore = () => {
     if (window.MutationObserver === V257SafeMutationObserver) window.MutationObserver = NativeMutationObserver;
   };
-  script.onload = restore;
+  script.onload = () => {
+    restore();
+    loadV258Assets();
+  };
   script.onerror = () => {
     restore();
     console.error("V25.7.2: no se pudo cargar el núcleo de interfaz.");
