@@ -47,7 +47,6 @@ fi
 echo "Version actual: ${CURRENT_SHA:0:8}"
 echo "Version de GitHub: ${TARGET_SHA:0:8}"
 echo "Storage persistente: $STORAGE_TARGET"
-
 echo "Dominio de produccion: https://$DOMAIN"
 
 if test "$CURRENT_SHA" = "$TARGET_SHA"; then
@@ -68,7 +67,7 @@ fi
 ln -s "$STORAGE_TARGET" "$STAGE/storage"
 chmod +x "$STAGE/start-vps.sh" "$STAGE/scripts/deploy-vps.sh"
 
-echo "=== INSTALANDO Y PROBANDO V25.6 ==="
+echo "=== INSTALANDO Y PROBANDO V25.7 ==="
 (
   cd "$STAGE/app"
   npm ci --omit=dev
@@ -78,6 +77,7 @@ node --check "$STAGE/app/server.mjs"
 node --check "$STAGE/app/lib/domain.mjs"
 node --check "$STAGE/app/lib/v25-4-server-patches.mjs"
 node --check "$STAGE/app/lib/v25-6-security-patches.mjs"
+node --check "$STAGE/app/lib/v25-7-form-patches.mjs"
 node --check "$STAGE/app/public/app.js"
 node --check "$STAGE/app/public/v22.js"
 node --check "$STAGE/app/public/v24.js"
@@ -88,6 +88,8 @@ node --check "$STAGE/app/public/v25-4.js"
 node --check "$STAGE/app/public/v25-4-1.js"
 node --check "$STAGE/app/public/v25-5.js"
 node --check "$STAGE/app/public/v25-6.js"
+node --check "$STAGE/app/public/v25-7.js"
+node --check "$STAGE/app/public/form-public.js"
 node --check "$STAGE/app/public/v25.js"
 node --check "$STAGE/app/public/sw.js"
 node --check "$STAGE/gateway/gateway.mjs"
@@ -107,6 +109,7 @@ node "$STAGE/app/test/v25-4-admin-contacts.mjs"
 node "$STAGE/app/test/v25-4-2-compact-delete.mjs"
 node "$STAGE/app/test/v25-5-pwa.mjs"
 node "$STAGE/app/test/v25-6-mobile-security.mjs"
+node "$STAGE/app/test/v25-7-form-mobile.mjs"
 node "$STAGE/app/test/feature-smoke.mjs"
 node "$STAGE/app/test/v25-message-smoke.mjs"
 node "$STAGE/app/test/v24-transfer-smoke.mjs"
