@@ -5,7 +5,7 @@ LIVE="${CRM_LIVE_DIR:-/opt/crm/crm-live}"
 ROOT="${CRM_ROOT_DIR:-/opt/crm}"
 REPO="${CRM_GIT_REPOSITORY:-https://github.com/lucasbj2000/crm.git}"
 PROCESS="${CRM_PM2_PROCESS:-crm-v23-gateway}"
-DOMAIN="${CRM_DOMAIN:-srv1917731.hstgr.cloud}"
+DOMAIN="${CRM_DOMAIN:-iciia.online}"
 EXPECTED_SHA="${1:-}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 STAGE="$ROOT/crm-release-$STAMP"
@@ -47,6 +47,8 @@ fi
 echo "Version actual: ${CURRENT_SHA:0:8}"
 echo "Version de GitHub: ${TARGET_SHA:0:8}"
 echo "Storage persistente: $STORAGE_TARGET"
+
+echo "Dominio de produccion: https://$DOMAIN"
 
 if test "$CURRENT_SHA" = "$TARGET_SHA"; then
   echo "=== CRM YA ACTUALIZADO ==="
@@ -158,7 +160,7 @@ fi
 if ! curl -fsS --max-time 15 \
   --resolve "$DOMAIN:443:127.0.0.1" \
   "https://$DOMAIN/api/health" >/dev/null; then
-  echo "ADVERTENCIA: el CRM interno funciona, pero fallo la comprobacion HTTPS local."
+  echo "ADVERTENCIA: el CRM interno funciona, pero fallo la comprobacion HTTPS local para https://$DOMAIN."
   pm2 logs "$PROCESS" --lines 60 --nostream || true
 fi
 
