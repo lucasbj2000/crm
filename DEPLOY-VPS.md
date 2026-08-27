@@ -4,6 +4,19 @@ Este procedimiento actualiza el CRM desde la rama `main` de GitHub y mantiene
 fuera del cambio todos los datos persistentes: empresas, usuarios, formularios,
 sesiones y conexiones de WhatsApp, tokens y configuraciones guardadas.
 
+## Dominio oficial
+
+El dominio de producción del CRM es:
+
+- CRM empresas: <https://iciia.online/login>
+- Administrador Maestro: <https://iciia.online/master>
+
+El certificado TLS vigente está emitido para `iciia.online` y `www.iciia.online`.
+El hostname técnico de Hostinger no debe utilizarse como URL pública del CRM.
+
+Si en el futuro cambia el dominio, el script permite sobrescribirlo mediante la
+variable de entorno `CRM_DOMAIN`.
+
 ## Flujo para cada actualización
 
 1. Realizar los cambios en una rama separada.
@@ -18,7 +31,7 @@ sesiones y conexiones de WhatsApp, tokens y configuraciones guardadas.
    ```
 
 6. Esperar el mensaje `DESPLIEGUE COMPLETADO`.
-7. Abrir <https://srv1917731.hstgr.cloud/> y actualizar con `Ctrl + F5`.
+7. Abrir <https://iciia.online/> y actualizar con `Ctrl + F5`.
 
 ## Protecciones incluidas
 
@@ -32,6 +45,7 @@ sesiones y conexiones de WhatsApp, tokens y configuraciones guardadas.
 - Reinicia únicamente `crm-v23-gateway`; no reinicia el VPS completo.
 - Si el proceso no responde en el puerto 3030, restaura automáticamente la
   versión anterior y conserva la versión fallida para diagnóstico.
+- Comprueba HTTPS local contra el dominio oficial `iciia.online`.
 
 ## Comprobación opcional de un commit específico
 
@@ -51,7 +65,8 @@ La actualización está completa solamente cuando aparecen estas tres señales:
 
 - `DESPLIEGUE COMPLETADO` en la terminal.
 - `crm-v23-gateway` figura `online` en PM2.
-- El CRM abre por HTTPS y las pantallas principales cargan tras `Ctrl + F5`.
+- El CRM abre por HTTPS en `https://iciia.online` y las pantallas principales
+  cargan tras `Ctrl + F5`.
 
 Los respaldos no se eliminan automáticamente. Esto evita borrar una versión
 recuperable sin una revisión previa.
