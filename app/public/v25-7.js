@@ -35,7 +35,22 @@
     }
   }
 
+  function installV258ApiCompatibility() {
+    const original = window.api;
+    if (typeof original !== "function" || original.__v258JsonBody) return;
+    const wrapped = function(url, options = {}) {
+      const next = { ...options };
+      if (next.body && typeof next.body === "object" && !(next.body instanceof FormData)) {
+        next.body = JSON.stringify(next.body);
+      }
+      return original.call(this, url, next);
+    };
+    wrapped.__v258JsonBody = true;
+    window.api = wrapped;
+  }
+
   function loadV258Assets() {
+    installV258ApiCompatibility();
     if (!document.querySelector("link[data-v258]")) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
