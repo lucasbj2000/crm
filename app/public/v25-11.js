@@ -37,7 +37,31 @@
 
   function suppressLegacyInbox() {
     const legacy = $("#v252-whatsapp-shell");
-    if (legacy) { legacy.setAttribute("aria-hidden","true"); legacy.dataset.v2511Suppressed="1"; }
+    if (legacy) {
+      legacy.setAttribute("aria-hidden","true");
+      legacy.dataset.v2511Suppressed="legacy-inbox";
+      legacy.hidden = true;
+      legacy.style.setProperty("display","none","important");
+    }
+
+    const view = $("[data-view-panel='whatsapp']");
+    if (!view) return;
+    const candidates = $$("section,article,div", view)
+      .filter((node) => !node.closest("#v2511-unified-inbox,#v2510-social-hub"))
+      .filter((node) => {
+        const text = String(node.textContent || "").replace(/\s+/g," ").trim().toLowerCase();
+        return text.includes("bandeja unificada")
+          && text.includes("contexto inmediato")
+          && (text.includes("abrir conversación") || text.includes("trabajar conversación"));
+      })
+      .sort((a,b) => String(a.textContent || "").length - String(b.textContent || "").length);
+    const duplicate = candidates[0];
+    if (duplicate) {
+      duplicate.setAttribute("aria-hidden","true");
+      duplicate.dataset.v2511Suppressed="duplicate-unified-inbox";
+      duplicate.hidden = true;
+      duplicate.style.setProperty("display","none","important");
+    }
   }
 
   function createUnifiedInbox() {
