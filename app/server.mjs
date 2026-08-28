@@ -10,6 +10,7 @@ import { applyV256SecurityPatches } from "./lib/v25-6-security-patches.mjs";
 import { applyV258ReportAiPatches } from "./lib/v25-8-report-ai-patches.mjs";
 import { applyV259SupportPatches } from "./lib/v25-9-support-patches.mjs";
 import { applyV2510SocialPatches } from "./lib/v25-10-social-patches.mjs";
+import { applyV2511OmnichannelPatches } from "./lib/v25-11-omnichannel-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -35,5 +36,6 @@ patched = applyV256SecurityPatches(patched);
 patched = applyV258ReportAiPatches(patched);
 patched = applyV259SupportPatches(patched);
 patched = applyV2510SocialPatches(patched);
+patched = applyV2511OmnichannelPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
