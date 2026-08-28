@@ -49,6 +49,23 @@
     window.api = wrapped;
   }
 
+  function loadV2511Assets() {
+    if (!document.querySelector("link[data-v2511]")) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "/v25-11.css?v=25110";
+      link.dataset.v2511 = "1";
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector("script[data-v2511]")) {
+      const script = document.createElement("script");
+      script.src = "/v25-11.js?v=25110";
+      script.async = false;
+      script.dataset.v2511 = "1";
+      document.head.appendChild(script);
+    }
+  }
+
   function loadV2510Assets() {
     if (!document.querySelector("link[data-v2510]")) {
       const link = document.createElement("link");
@@ -57,12 +74,16 @@
       link.dataset.v2510 = "1";
       document.head.appendChild(link);
     }
-    if (!document.querySelector("script[data-v2510]")) {
+    const existing = document.querySelector("script[data-v2510]");
+    if (!existing) {
       const script = document.createElement("script");
       script.src = "/v25-10.js?v=25100";
       script.async = false;
       script.dataset.v2510 = "1";
+      script.onload = loadV2511Assets;
       document.head.appendChild(script);
+    } else {
+      loadV2511Assets();
     }
   }
 
