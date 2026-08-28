@@ -20,6 +20,14 @@
     return data;
   }
 
+  function ensureStyle() {
+    if($("#v2512-social-direct-style"))return;
+    const style=document.createElement("style");
+    style.id="v2512-social-direct-style";
+    style.textContent="#v2511-oauth-settings,.v2511-manual-button,[data-v2510-add],#v2511-oauth-dialog{display:none!important}";
+    document.head.appendChild(style);
+  }
+
   function providerFromCard(card) {
     const title=$(".v2510-channel-title strong",card)?.textContent?.trim().toLowerCase()||"";
     if(title.includes("facebook"))return "facebook";
@@ -53,6 +61,7 @@
     if(enhancing)return;
     enhancing=true;
     try {
+      ensureStyle();
       removeTechnicalUi();
       const hub=$("#v2510-social-hub");
       if(!hub)return;
@@ -79,6 +88,7 @@
   }
 
   function boot() {
+    ensureStyle();
     removeTechnicalUi();
     enhanceCards();
     const root=$("[data-view-panel='whatsapp']")||document.body;
