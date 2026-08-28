@@ -1,0 +1,67 @@
+import assert from "node:assert/strict";
+import { readFile, writeFile, unlink } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { applyV257FormPatches } from "../lib/v25-7-form-patches.mjs";
+import { applyV256SecurityPatches } from "../lib/v25-6-security-patches.mjs";
+import { applyV258ReportAiPatches } from "../lib/v25-8-report-ai-patches.mjs";
+import { applyV259SupportPatches } from "../lib/v25-9-support-patches.mjs";
+import { applyV2510SocialPatches } from "../lib/v25-10-social-patches.mjs";
+import { applyV2511OmnichannelPatches } from "../lib/v25-11-omnichannel-patches.mjs";
+
+const here=path.dirname(fileURLToPath(import.meta.url));
+const appDir=path.resolve(here,"..");
+const core=await readFile(path.join(appDir,"server-core.mjs"),"utf8");
+let patched=applyV257FormPatches(core);
+patched=applyV256SecurityPatches(patched);
+patched=applyV258ReportAiPatches(patched);
+patched=applyV259SupportPatches(patched);
+patched=applyV2510SocialPatches(patched);
+patched=applyV2511OmnichannelPatches(patched);
+const generated=path.join(appDir,".v25-11-syntax-check.mjs");
+await writeFile(generated,patched,"utf8");
+const syntax=spawnSync(process.execPath,["--check",generated],{encoding:"utf8"});
+await unlink(generated).catch(()=>{});
+assert.equal(syntax.status,0,`El servidor generado V25.11 debe ser JavaScript válido. ${syntax.stderr||syntax.stdout||""}`);
+
+const ui=await readFile(path.join(appDir,"public","v25-11.js"),"utf8");
+const css=await readFile(path.join(appDir,"public","v25-11.css"),"utf8");
+const loader=await readFile(path.join(appDir,"public","v25-7.js"),"utf8");
+const sw=await readFile(path.join(appDir,"public","sw.js"),"utf8");
+
+assert.match(patched,/\/api\/social\/oauth\/:provider\/start/,"Debe existir inicio OAuth por proveedor.");
+assert.match(patched,/\/api\/social\/oauth\/meta\/callback/,"Debe existir callback OAuth de Meta.");
+assert.match(patched,/\/api\/social\/oauth\/tiktok\/callback/,"Debe existir callback OAuth de TikTok.");
+assert.match(patched,/pages_messaging/,"Facebook debe solicitar permiso de mensajería de páginas.");
+assert.match(patched,/instagram_manage_messages/,"Instagram debe solicitar permiso de mensajería.");
+assert.match(patched,/user\.info\.basic/,"TikTok debe usar Login Kit con scope básico.");
+assert.match(patched,/createHmac\("sha256"/,"El webhook de Meta debe validar firma HMAC SHA-256.");
+assert.match(patched,/x-hub-signature-256/,"Debe comprobarse la cabecera oficial de firma de Meta.");
+assert.match(patched,/request\.rawBody = Buffer\.from\(buffer\)/,"El JSON parser debe conservar el body crudo para verificar la firma.");
+assert.match(patched,/\/api\/social\/meta\/webhook/,"Debe existir webhook de Meta.");
+assert.match(patched,/\/api\/omnichannel\/inbox/,"Debe existir una única fuente de bandeja omnicanal.");
+assert.match(patched,/userCanAccessDeal\(user,deal\)/,"WhatsApp debe respetar la visibilidad real de negociaciones.");
+assert.match(patched,/provider===\"facebook\"/,"La bandeja debe soportar Facebook.");
+assert.match(patched,/provider===\"instagram\"/,"La bandeja debe soportar Instagram.");
+assert.doesNotMatch(patched,/provider===\"tiktok\"[^\n]*\/messages/,"TikTok no debe simular una API de mensajes salientes.");
+assert.match(patched,/requestOpenAiText/,"Las conversaciones sociales deben poder pedir sugerencia IA.");
+
+assert.match(css,/#v252-whatsapp-shell\{display:none!important\}/,"La bandeja duplicada V25.2 debe desaparecer visualmente.");
+assert.match(ui,/BANDEJA UNIFICADA/,"Debe existir una única bandeja visible.");
+assert.match(ui,/data-v2511-filter=\"whatsapp\"/,"Debe filtrar WhatsApp.");
+assert.match(ui,/data-v2511-filter=\"facebook\"/,"Debe filtrar Facebook.");
+assert.match(ui,/data-v2511-filter=\"instagram\"/,"Debe filtrar Instagram.");
+assert.doesNotMatch(ui,/data-v2511-filter=\"tiktok\"/,"TikTok no debe mostrarse como DM si no hay API aprobada.");
+assert.match(ui,/Sugerir con IA/,"La bandeja debe conservar ayuda IA.");
+assert.match(ui,/Respuesta rápida/,"La bandeja debe conservar respuestas rápidas.");
+assert.match(ui,/Gestión completa/,"WhatsApp debe conservar acceso a la gestión completa.");
+assert.match(ui,/Conectar con /,"Debe existir conexión simple mediante login oficial.");
+assert.match(ui,/Configuración manual/,"La carga manual debe quedar como opción secundaria avanzada.");
+assert.match(ui,/Configuración avanzada de conexiones/,"Debe existir configuración técnica separada.");
+assert.match(loader,/v25-11\.css\?v=25110/,"El loader debe cargar estilos V25.11.");
+assert.match(loader,/v25-11\.js\?v=25110/,"El loader debe cargar la UI V25.11.");
+assert.match(sw,/whatsbot-mobile-v25-11-production-shell/,"La PWA debe renovar caché a V25.11.");
+assert.match(sw,/\/v25-11\.css/);assert.match(sw,/\/v25-11\.js/);
+
+console.log("OK · V25.11 OAuth, firma Meta y bandeja unificada omnicanal validados.");
