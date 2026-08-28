@@ -49,6 +49,15 @@
     window.api = wrapped;
   }
 
+  function loadV2512Assets() {
+    if (document.querySelector("script[data-v2512]")) return;
+    const script = document.createElement("script");
+    script.src = "/v25-12.js?v=25120";
+    script.async = false;
+    script.dataset.v2512 = "1";
+    document.head.appendChild(script);
+  }
+
   function loadV2511Assets() {
     if (!document.querySelector("link[data-v2511]")) {
       const link = document.createElement("link");
@@ -57,12 +66,16 @@
       link.dataset.v2511 = "1";
       document.head.appendChild(link);
     }
-    if (!document.querySelector("script[data-v2511]")) {
+    const existing = document.querySelector("script[data-v2511]");
+    if (!existing) {
       const script = document.createElement("script");
       script.src = "/v25-11.js?v=25110";
       script.async = false;
       script.dataset.v2511 = "1";
+      script.onload = loadV2512Assets;
       document.head.appendChild(script);
+    } else {
+      loadV2512Assets();
     }
   }
 
