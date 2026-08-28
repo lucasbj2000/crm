@@ -71,13 +71,14 @@
         $$(".v2511-manual-button,[data-v2510-add]",card).forEach((node)=>node.remove());
         const old=$("[data-v2511-oauth]",card);
         if(!old)return;
+        const desired=`Conectar con ${labels[provider]}`;
         if(old.dataset.v2512Direct==="1"){
-          old.textContent=`Conectar con ${labels[provider]}`;
+          if(old.textContent!==desired) old.textContent=desired;
           return;
         }
         const button=old.cloneNode(true);
         button.dataset.v2512Direct="1";
-        button.textContent=`Conectar con ${labels[provider]}`;
+        button.textContent=desired;
         button.removeAttribute("title");
         button.addEventListener("click",(event)=>{event.preventDefault();event.stopPropagation();void connect(provider,button);});
         old.replaceWith(button);
