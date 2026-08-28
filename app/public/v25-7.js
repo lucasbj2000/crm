@@ -49,6 +49,23 @@
     window.api = wrapped;
   }
 
+  function loadV2510Assets() {
+    if (!document.querySelector("link[data-v2510]")) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "/v25-10.css?v=25100";
+      link.dataset.v2510 = "1";
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector("script[data-v2510]")) {
+      const script = document.createElement("script");
+      script.src = "/v25-10.js?v=25100";
+      script.async = false;
+      script.dataset.v2510 = "1";
+      document.head.appendChild(script);
+    }
+  }
+
   function loadV259Assets() {
     if (!document.querySelector("link[data-v259]")) {
       const link = document.createElement("link");
@@ -57,12 +74,16 @@
       link.dataset.v259 = "1";
       document.head.appendChild(link);
     }
-    if (!document.querySelector("script[data-v259]")) {
+    const existing = document.querySelector("script[data-v259]");
+    if (!existing) {
       const script = document.createElement("script");
       script.src = "/v25-9.js?v=2590";
       script.async = false;
       script.dataset.v259 = "1";
+      script.onload = loadV2510Assets;
       document.head.appendChild(script);
+    } else {
+      loadV2510Assets();
     }
   }
 
