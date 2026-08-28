@@ -1,0 +1,63 @@
+import assert from "node:assert/strict";
+import { readFile, writeFile, unlink } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { applyV257FormPatches } from "../lib/v25-7-form-patches.mjs";
+import { applyV256SecurityPatches } from "../lib/v25-6-security-patches.mjs";
+import { applyV258ReportAiPatches } from "../lib/v25-8-report-ai-patches.mjs";
+import { applyV259SupportPatches } from "../lib/v25-9-support-patches.mjs";
+import { applyV2510SocialPatches } from "../lib/v25-10-social-patches.mjs";
+
+const here=path.dirname(fileURLToPath(import.meta.url));
+const appDir=path.resolve(here,"..");
+const core=await readFile(path.join(appDir,"server-core.mjs"),"utf8");
+let patched=applyV257FormPatches(core);
+patched=applyV256SecurityPatches(patched);
+patched=applyV258ReportAiPatches(patched);
+patched=applyV259SupportPatches(patched);
+patched=applyV2510SocialPatches(patched);
+const generatedCheck=path.join(appDir,".v25-10-syntax-check.mjs");
+await writeFile(generatedCheck,patched,"utf8");
+const syntax=spawnSync(process.execPath,["--check",generatedCheck],{encoding:"utf8"});
+await unlink(generatedCheck).catch(()=>{});
+assert.equal(syntax.status,0,`El servidor generado V25.10 debe ser JavaScript válido. ${syntax.stderr||syntax.stdout||""}`);
+
+const loader=await readFile(path.join(appDir,"public","v25-7.js"),"utf8");
+const ui=await readFile(path.join(appDir,"public","v25-10.js"),"utf8");
+const css=await readFile(path.join(appDir,"public","v25-10.css"),"utf8");
+const sw=await readFile(path.join(appDir,"public","sw.js"),"utf8");
+
+assert.match(patched,/data\.socialConnections/,"Debe persistir conexiones sociales por empresa.");
+assert.match(patched,/facebook: \{ label: \"Facebook\"/,"Debe soportar Facebook.");
+assert.match(patched,/instagram: \{ label: \"Instagram\"/,"Debe soportar Instagram.");
+assert.match(patched,/tiktok: \{ label: \"TikTok\"/,"Debe soportar TikTok.");
+assert.match(patched,/\/api\/social\/connections/,"Debe existir API de administración de conexiones sociales.");
+assert.match(patched,/\/api\/social\/connections\/:id\/test/,"Cada conexión debe poder validarse con el proveedor.");
+assert.match(patched,/v2510SocialCanManage/,"Las credenciales deben quedar bajo permisos administrativos.");
+assert.match(patched,/tokenPreview/,"La API debe devolver solo una vista enmascarada del token.");
+assert.doesNotMatch(patched,/accessToken: connection\.accessToken/,"La API pública no debe exponer el token completo.");
+assert.match(patched,/graph\.facebook\.com/,"Facebook e Instagram deben validarse contra Meta Graph API.");
+assert.match(patched,/open\.tiktokapis\.com\/v2\/user\/info/,"TikTok debe validarse contra su API oficial de usuario.");
+assert.match(patched,/inbox: false/,"TikTok no debe anunciar una bandeja DM pública que no exista.");
+assert.match(patched,/allowedUserIds/,"Debe poder limitar qué usuarios usan cada canal.");
+assert.match(patched,/branchId/,"Debe poder limitar la conexión a una sucursal.");
+
+assert.match(loader,/v25-10\.css\?v=25100/,"El loader debe cargar estilos V25.10.");
+assert.match(loader,/v25-10\.js\?v=25100/,"El loader debe cargar la UI V25.10.");
+assert.match(loader,/script\.onload = loadV2510Assets/,"V25.10 debe cargarse después de V25.9.");
+assert.match(ui,/Canales y bot/,"La navegación debe evolucionar de WhatsApp a Canales.");
+assert.match(ui,/Redes sociales y mensajería/,"Debe existir el Centro de Canales.");
+assert.match(ui,/facebook/,"La UI debe incluir Facebook.");
+assert.match(ui,/instagram/,"La UI debe incluir Instagram.");
+assert.match(ui,/tiktok/,"La UI debe incluir TikTok.");
+assert.match(ui,/Probar/,"Debe existir validación explícita de la conexión.");
+assert.match(ui,/Usuarios autorizados/,"Debe permitir asignar usuarios al canal.");
+assert.match(ui,/Todas \/ corporativo/,"Debe contemplar conexiones corporativas y por sucursal.");
+assert.match(ui,/La bandeja DM depende/,"TikTok debe informar su limitación de mensajería.");
+assert.match(css,/\.v2510-channel-grid/,"Debe existir una grilla responsive de canales.");
+assert.match(css,/@media\(max-width:760px\)/,"Canales sociales debe ser usable en mobile.");
+assert.match(sw,/whatsbot-mobile-v25-10-production-shell/,"La caché PWA debe renovarse a V25.10.");
+assert.match(sw,/\/v25-10\.css/);assert.match(sw,/\/v25-10\.js/);
+
+console.log("OK · V25.10 Facebook, Instagram, TikTok, permisos, validación y mobile validados.");
