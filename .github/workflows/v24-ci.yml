@@ -40,6 +40,7 @@ jobs:
           node --check app/lib/v25-8-report-ai-patches.mjs
           node --check app/lib/v25-9-support-patches.mjs
           node --check app/lib/v25-10-social-patches.mjs
+          node --check app/lib/v25-11-omnichannel-patches.mjs
           node --check app/public/app.js
           node --check app/public/v22.js
           node --check app/public/v24.js
@@ -55,6 +56,7 @@ jobs:
           node --check app/public/v25-8-1.js
           node --check app/public/v25-9.js
           node --check app/public/v25-10.js
+          node --check app/public/v25-11.js
           node --check app/public/form-public.js
           node --check app/public/v25.js
           node --check gateway/gateway.mjs
@@ -103,6 +105,9 @@ jobs:
 
       - name: Validate V25.10 social channels
         run: node app/test/v25-10-social-channels.mjs
+
+      - name: Validate V25.11 OAuth and unified inbox
+        run: node app/test/v25-11-oauth-unified-inbox.mjs
 
       - name: Validate V25 master/login UI
         run: node gateway/test/v25-master-ui.mjs
