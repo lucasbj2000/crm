@@ -101,7 +101,7 @@ async function v2510SocialTest(connection) {
   if (connection.provider === "facebook") {
     if (!connection.pageId) throw new Error("Falta el Page ID de Facebook.");
     const version = /^v\d+\.\d+$/.test(connection.graphVersion || "") ? connection.graphVersion : "v26.0";
-    const url = new URL(`https://graph.facebook.com/${version}/${encodeURIComponent(connection.pageId)}`);
+    const url = new URL("https://graph.facebook.com/" + version + "/" + encodeURIComponent(connection.pageId));
     url.searchParams.set("fields", "id,name");
     url.searchParams.set("access_token", connection.accessToken);
     const payload = await v2510SocialFetchJson(url);
@@ -110,20 +110,20 @@ async function v2510SocialTest(connection) {
   if (connection.provider === "instagram") {
     const version = /^v\d+\.\d+$/.test(connection.graphVersion || "") ? connection.graphVersion : "v26.0";
     if (connection.accountId) {
-      const url = new URL(`https://graph.facebook.com/${version}/${encodeURIComponent(connection.accountId)}`);
+      const url = new URL("https://graph.facebook.com/" + version + "/" + encodeURIComponent(connection.accountId));
       url.searchParams.set("fields", "id,username,name");
       url.searchParams.set("access_token", connection.accessToken);
       const payload = await v2510SocialFetchJson(url);
       return { accountId: cleanText(payload.id, 220), accountName: cleanText(payload.name || payload.username, 240), handle: cleanText(payload.username, 220), rawType: "instagram_business_account" };
     }
     if (!connection.pageId) throw new Error("Ingresá el Instagram Account ID o la Page ID vinculada.");
-    const url = new URL(`https://graph.facebook.com/${version}/${encodeURIComponent(connection.pageId)}`);
+    const url = new URL("https://graph.facebook.com/" + version + "/" + encodeURIComponent(connection.pageId));
     url.searchParams.set("fields", "id,name,instagram_business_account");
     url.searchParams.set("access_token", connection.accessToken);
     const page = await v2510SocialFetchJson(url);
     const igId = cleanText(page?.instagram_business_account?.id, 220);
     if (!igId) throw new Error("La página no devolvió una cuenta profesional de Instagram vinculada.");
-    const igUrl = new URL(`https://graph.facebook.com/${version}/${encodeURIComponent(igId)}`);
+    const igUrl = new URL("https://graph.facebook.com/" + version + "/" + encodeURIComponent(igId));
     igUrl.searchParams.set("fields", "id,username,name");
     igUrl.searchParams.set("access_token", connection.accessToken);
     const payload = await v2510SocialFetchJson(igUrl);
@@ -132,7 +132,7 @@ async function v2510SocialTest(connection) {
   if (connection.provider === "tiktok") {
     const url = new URL("https://open.tiktokapis.com/v2/user/info/");
     url.searchParams.set("fields", "open_id,union_id,avatar_url,display_name");
-    const payload = await v2510SocialFetchJson(url, { headers: { Authorization: `Bearer ${connection.accessToken}` } });
+    const payload = await v2510SocialFetchJson(url, { headers: { Authorization: "Bearer " + connection.accessToken } });
     const user = payload?.data?.user || {};
     if (!user.open_id && !user.display_name) throw new Error("TikTok no devolvió información del usuario.");
     return { accountId: cleanText(user.open_id, 220), accountName: cleanText(user.display_name, 240), handle: cleanText(user.display_name, 220), rawType: "tiktok_user" };
