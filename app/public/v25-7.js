@@ -50,18 +50,18 @@
   }
 
   function loadV26Assets() {
-    if (!document.querySelector("link[data-v26]")) {
+    if (!document.querySelector("link[data-v261]")) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
-      link.href = "/v26.css?v=26010";
-      link.dataset.v26 = "1";
+      link.href = "/v26-1.css?v=26011";
+      link.dataset.v261 = "1";
       document.head.appendChild(link);
     }
-    if (!document.querySelector("script[data-v26]")) {
+    if (!document.querySelector("script[data-v261]")) {
       const script = document.createElement("script");
-      script.src = "/v26.js?v=26010";
+      script.src = "/v26-1.js?v=26011";
       script.async = false;
-      script.dataset.v26 = "1";
+      script.dataset.v261 = "1";
       document.head.appendChild(script);
     }
   }
