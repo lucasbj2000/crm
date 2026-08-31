@@ -49,13 +49,35 @@
     window.api = wrapped;
   }
 
+  function loadV26Assets() {
+    if (!document.querySelector("link[data-v26]")) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "/v26.css?v=26010";
+      link.dataset.v26 = "1";
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector("script[data-v26]")) {
+      const script = document.createElement("script");
+      script.src = "/v26.js?v=26010";
+      script.async = false;
+      script.dataset.v26 = "1";
+      document.head.appendChild(script);
+    }
+  }
+
   function loadV2512Assets() {
-    if (document.querySelector("script[data-v2512]")) return;
-    const script = document.createElement("script");
-    script.src = "/v25-12.js?v=25120";
-    script.async = false;
-    script.dataset.v2512 = "1";
-    document.head.appendChild(script);
+    const existing = document.querySelector("script[data-v2512]");
+    if (!existing) {
+      const script = document.createElement("script");
+      script.src = "/v25-12.js?v=25120";
+      script.async = false;
+      script.dataset.v2512 = "1";
+      script.onload = loadV26Assets;
+      document.head.appendChild(script);
+    } else {
+      loadV26Assets();
+    }
   }
 
   function loadV2511Assets() {
