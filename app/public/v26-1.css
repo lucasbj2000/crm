@@ -1,0 +1,87 @@
+/* CRM V26.1.1 · Premium skin estable sobre layout legacy */
+:root{
+  --crm-primary:var(--primary,#171717);
+  --crm-accent:var(--accent,#ff7a00);
+  --crm-bg:#f4f5f7;
+  --crm-surface:#ffffff;
+  --crm-surface-soft:#f8f8fa;
+  --crm-text:#17181a;
+  --crm-text-muted:#73767e;
+  --crm-border:rgba(22,24,29,.10);
+  --crm-border-strong:rgba(22,24,29,.16);
+  --crm-radius-sm:10px;
+  --crm-radius-md:14px;
+  --crm-radius-lg:18px;
+  --crm-radius-xl:24px;
+  --crm-shadow-sm:0 4px 16px rgba(18,22,33,.05);
+  --crm-shadow-md:0 10px 30px rgba(18,22,33,.08);
+  --crm-motion:160ms ease;
+}
+
+html.v26-ready,html.v26-ready body{background:var(--crm-bg);color:var(--crm-text)}
+html.v26-ready body{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+html.v26-ready button,html.v26-ready input,html.v26-ready select,html.v26-ready textarea{font:inherit}
+html.v26-ready #app-shell.app-shell{background:linear-gradient(180deg,#fafafa 0,#f4f5f7 100%)}
+html.v26-ready #app-shell[hidden]{display:none!important}
+
+/* Solo acabado visual: no se fuerzan grids, anchos, alturas, overflow ni padding estructural. */
+html.v26-ready .sidebar{background:linear-gradient(180deg,#191a1d 0,#121316 100%);box-shadow:8px 0 28px rgba(12,14,18,.08)}
+html.v26-ready .sidebar-brand{border-radius:var(--crm-radius-lg)}
+html.v26-ready .nav-item{border-radius:var(--crm-radius-md);transition:background var(--crm-motion),color var(--crm-motion)}
+html.v26-ready .nav-item:hover{background:rgba(255,255,255,.07)}
+html.v26-ready .nav-item.active{border-radius:var(--crm-radius-md);box-shadow:none}
+html.v26-ready .current-user-card{border-radius:var(--crm-radius-md)}
+
+html.v26-ready input:not([type="checkbox"]):not([type="radio"]),html.v26-ready select,html.v26-ready textarea{border-radius:var(--crm-radius-sm);transition:border-color var(--crm-motion),box-shadow var(--crm-motion)}
+html.v26-ready input:focus,html.v26-ready select:focus,html.v26-ready textarea:focus{outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--crm-accent) 12%,transparent)}
+html.v26-ready .button,html.v26-ready .btn{border-radius:var(--crm-radius-md);transition:filter var(--crm-motion),transform var(--crm-motion)}
+html.v26-ready .button:hover,html.v26-ready .btn:hover{filter:brightness(1.02)}
+
+html.v26-ready .workspace-header{background:rgba(255,255,255,.94);border-bottom-color:var(--crm-border);box-shadow:0 3px 14px rgba(20,23,31,.035)}
+html.v26-ready .workspace-header h2{letter-spacing:-.02em}
+html.v26-ready .live-clock,html.v26-ready .weather-pill,html.v26-ready .presence-pill,html.v26-ready .connection-pill,html.v26-ready .header-attendance{border-radius:var(--crm-radius-md)}
+
+html.v26-ready .v26-welcome{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:0 0 14px;padding:18px 20px;border:1px solid rgba(255,255,255,.85);border-radius:var(--crm-radius-xl);background:linear-gradient(135deg,#17181b 0,#24262a 72%,color-mix(in srgb,var(--crm-accent) 22%,#1c1d20) 100%);color:#fff;box-shadow:var(--crm-shadow-sm)}
+html.v26-ready .v26-welcome-copy{min-width:0;flex:1 1 360px}
+html.v26-ready .v26-welcome-copy small{display:block;font-size:10px;letter-spacing:.10em;color:#b7b9bf;font-weight:700}
+html.v26-ready .v26-welcome-copy h1{margin:5px 0 4px;font-size:clamp(22px,2.2vw,32px);line-height:1.08;letter-spacing:-.035em}
+html.v26-ready .v26-welcome-copy p{margin:0;max-width:660px;color:#c1c3c9;font-size:12px;line-height:1.45}
+html.v26-ready .v26-welcome-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+html.v26-ready .v26-welcome-actions button{min-height:36px;padding:0 12px;border:1px solid #ffffff1c;border-radius:var(--crm-radius-md);background:#ffffff0d;color:#fff;font-weight:700;cursor:pointer}
+html.v26-ready .v26-welcome-actions button.primary{background:#fff;color:#17181b}
+
+html.v26-ready .metric{border-color:var(--crm-border);border-radius:var(--crm-radius-lg);box-shadow:var(--crm-shadow-sm);transition:box-shadow var(--crm-motion),transform var(--crm-motion)}
+html.v26-ready .metric:hover{box-shadow:var(--crm-shadow-md);transform:translateY(-1px)}
+html.v26-ready .metric-icon{border-radius:var(--crm-radius-sm)}
+html.v26-ready .toolbar{border-radius:var(--crm-radius-lg);border-color:var(--crm-border);box-shadow:var(--crm-shadow-sm)}
+html.v26-ready .panel,html.v26-ready .card{border-color:var(--crm-border);border-radius:var(--crm-radius-lg)}
+
+html.v26-ready .board-column{border-radius:var(--crm-radius-lg);border-color:var(--crm-border);background:color-mix(in srgb,#f7f8fa 90%,transparent)}
+html.v26-ready .deal-card,html.v26-ready .deal{border-radius:var(--crm-radius-md);border-color:var(--crm-border);box-shadow:0 2px 10px rgba(18,22,33,.035)}
+
+html.v26-ready .v254-contact-hero,html.v26-ready .v254-contact-toolbar,html.v26-ready .v254-contact-list,html.v26-ready .v254-contact-detail{border-radius:var(--crm-radius-lg)}
+html.v26-ready .v254-contact-row{border-radius:var(--crm-radius-md)}
+html.v26-ready .v254-avatar{border-radius:50%}
+
+html.v26-ready #v2511-unified-inbox{border-radius:var(--crm-radius-xl);border-color:var(--crm-border);box-shadow:var(--crm-shadow-sm);overflow:hidden}
+html.v26-ready #v2511-unified-inbox .v2511-row{border-radius:var(--crm-radius-md)}
+html.v26-ready #v2511-unified-inbox .v2511-row-avatar,html.v26-ready #v2511-unified-inbox .v2511-avatar{border-radius:50%}
+html.v26-ready #v2511-unified-inbox .v2511-message{border-radius:var(--crm-radius-md)}
+html.v26-ready #v2511-unified-inbox .v2511-composer{border-radius:var(--crm-radius-lg)}
+html.v26-ready #v2510-social-hub .v2510-channel-card{border-radius:var(--crm-radius-lg);border-color:var(--crm-border);box-shadow:var(--crm-shadow-sm)}
+
+/* Controles experimentales V26.1 quedan fuera hasta rediseñarlos módulo a módulo. */
+html.v26-ready .v26-sidebar-toggle,html.v26-ready .v26-mobile-nav,html.v26-ready .v26-theme-toggle{display:none!important}
+
+html.v26-ready[data-v26-theme="dark"]{--crm-bg:#17181b;--crm-surface:#222328;--crm-surface-soft:#1e2024;--crm-text:#f3f4f6;--crm-text-muted:#a7aab1;--crm-border:rgba(255,255,255,.09);--crm-border-strong:rgba(255,255,255,.14)}
+
+@media(max-width:1100px){html.v26-ready .v26-welcome{padding:16px 18px}}
+@media(max-width:760px){
+  html.v26-ready .v26-welcome{margin:0 0 10px;padding:14px;border-radius:18px;display:block}
+  html.v26-ready .v26-welcome-copy h1{font-size:22px}
+  html.v26-ready .v26-welcome-copy p{font-size:11px}
+  html.v26-ready .v26-welcome-actions{margin-top:10px;display:flex;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
+  html.v26-ready .v26-welcome-actions button{white-space:nowrap;flex:0 0 auto}
+  html.v26-ready .metric,html.v26-ready .toolbar,html.v26-ready .panel,html.v26-ready .card{border-radius:14px}
+  html.v26-ready #v2511-unified-inbox{border-radius:16px}
+}
