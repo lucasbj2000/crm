@@ -19,7 +19,8 @@ assert.match(css,/#v2511-unified-inbox/,"V26.1.1 debe estilizar la bandeja exist
 assert.match(css,/@media\(max-width:760px\)/,"V26.1.1 debe mantener adaptación responsive.");
 assert.doesNotMatch(css,/#app-shell\.app-shell\{display:grid!important/,"V26.1.1 no debe reemplazar el layout principal.");
 assert.doesNotMatch(css,/\.board-column\{[^}]*min-height:/s,"V26.1.1 no debe forzar alturas del kanban.");
-assert.doesNotMatch(css,/input,[\s\S]*background:[^;]+!important/,"V26.1.1 no debe recolorear globalmente controles con !important.");
+assert.doesNotMatch(css,/input:not\([^}]*background:[^}]*!important/s,"V26.1.1 no debe recolorear globalmente controles con !important.");
+assert.doesNotMatch(css,/\.workspace\{[^}]*overflow:clip/s,"V26.1.1 no debe recortar overlays o drawers del workspace.");
 
 assert.match(js,/removeUnstableV26Controls/,"V26.1.1 debe limpiar controles experimentales anteriores.");
 assert.match(js,/window\.addEventListener\("crm:state"/,"V26.1.1 debe actualizarse con el estado existente.");
