@@ -1,0 +1,103 @@
+(() => {
+  "use strict";
+
+  const $=(selector,root=document)=>root?.querySelector?.(selector)||null;
+  const $$=(selector,root=document)=>Array.from(root?.querySelectorAll?.(selector)||[]);
+  let attempts=0;
+
+  function hourGreeting(){
+    const hour=new Date().getHours();
+    if(hour<12)return "Buenos días";
+    if(hour<19)return "Buenas tardes";
+    return "Buenas noches";
+  }
+
+  function firstName(){
+    const text=$("#current-user-name")?.textContent?.trim()||"";
+    return text.split(/\s+/)[0]||"";
+  }
+
+  function clickExisting(selector){
+    const target=$(selector);
+    if(!target)return false;
+    target.click();
+    return true;
+  }
+
+  function openNewClient(){
+    if(clickExisting("#new-client-button"))return;
+    clickExisting('[data-view="crm"]');
+    setTimeout(()=>$("#new-client-button")?.click(),80);
+  }
+
+  function openContacts(){
+    if(clickExisting("[data-v254-contacts-nav]"))return;
+    clickExisting('[data-view="crm"]');
+  }
+
+  function ensureWelcome(){
+    const view=$("[data-view-panel='crm']");
+    if(!view||$("#v26-welcome",view))return;
+    const block=document.createElement("section");
+    block.id="v26-welcome";
+    block.className="v26-welcome";
+    block.innerHTML=`
+      <div class="v26-welcome-copy">
+        <small>RESUMEN DE HOY</small>
+        <h1 id="v26-greeting">${hourGreeting()}</h1>
+        <p>Conversaciones, clientes y oportunidades importantes en un solo lugar.</p>
+      </div>
+      <div class="v26-welcome-actions">
+        <button type="button" class="primary" data-v26-quick="new">＋ Nuevo cliente</button>
+        <button type="button" data-v26-quick="chats">Conversaciones</button>
+        <button type="button" data-v26-quick="contacts">Clientes</button>
+      </div>`;
+    const metric=$(".metric-grid",view);
+    view.insertBefore(block,metric||view.firstChild);
+    block.addEventListener("click",(event)=>{
+      const button=event.target.closest("[data-v26-quick]");
+      if(!button)return;
+      if(button.dataset.v26Quick==="new")openNewClient();
+      if(button.dataset.v26Quick==="chats")clickExisting('[data-view="whatsapp"]');
+      if(button.dataset.v26Quick==="contacts")openContacts();
+    });
+    updateWelcome();
+  }
+
+  function updateWelcome(){
+    const greeting=$("#v26-greeting");
+    if(!greeting)return;
+    const name=firstName();
+    greeting.textContent=name?`${hourGreeting()}, ${name}`:hourGreeting();
+  }
+
+  function removeUnstableV26Controls(){
+    $("#v26-sidebar-toggle")?.remove();
+    $("#v26-mobile-nav")?.remove();
+    $("#v26-theme-toggle")?.remove();
+    const shell=$("#app-shell");
+    shell?.classList.remove("v26-sidebar-collapsed","v26-mobile-more-open");
+  }
+
+  function refresh(){
+    removeUnstableV26Controls();
+    ensureWelcome();
+    updateWelcome();
+  }
+
+  function waitForApp(){
+    refresh();
+    attempts+=1;
+    if(attempts<12&&(!$("#app-shell")||!$("#v26-welcome")))setTimeout(waitForApp,300);
+  }
+
+  function boot(){
+    document.documentElement.classList.add("v26-ready");
+    document.documentElement.removeAttribute("data-v26-theme");
+    document.documentElement.removeAttribute("data-v26-theme-mode");
+    waitForApp();
+    window.addEventListener("crm:state",()=>setTimeout(refresh,0));
+  }
+
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
+})();
