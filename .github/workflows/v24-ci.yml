@@ -60,7 +60,7 @@ jobs:
           node --check app/public/v25-10.js
           node --check app/public/v25-11.js
           node --check app/public/v25-12.js
-          node --check app/public/v26.js
+          node --check app/public/v26-1.js
           node --check app/public/form-public.js
           node --check app/public/v25.js
           node --check app/public/sw.js
@@ -116,7 +116,7 @@ jobs:
       - name: Validate V25.12 OAuth global and unified inbox
         run: node app/test/v25-11-oauth-unified-inbox.mjs
 
-      - name: Validate V26.1 premium responsive UI
+      - name: Validate V26.1.1 stable premium UI
         run: node app/test/v26-ui.mjs
 
       - name: Validate V25 master/login UI
