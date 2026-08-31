@@ -18,5 +18,5 @@ async function checkHtml(file,markers=[]){
   if(result.status!==0)throw new Error(`${file}: JavaScript inválido\n${result.stderr||result.stdout}`);
 }
 await checkHtml("master-v25.html",["Administrador Maestro · CRM V25","/api/gateway/master/companies/","Descargar backup JSON","Módulos habilitados"]);
-await checkHtml("login.html",["Administrador Maestro · gestionar todas las empresas","/api/gateway/login","/master"]);
-console.log("OK · login multiempresa y panel Administrador Maestro V25 validados.");
+await checkHtml("login.html",["Administrador Maestro","/api/gateway/login","/master"]);
+console.log("OK · login multiempresa y panel Administrador Maestro compatibles con V26.");
