@@ -45,6 +45,6 @@ assert.ok(guard.includes('target?.id === "crm-board"') && guard.includes("isRecu
 assert.ok(loader.indexOf('/v25-2-1.js?v=25.2.1') < loader.indexOf('/v25.js?v=25.2.1'), "El guard V25.2.1 debe cargarse antes que V25.");
 assert.ok(loader.includes('/v25.css?v=25.2.1'), "El loader perdió la base visual V25.2.1.");
 assert.ok(sw.includes('/v25-2-1.js'), "El service worker perdió el guard V25.2.1.");
-assert.ok(sw.includes('const CACHE = "whatsbot-mobile-v25-'), "El service worker no usa una caché versionada V25.");
+assert.match(sw,/const CACHE = "whatsbot-mobile-v(?:25|26)-[^"\n]+";/,"El service worker no usa una caché de producción versionada.");
 
 console.log("OK · V25.2.1 conserva herramientas y bloquea el loop del tablero.");
