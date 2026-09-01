@@ -12,6 +12,7 @@ import { applyV259SupportPatches } from "./lib/v25-9-support-patches.mjs";
 import { applyV2510SocialPatches } from "./lib/v25-10-social-patches.mjs";
 import { applyV2511OmnichannelPatches } from "./lib/v25-11-omnichannel-patches.mjs";
 import { applyV2512SocialPlatformPatches } from "./lib/v25-12-social-platform-patches.mjs";
+import { applyV262WhatsappPatches } from "./lib/v26-2-whatsapp-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -39,5 +40,6 @@ patched = applyV259SupportPatches(patched);
 patched = applyV2510SocialPatches(patched);
 patched = applyV2511OmnichannelPatches(patched);
 patched = applyV2512SocialPlatformPatches(patched);
+patched = applyV262WhatsappPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
