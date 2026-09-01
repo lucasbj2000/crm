@@ -96,7 +96,7 @@ const inboxRoute = String.raw`app.get("/api/omnichannel/inbox",(request,response
   response.json({conversations});
 });`;
 
-const connectRoute = String.raw`app.post("/api/whatsapp-lines/:id/connect", requireManagerOrAdmin, async (request,response,next)=>{
+const lineConnectRoute = String.raw`app.post("/api/whatsapp-lines/:id/connect", requireManagerOrAdmin, async (request,response,next)=>{
   try {
     const user=request.currentUser||currentUser(request),line=whatsappLineById(request.params.id);
     if(!line||line.active===false)throw new Error("Línea no encontrada o inactiva.");
@@ -105,8 +105,23 @@ const connectRoute = String.raw`app.post("/api/whatsapp-lines/:id/connect", requ
     if(line.provider==="qr"&&connection?.status!=="connected"){
       await disconnectWhatsappLineConnection(line.id).catch(()=>{});
     }
-    void startWhatsappLineConnection(line.id);
-    response.status(202).json({ok:true,revision:store.revision,line:{id:line.id,connection:whatsappLineConnectionState(line.id)}});
+    await startWhatsappLineConnection(line.id);
+    response.status(202).json(stateResponse(request));
+  } catch(error) { next(error); }
+});`;
+
+const branchConnectRoute = String.raw`app.post("/api/branches/:id/connect", requireManagerOrAdmin, async (request,response,next)=>{
+  try {
+    const user=request.currentUser||currentUser(request);
+    const branch=getBranch(request.params.id);
+    if(!branch||branch.active===false)throw new Error("Sucursal no encontrada o inactiva.");
+    if(user.role!=="admin"&&!userCanAccessBranch(user,branch.id))throw new Error("No tenés acceso a esa sucursal.");
+    const connection=branchConnectionState(branch.id);
+    if(connection?.provider!=="cloud"&&connection?.status!=="connected"){
+      await disconnectBranchConnection(branch.id).catch(()=>{});
+    }
+    await startBranchConnection(branch.id);
+    response.status(202).json(stateResponse(request));
   } catch(error) { next(error); }
 });`;
 
@@ -138,8 +153,16 @@ export function applyV262WhatsappPatches(source) {
     patched,
     'app.post("/api/whatsapp-lines/:id/connect",',
     'app.post("/api/whatsapp-lines/:id/disconnect",',
-    connectRoute,
-    "ruta de reconexión QR",
+    lineConnectRoute,
+    "ruta de reconexión QR por línea",
+  );
+
+  patched = replaceBetween(
+    patched,
+    'app.post("/api/branches/:id/connect",',
+    'app.post("/api/branches/:id/disconnect",',
+    branchConnectRoute,
+    "ruta de reconexión QR por sucursal",
   );
 
   const inboxStart = 'app.get("/api/omnichannel/inbox",';
