@@ -95,7 +95,7 @@ async function downloadIncomingAttachment(item, info, sourceSocket = null) {
       return await saveAttachmentBuffer(Buffer.from(buffer), info, attachmentId);
     } catch (error) {
       lastError = error;
-      console.warn(`[media download] intento ${attempt}/3`, error?.message || error);
+      console.warn("[media download] intento " + attempt + "/3", error?.message || error);
       if (attempt < 3) {
         await v265RefreshMedia(item, socket);
         await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
