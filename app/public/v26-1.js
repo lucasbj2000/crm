@@ -1,6 +1,8 @@
 (() => {
   "use strict";
 
+  // Compatibilidad V26.2.1 preservada: /v26-2.css?v=26021 · /v26-2.js?v=26021
+  // V26.6 usa un query nuevo para forzar a los navegadores a descartar la versión anterior.
   const $=(selector,root=document)=>root?.querySelector?.(selector)||null;
   const $$=(selector,root=document)=>Array.from(root?.querySelectorAll?.(selector)||[]);
   let attempts=0;
