@@ -33,7 +33,7 @@ assert.match(loader,/script\.onload = loadV26Assets/,"V26 debe seguir cargándos
 assert.doesNotMatch(loader,/\/v26\.css\?v=26010/,"El loader no debe cargar la hoja V26.1 invasiva.");
 assert.doesNotMatch(loader,/\/v26\.js\?v=26010/,"El loader no debe cargar la lógica V26.1 invasiva.");
 
-assert.match(sw,/whatsbot-mobile-v26-1-1-production-shell/,"La PWA debe renovar caché para V26.1.1.");
+assert.match(sw,/whatsbot-mobile-v26-2-production-shell/,"La PWA debe usar la caché vigente V26.2.");
 assert.match(sw,/"\/v26-1\.css"/,"La PWA debe precachear V26.1.1 CSS.");
 assert.match(sw,/"\/v26-1\.js"/,"La PWA debe precachear V26.1.1 JS.");
 
@@ -42,4 +42,4 @@ assert.match(login,/Una experiencia más simple/,"El login V26 conserva la exper
 assert.match(login,/Administrador Maestro/,"El acceso al panel maestro debe conservarse.");
 assert.match(login,/\/api\/gateway\/login/,"El rediseño no debe cambiar autenticación.");
 
-console.log("OK · V26.1.1 skin premium estable y layout legacy preservado.");
+console.log("OK · V26.1.1 skin premium estable y layout legacy preservado sobre V26.2.");
