@@ -20,6 +20,13 @@
       script.dataset.v262="1";
       document.head.appendChild(script);
     }
+    if(!document.querySelector("script[data-v263]")){
+      const script=document.createElement("script");
+      script.src="/v26-3.js?v=26030";
+      script.async=false;
+      script.dataset.v263="1";
+      document.head.appendChild(script);
+    }
   }
 
   function hourGreeting(){
