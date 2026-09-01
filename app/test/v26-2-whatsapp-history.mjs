@@ -48,7 +48,8 @@ assert.match(patched,/from "\.\/lib\/domain-v26\.mjs";/,"El servidor debe usar e
 assert.match(patched,/\/api\/deals\/:id\/full-history/,"Debe existir un endpoint de historial completo.");
 assert.match(patched,/function v262WhatsappHistory/,"Debe agrupar el historial por cliente/teléfono.");
 assert.match(patched,/messages: v262WhatsappHistory\(deal, user\)/,"La bandeja debe recibir el historial completo.");
-assert.match(patched,/connection\?\.status!=="connected"[\s\S]*disconnectWhatsappLineConnection\(line\.id\)[\s\S]*startWhatsappLineConnection\(line\.id\)/,"Un reintento QR debe limpiar la sesión antes de generar otra.");
+assert.match(patched,/\/api\/whatsapp-lines\/:id\/connect[\s\S]*disconnectWhatsappLineConnection\(line\.id\)[\s\S]*await startWhatsappLineConnection\(line\.id\)[\s\S]*stateResponse\(request\)/,"Un reintento QR por línea debe limpiar la sesión, iniciar otra y devolver el estado completo.");
+assert.match(patched,/\/api\/branches\/:id\/connect[\s\S]*disconnectBranchConnection\(branch\.id\)[\s\S]*await startBranchConnection\(branch\.id\)[\s\S]*stateResponse\(request\)/,"El botón real de empresa/sucursal debe regenerar la sesión QR y devolver el estado completo.");
 assert.doesNotMatch(patched,/thread\.messages\.length>500/,"Las redes sociales no deben borrar mensajes antiguos.");
 assert.doesNotMatch(patched,/messages:\(thread\.messages\|\|\[\]\)\.slice\(-250\)/,"La API social no debe recortar el historial.");
 
@@ -72,11 +73,14 @@ assert.match(css,/\.v2511-message\{[\s\S]*width:fit-content/s,"La burbuja omnica
 assert.match(css,/#drawer-messages\.message-list \.message:not\(\.system\)\{[\s\S]*width:fit-content/s,"La burbuja del drawer debe ajustarse al texto.");
 assert.match(js,/\/api\/deals\/\$\{encodeURIComponent\(dealId\)\}\/full-history/,"El drawer debe solicitar el historial completo.");
 assert.match(js,/window\.openDrawer=wrapped/,"La apertura de una negociación debe recargar su historial completo.");
+assert.match(js,/function installQrScrollGuard/,"Debe existir protección de posición para generar QR.");
+assert.match(js,/\/api\\\/branches\\\/\(\[\^\/\]\+\)\\\/connect\$/, "La protección debe reconocer la generación QR por empresa/sucursal.");
+assert.match(js,/restoreQrViewport/,"La pantalla debe volver a la misma tarjeta después de generar QR.");
 assert.doesNotMatch(js,/new MutationObserver/,"La mejora no debe introducir observadores globales.");
-assert.match(loader,/\/v26-2\.css\?v=26020/,"V26.1.1 debe cargar los estilos V26.2.");
-assert.match(loader,/\/v26-2\.js\?v=26020/,"V26.1.1 debe cargar la lógica V26.2.");
-assert.match(sw,/whatsbot-mobile-v26-2-production-shell/,"La PWA debe renovar la caché para V26.2.");
+assert.match(loader,/\/v26-2\.css\?v=26021/,"V26.1.1 debe cargar los estilos V26.2.1.");
+assert.match(loader,/\/v26-2\.js\?v=26021/,"V26.1.1 debe cargar la lógica V26.2.1.");
+assert.match(sw,/whatsbot-mobile-v26-2-1-production-shell/,"La PWA debe renovar la caché para V26.2.1.");
 assert.match(sw,/"\/v26-2\.css"/,"La PWA debe cachear los estilos V26.2.");
 assert.match(sw,/"\/v26-2\.js"/,"La PWA debe cachear la lógica V26.2.");
 
-console.log("OK · V26.2 QR renovable, historial completo y burbujas naturales validados.");
+console.log("OK · V26.2.1 QR real por empresa, posición estable, historial completo y burbujas naturales validados.");
