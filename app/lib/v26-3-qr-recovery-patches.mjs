@@ -97,7 +97,7 @@ const primaryConnectRoute = String.raw`app.post("/api/connect", async (request, 
         qrDataUrl = null;
         connectionStatus = "error";
         lastError = cleanText(state?.error || "WhatsApp no entregó un código QR. Tocá Generar QR para intentar nuevamente.", 300);
-        addLog(`QR: ${lastError}`, "warning");
+        addLog("QR: " + lastError, "warning");
       }
     }
 
@@ -107,7 +107,7 @@ const primaryConnectRoute = String.raw`app.post("/api/connect", async (request, 
     connectionStatus = "error";
     qrDataUrl = null;
     lastError = cleanText(error?.message || "No se pudo generar el código QR.", 300);
-    addLog(`QR: ${lastError}`, "warning");
+    addLog("QR: " + lastError, "warning");
     return response.status(502).json({ ...stateResponse(request), error: lastError });
   }
 });`;
