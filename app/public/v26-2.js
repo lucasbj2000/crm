@@ -9,11 +9,11 @@
     return String(value??"").replace(/[&<>"']/g,(char)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
   }
 
-  async function request(url){
+  async function request(url,options={}){
     try{
-      if(typeof window.api==="function")return await window.api(url);
+      if(typeof window.api==="function")return await window.api(url,options);
     }catch(error){throw error;}
-    const response=await fetch(url,{credentials:"same-origin",cache:"no-store"});
+    const response=await fetch(url,{credentials:"same-origin",cache:"no-store",...options});
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(data.error||`Error ${response.status}`);
     return data;
@@ -92,6 +92,51 @@
     window.openDrawer=wrapped;
   }
 
+  function qrViewport(path){
+    const match=String(path||"").match(/\/api\/branches\/([^/]+)\/connect$/);
+    if(!match)return null;
+    let branchId="";
+    try{branchId=decodeURIComponent(match[1]);}catch{branchId=match[1];}
+    const card=document.querySelector(`[data-branch-id="${CSS.escape(branchId)}"]`);
+    return {branchId,top:card?.getBoundingClientRect().top??null,scrollY:window.scrollY};
+  }
+
+  function restoreQrViewport(snapshot){
+    if(!snapshot)return;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      const card=document.querySelector(`[data-branch-id="${CSS.escape(snapshot.branchId)}"]`);
+      if(card&&snapshot.top!==null){
+        const delta=card.getBoundingClientRect().top-snapshot.top;
+        if(Math.abs(delta)>1)window.scrollBy({top:delta,left:0,behavior:"auto"});
+      }else if(Math.abs(window.scrollY-snapshot.scrollY)>1){
+        window.scrollTo({top:snapshot.scrollY,left:0,behavior:"auto"});
+      }
+    }));
+  }
+
+  function installQrScrollGuard(){
+    const original=window.mutate;
+    if(typeof original!=="function"||original.__v262QrScroll)return;
+    const wrapped=async function(path,method,body,...rest){
+      const snapshot=qrViewport(path);
+      try{return await original.call(this,path,method,body,...rest);}
+      finally{restoreQrViewport(snapshot);}
+    };
+    wrapped.__v262QrScroll=true;
+    wrapped.__v262Original=original;
+    window.mutate=wrapped;
+
+    document.addEventListener("click",(event)=>{
+      const button=event.target.closest?.('#branches-list [data-branch-action="connect"]');
+      if(!button)return;
+      event.preventDefault();
+      const card=button.closest("[data-branch-id]");
+      const snapshot=card?{branchId:card.dataset.branchId,top:card.getBoundingClientRect().top,scrollY:window.scrollY}:null;
+      setTimeout(()=>restoreQrViewport(snapshot),250);
+      setTimeout(()=>restoreQrViewport(snapshot),900);
+    },true);
+  }
+
   function trackConversationClicks(){
     if(document.documentElement.dataset.v262HistoryClicks==="1")return;
     document.documentElement.dataset.v262HistoryClicks="1";
@@ -115,15 +160,19 @@
 
   function refresh(){
     installDrawerHook();
+    installQrScrollGuard();
     if($("#deal-drawer")?.classList.contains("open")&&activeDealId)setTimeout(()=>void loadFullHistory(activeDealId),0);
   }
 
   function boot(){
     installDrawerHook();
+    installQrScrollGuard();
     trackConversationClicks();
     window.addEventListener("crm:state",refresh);
     setTimeout(installDrawerHook,500);
     setTimeout(installDrawerHook,1500);
+    setTimeout(installQrScrollGuard,500);
+    setTimeout(installQrScrollGuard,1500);
   }
 
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
