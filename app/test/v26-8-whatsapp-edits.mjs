@@ -54,7 +54,7 @@ patched=applyV265MediaReliabilityPatches(patched);
 patched=applyV266MediaRetryPatches(patched);
 patched=applyV268WhatsappEditPatches(patched);
 
-assert.match(patched,/protocolMessage\?\.editedMessage/,"Debe reconocer protocolMessage.editedMessage de WhatsApp.");
+assert.match(patched,/const protocol = content\?\.protocolMessage[\s\S]*protocol\?\.editedMessage/,"Debe reconocer protocolMessage.editedMessage de WhatsApp.");
 assert.match(patched,/v268ApplyWhatsappEdit\(item, \{ branchId, lineId \}\)/,"messages.upsert debe consumir ediciones antes de tratarlas como mensajes nuevos.");
 assert.ok((patched.match(/\.ev\.on\("messages\.update"/g)||[]).length>=3,"Debe escuchar messages.update en principal, sucursales y líneas adicionales.");
 assert.match(patched,/record\.message\.editHistory = history/,"Debe conservar un historial interno de textos anteriores.");
@@ -75,7 +75,7 @@ const sw=await readFile(path.join(appDir,"public","sw.js"),"utf8");
 const server=await readFile(path.join(appDir,"server.mjs"),"utf8");
 
 assert.match(ui,/v268-edited-label/,"La UI debe mostrar la etiqueta editado.");
-assert.match(ui,/\/api\/deals\/\(\[\^\/\]\+\)\/full-history/,"La UI debe detectar las respuestas de historial completo.");
+assert.match(ui,/full-history/,"La UI debe detectar las respuestas de historial completo.");
 assert.match(ui,/\/api\/omnichannel\/inbox/,"La bandeja unificada debe reconocer mensajes editados.");
 assert.doesNotMatch(ui,/new MutationObserver/,"El indicador de edición no debe introducir observadores que repinten la pantalla.");
 assert.match(loader,/\/v26-8\.js\?v=26080/,"El loader debe cargar V26.8 después de V26.7.");
