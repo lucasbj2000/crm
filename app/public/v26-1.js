@@ -9,13 +9,13 @@
     if(!document.querySelector("link[data-v262]")){
       const link=document.createElement("link");
       link.rel="stylesheet";
-      link.href="/v26-2.css?v=26020";
+      link.href="/v26-2.css?v=26021";
       link.dataset.v262="1";
       document.head.appendChild(link);
     }
     if(!document.querySelector("script[data-v262]")){
       const script=document.createElement("script");
-      script.src="/v26-2.js?v=26020";
+      script.src="/v26-2.js?v=26021";
       script.async=false;
       script.dataset.v262="1";
       document.head.appendChild(script);
