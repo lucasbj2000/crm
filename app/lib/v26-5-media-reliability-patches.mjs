@@ -61,15 +61,16 @@ async function v265StreamDownload(item, info) {
 }
 
 async function v265RefreshMedia(item, sourceSocket) {
-  if (!sourceSocket || typeof sourceSocket.updateMediaMessage !== "function") return false;
+  if (!sourceSocket || typeof sourceSocket.updateMediaMessage !== "function") return item;
   try {
-    await Promise.race([
+    const refreshed = await Promise.race([
       sourceSocket.updateMediaMessage(item),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout refrescando multimedia")), 5000)),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout refrescando multimedia")), 7000)),
     ]);
-    return true;
-  } catch {
-    return false;
+    return refreshed?.message ? refreshed : item;
+  } catch (error) {
+    console.warn("[media refresh]", error?.message || error);
+    return item;
   }
 }
 
@@ -83,13 +84,18 @@ async function downloadIncomingAttachment(item, info, sourceSocket = null) {
   }
 
   const socket = sourceSocket || whatsappSocket;
+  let workingItem = item;
   let lastError = null;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
-      const buffer = await downloadMediaMessage(item, "buffer", {}, {
+      const buffer = await downloadMediaMessage(workingItem, "buffer", {}, {
         logger: whatsappLogger,
         reuploadRequest: async (message) => {
-          if (socket?.updateMediaMessage) await socket.updateMediaMessage(message);
+          if (!socket?.updateMediaMessage) return message;
+          const refreshed = await socket.updateMediaMessage(message);
+          const usable = refreshed?.message ? refreshed : message;
+          workingItem = usable;
+          return usable;
         },
       });
       return await saveAttachmentBuffer(Buffer.from(buffer), info, attachmentId);
@@ -97,15 +103,15 @@ async function downloadIncomingAttachment(item, info, sourceSocket = null) {
       lastError = error;
       console.warn("[media download] intento " + attempt + "/3", error?.message || error);
       if (attempt < 3) {
-        await v265RefreshMedia(item, socket);
-        await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+        workingItem = await v265RefreshMedia(workingItem, socket);
+        await new Promise((resolve) => setTimeout(resolve, 350 * attempt));
       }
     }
   }
 
   try {
-    await v265RefreshMedia(item, socket);
-    const fallbackBuffer = await v265StreamDownload(item, info);
+    workingItem = await v265RefreshMedia(workingItem, socket);
+    const fallbackBuffer = await v265StreamDownload(workingItem, info);
     return await saveAttachmentBuffer(fallbackBuffer, info, attachmentId);
   } catch (fallbackError) {
     lastError = fallbackError || lastError;
