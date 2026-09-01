@@ -2,10 +2,19 @@
   "use strict";
 
   // Compatibilidad V26.2.1 preservada: /v26-2.css?v=26021 · /v26-2.js?v=26021
-  // V26.6 usa un query nuevo para forzar a los navegadores a descartar la versión anterior.
+  // V26.7 agrega estabilidad visual sobre la sincronización silenciosa V26.6.
   const $=(selector,root=document)=>root?.querySelector?.(selector)||null;
   const $$=(selector,root=document)=>Array.from(root?.querySelectorAll?.(selector)||[]);
   let attempts=0;
+
+  function loadV267Assets(){
+    if(document.querySelector("script[data-v267]"))return;
+    const script=document.createElement("script");
+    script.src="/v26-7.js?v=26070";
+    script.async=false;
+    script.dataset.v267="1";
+    document.head.appendChild(script);
+  }
 
   function loadV266Assets(){
     if(!document.querySelector("link[data-v266]")){
@@ -15,12 +24,16 @@
       link.dataset.v266="1";
       document.head.appendChild(link);
     }
-    if(!document.querySelector("script[data-v266]")){
+    const existing=document.querySelector("script[data-v266]");
+    if(!existing){
       const script=document.createElement("script");
       script.src="/v26-6.js?v=26060";
       script.async=false;
       script.dataset.v266="1";
+      script.onload=loadV267Assets;
       document.head.appendChild(script);
+    }else{
+      loadV267Assets();
     }
   }
 
