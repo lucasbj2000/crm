@@ -79,8 +79,8 @@ assert.match(js,/restoreQrViewport/,"La pantalla debe volver a la misma tarjeta 
 assert.doesNotMatch(js,/new MutationObserver/,"La mejora no debe introducir observadores globales.");
 assert.match(loader,/\/v26-2\.css\?v=26021/,"V26.1.1 debe cargar los estilos V26.2.1.");
 assert.match(loader,/\/v26-2\.js\?v=26021/,"V26.1.1 debe cargar la lógica V26.2.1.");
-assert.match(sw,/whatsbot-mobile-v26-2-1-production-shell/,"La PWA debe renovar la caché para V26.2.1.");
+assert.match(sw,/whatsbot-mobile-v26-3-production-shell/,"La PWA debe conservar V26.2 y renovar caché para V26.3.");
 assert.match(sw,/"\/v26-2\.css"/,"La PWA debe cachear los estilos V26.2.");
 assert.match(sw,/"\/v26-2\.js"/,"La PWA debe cachear la lógica V26.2.");
 
-console.log("OK · V26.2.1 QR real por empresa, posición estable, historial completo y burbujas naturales validados.");
+console.log("OK · V26.2.1 historial completo, posición estable y burbujas naturales preservados en V26.3.");
