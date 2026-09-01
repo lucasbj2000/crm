@@ -2,18 +2,32 @@
   "use strict";
 
   // Compatibilidad V26.2.1 preservada: /v26-2.css?v=26021 · /v26-2.js?v=26021
-  // V26.7 agrega estabilidad visual sobre la sincronización silenciosa V26.6.
+  // V26.8 agrega soporte visual de mensajes editados sobre V26.7.
   const $=(selector,root=document)=>root?.querySelector?.(selector)||null;
   const $$=(selector,root=document)=>Array.from(root?.querySelectorAll?.(selector)||[]);
   let attempts=0;
 
-  function loadV267Assets(){
-    if(document.querySelector("script[data-v267]"))return;
+  function loadV268Assets(){
+    if(document.querySelector("script[data-v268]"))return;
     const script=document.createElement("script");
-    script.src="/v26-7.js?v=26070";
+    script.src="/v26-8.js?v=26080";
     script.async=false;
-    script.dataset.v267="1";
+    script.dataset.v268="1";
     document.head.appendChild(script);
+  }
+
+  function loadV267Assets(){
+    const existing=document.querySelector("script[data-v267]");
+    if(!existing){
+      const script=document.createElement("script");
+      script.src="/v26-7.js?v=26070";
+      script.async=false;
+      script.dataset.v267="1";
+      script.onload=loadV268Assets;
+      document.head.appendChild(script);
+    }else{
+      loadV268Assets();
+    }
   }
 
   function loadV266Assets(){
