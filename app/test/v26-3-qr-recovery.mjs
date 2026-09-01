@@ -66,7 +66,7 @@ const server=await readFile(path.join(appDir,"server.mjs"),"utf8");
 assert.match(ui,/#connect-button/,"V26.3 debe interceptar el botón principal Generar QR.");
 assert.match(ui,/stopImmediatePropagation\(\)/,"Debe impedir la doble ejecución del handler legacy.");
 assert.match(ui,/\/api\/connect/,"El controlador nuevo debe usar la ruta principal corregida.");
-assert.match(ui,/data-branch-action=\\"connect\\"/,"También debe controlar el QR de sucursales.");
+assert.match(ui,/data-branch-action="connect"/,"También debe controlar el QR de sucursales.");
 assert.match(ui,/restoreViewport/,"La generación del QR no debe mover al usuario hacia arriba.");
 assert.match(ui,/connection\.status==="qr"&&connection\.qr/,"La interfaz debe exigir un QR real antes de confirmar éxito.");
 assert.match(loader,/\/v26-3\.js\?v=26030/,"El CRM debe cargar el controlador QR V26.3.");
