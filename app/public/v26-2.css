@@ -1,0 +1,60 @@
+/* CRM V26.2 · Conversaciones: burbujas naturales sin alterar el layout */
+html.v26-ready #v2511-unified-inbox .v2511-message{
+  width:fit-content;
+  inline-size:fit-content;
+  max-width:min(82%,680px);
+  min-width:0;
+}
+html.v26-ready #v2511-unified-inbox .v2511-message.in{
+  margin-left:0;
+  margin-right:auto;
+}
+html.v26-ready #v2511-unified-inbox .v2511-message.out{
+  margin-left:auto;
+  margin-right:0;
+}
+html.v26-ready #v2511-unified-inbox .v2511-message p{
+  width:auto;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+html.v26-ready #v2511-unified-inbox .v2511-message small{
+  width:auto;
+  white-space:nowrap;
+}
+
+html.v26-ready #drawer-messages.message-list .message:not(.system){
+  width:fit-content;
+  inline-size:fit-content;
+  max-width:84%;
+  justify-self:start;
+  overflow-wrap:anywhere;
+}
+html.v26-ready #drawer-messages.message-list .message.outgoing{
+  justify-self:end;
+}
+html.v26-ready #drawer-messages.message-list .message.system{
+  width:auto;
+  max-width:100%;
+}
+
+html.v26-ready .v262-history-note{
+  position:sticky;
+  top:0;
+  z-index:2;
+  justify-self:stretch;
+  padding:5px 9px;
+  border-radius:999px;
+  background:rgba(255,255,255,.92);
+  color:#7b8580;
+  box-shadow:0 2px 8px rgba(18,22,33,.05);
+  font-size:8px;
+  font-weight:750;
+  text-align:center;
+}
+
+@media(max-width:760px){
+  html.v26-ready #v2511-unified-inbox .v2511-message{max-width:90%}
+  html.v26-ready #drawer-messages.message-list .message:not(.system){max-width:92%}
+}
