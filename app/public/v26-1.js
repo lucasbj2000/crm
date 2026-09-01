@@ -5,6 +5,23 @@
   const $$=(selector,root=document)=>Array.from(root?.querySelectorAll?.(selector)||[]);
   let attempts=0;
 
+  function loadV262Assets(){
+    if(!document.querySelector("link[data-v262]")){
+      const link=document.createElement("link");
+      link.rel="stylesheet";
+      link.href="/v26-2.css?v=26020";
+      link.dataset.v262="1";
+      document.head.appendChild(link);
+    }
+    if(!document.querySelector("script[data-v262]")){
+      const script=document.createElement("script");
+      script.src="/v26-2.js?v=26020";
+      script.async=false;
+      script.dataset.v262="1";
+      document.head.appendChild(script);
+    }
+  }
+
   function hourGreeting(){
     const hour=new Date().getHours();
     if(hour<12)return "Buenos días";
@@ -95,6 +112,7 @@
     document.documentElement.classList.add("v26-ready");
     document.documentElement.removeAttribute("data-v26-theme");
     document.documentElement.removeAttribute("data-v26-theme-mode");
+    loadV262Assets();
     waitForApp();
     window.addEventListener("crm:state",()=>setTimeout(refresh,0));
   }
