@@ -5,17 +5,34 @@
   const $$=(selector,root=document)=>Array.from(root?.querySelectorAll?.(selector)||[]);
   let attempts=0;
 
+  function loadV266Assets(){
+    if(!document.querySelector("link[data-v266]")){
+      const link=document.createElement("link");
+      link.rel="stylesheet";
+      link.href="/v26-6.css?v=26060";
+      link.dataset.v266="1";
+      document.head.appendChild(link);
+    }
+    if(!document.querySelector("script[data-v266]")){
+      const script=document.createElement("script");
+      script.src="/v26-6.js?v=26060";
+      script.async=false;
+      script.dataset.v266="1";
+      document.head.appendChild(script);
+    }
+  }
+
   function loadV262Assets(){
     if(!document.querySelector("link[data-v262]")){
       const link=document.createElement("link");
       link.rel="stylesheet";
-      link.href="/v26-2.css?v=26021";
+      link.href="/v26-2.css?v=26060";
       link.dataset.v262="1";
       document.head.appendChild(link);
     }
     if(!document.querySelector("script[data-v262]")){
       const script=document.createElement("script");
-      script.src="/v26-2.js?v=26021";
+      script.src="/v26-2.js?v=26060";
       script.async=false;
       script.dataset.v262="1";
       document.head.appendChild(script);
@@ -34,12 +51,16 @@
       link.dataset.v264="1";
       document.head.appendChild(link);
     }
-    if(!document.querySelector("script[data-v264]")){
+    const v264=document.querySelector("script[data-v264]");
+    if(!v264){
       const script=document.createElement("script");
       script.src="/v26-4.js?v=26040";
       script.async=false;
       script.dataset.v264="1";
+      script.onload=loadV266Assets;
       document.head.appendChild(script);
+    }else{
+      loadV266Assets();
     }
   }
 
