@@ -68,10 +68,14 @@ assert.equal(syntax.status,0,`El servidor generado V26.6 debe ser válido: ${syn
 
 const ui=await readFile(path.join(appDir,"public","v26-2.js"),"utf8");
 const silent=await readFile(path.join(appDir,"public","v26-6.js"),"utf8");
+const stable=await readFile(path.join(appDir,"public","v26-7.js"),"utf8");
 const css=await readFile(path.join(appDir,"public","v26-6.css"),"utf8");
 const loader=await readFile(path.join(appDir,"public","v26-1.js"),"utf8");
 const sw=await readFile(path.join(appDir,"public","sw.js"),"utf8");
 const server=await readFile(path.join(appDir,"server.mjs"),"utf8");
+
+const stableSyntax=spawnSync(process.execPath,["--check",path.join(appDir,"public","v26-7.js")],{encoding:"utf8"});
+assert.equal(stableSyntax.status,0,`V26.7 debe ser JavaScript válido: ${stableSyntax.stderr||stableSyntax.stdout}`);
 
 assert.match(ui,/data-v266-media-retry/,"Los archivos fallidos deben mostrar un botón de reintento.");
 assert.match(ui,/data-v266-open-media/,"Las imágenes deben poder abrirse desde la conversación.");
@@ -82,8 +86,16 @@ assert.match(silent,/backgroundStateObject/,"La capa silenciosa debe identificar
 assert.match(silent,/window\.renderAll=\(\)=>\{\}/,"El polling no debe re-renderizar todo el CRM.");
 assert.match(silent,/renderVisibleSlice/,"Solo la vista visible debe actualizarse después del polling.");
 assert.match(css,/v266-silent-sync/,"Las actualizaciones silenciosas deben desactivar animaciones transitorias.");
-assert.match(loader,/v26-6\.js\?v=26060/,"El loader debe cargar V26.6.");
-assert.match(sw,/whatsbot-mobile-v26-6-production-shell/,"La PWA debe renovar su caché a V26.6.");
-assert.match(server,/applyV266MediaRetryPatches/,"El servidor debe activar V26.6 después de V26.5.");
 
-console.log("OK · V26.6 multimedia recuperable y sincronización silenciosa validados.");
+assert.match(stable,/guardedIds=new Set\(\["v2511-messages","v2511-list","v2511-quick","drawer-messages","drawer-quick-reply"\]\)/,"V26.7 debe proteger la bandeja y el drawer contra reconstrucciones idénticas.");
+assert.match(stable,/if\(current===next\)return;/,"Una actualización con el mismo HTML debe ser un no-op real.");
+assert.match(stable,/messageIds=new Set\(\["v2511-messages","drawer-messages"\]\)/,"V26.7 debe proteger el scroll de ambos historiales.");
+assert.match(stable,/age>250&&forcingBottom&&\(composing\|\|userReadingAbove\)/,"El polling no debe forzar el scroll al fondo mientras el agente escribe o lee mensajes anteriores.");
+assert.match(stable,/animation:none!important;transition:none!important/,"La conversación debe permanecer visualmente estable durante sincronizaciones.");
+assert.match(loader,/v26-6\.js\?v=26060/,"El loader debe conservar V26.6.");
+assert.match(loader,/v26-7\.js\?v=26070/,"El loader debe cargar V26.7 después de V26.6.");
+assert.match(sw,/whatsbot-mobile-v26-7-production-shell/,"La PWA debe renovar su caché a V26.7.");
+assert.match(sw,/"\/v26-7\.js"/,"La PWA debe cachear el estabilizador V26.7.");
+assert.match(server,/applyV266MediaRetryPatches/,"El servidor debe conservar la recuperación multimedia V26.6.");
+
+console.log("OK · V26.7 multimedia recuperable y conversación visualmente estable validados.");
