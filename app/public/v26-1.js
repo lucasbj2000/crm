@@ -27,6 +27,20 @@
       script.dataset.v263="1";
       document.head.appendChild(script);
     }
+    if(!document.querySelector("link[data-v264]")){
+      const link=document.createElement("link");
+      link.rel="stylesheet";
+      link.href="/v26-4.css?v=26040";
+      link.dataset.v264="1";
+      document.head.appendChild(link);
+    }
+    if(!document.querySelector("script[data-v264]")){
+      const script=document.createElement("script");
+      script.src="/v26-4.js?v=26040";
+      script.async=false;
+      script.dataset.v264="1";
+      document.head.appendChild(script);
+    }
   }
 
   function hourGreeting(){
