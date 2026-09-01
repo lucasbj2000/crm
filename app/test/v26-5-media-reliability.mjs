@@ -53,8 +53,13 @@ patched=applyV265MediaReliabilityPatches(patched);
 assert.match(patched,/async function downloadIncomingAttachment\(item, info, sourceSocket = null\)/,"La descarga debe recibir el socket que originó el mensaje.");
 assert.match(patched,/lineSocket\(lineId\) \|\| branchSocket\(branchId\) \|\| whatsappSocket/,"Cada línea debe usar su propio socket para multimedia.");
 assert.match(patched,/for \(let attempt = 1; attempt <= 3; attempt \+= 1\)/,"La descarga debe reintentar antes de marcar el archivo como fallido.");
-assert.match(patched,/sourceSocket\.updateMediaMessage|socket\?\.updateMediaMessage/,"Debe pedir re-subida del archivo usando la sesión correcta.");
+assert.match(patched,/let workingItem = item/,"Los reintentos deben trabajar sobre el mensaje multimedia más reciente.");
+assert.match(patched,/const refreshed = await socket\.updateMediaMessage\(message\)/,"El reupload debe pedir a WhatsApp un mensaje actualizado.");
+assert.match(patched,/workingItem = usable/,"El mensaje actualizado debe reemplazar al mensaje viejo durante la descarga.");
+assert.match(patched,/return usable;/,"El callback reuploadRequest debe devolver el mensaje actualizado a Baileys.");
+assert.match(patched,/workingItem = await v265RefreshMedia\(workingItem, socket\)/,"Los reintentos manuales también deben conservar el mensaje refrescado.");
 assert.match(patched,/downloadContentFromMessage/,"Debe existir un segundo método de descarga por stream.");
+assert.match(patched,/v265StreamDownload\(workingItem, info\)/,"El fallback por stream debe usar el mensaje refrescado y no el original vencido.");
 assert.match(patched,/content\.imageMessage/,"Debe cubrir imágenes.");
 assert.match(patched,/content\.videoMessage/,"Debe cubrir videos.");
 assert.match(patched,/content\.audioMessage/,"Debe cubrir audios y notas de voz.");
@@ -76,4 +81,4 @@ assert.match(ui,/attachment\.kind === "video"/,"La conversación debe renderizar
 assert.match(ui,/attachment\.kind === "audio"/,"La conversación debe renderizar audios con controles.");
 assert.match(ui,/download=/,"Los documentos deben seguir disponibles para descarga.");
 
-console.log("OK · V26.5 descarga multimedia por línea, reintentos y render nativo validados.");
+console.log("OK · V26.5.1 reupload devuelve y reutiliza el mensaje multimedia actualizado de WhatsApp.");
