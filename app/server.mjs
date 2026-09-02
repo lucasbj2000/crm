@@ -18,6 +18,7 @@ import { applyV264PlatformReliabilityCatalogPatches } from "./lib/v26-4-platform
 import { applyV265MediaReliabilityPatches } from "./lib/v26-5-media-reliability-patches.mjs";
 import { applyV266MediaRetryPatches } from "./lib/v26-6-media-retry-patches.mjs";
 import { applyV268WhatsappEditPatches } from "./lib/v26-8-whatsapp-edit-patches.mjs";
+import { applyV269AccessControlPatches } from "./lib/v26-9-access-control-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -51,5 +52,6 @@ patched = applyV264PlatformReliabilityCatalogPatches(patched);
 patched = applyV265MediaReliabilityPatches(patched);
 patched = applyV266MediaRetryPatches(patched);
 patched = applyV268WhatsappEditPatches(patched);
+patched = applyV269AccessControlPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
