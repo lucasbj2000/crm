@@ -22,7 +22,7 @@ import { applyV264PlatformReliabilityCatalogPatches } from "../lib/v26-4-platfor
 import { applyV265MediaReliabilityPatches } from "../lib/v26-5-media-reliability-patches.mjs";
 import { applyV266MediaRetryPatches } from "../lib/v26-6-media-retry-patches.mjs";
 import { applyV268WhatsappEditPatches } from "../lib/v26-8-whatsapp-edit-patches.mjs";
-import { applyV269AccessControlPatches } from "../lib/v26-9-access-control-patches.mjs";
+import { applyV269AccessControlStable } from "../lib/v26-9-access-control-wrapper.mjs";
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const appDir=path.resolve(here,"..");
@@ -48,12 +48,13 @@ patched=applyV264PlatformReliabilityCatalogPatches(patched);
 patched=applyV265MediaReliabilityPatches(patched);
 patched=applyV266MediaRetryPatches(patched);
 patched=applyV268WhatsappEditPatches(patched);
-patched=applyV269AccessControlPatches(patched);
+patched=applyV269AccessControlStable(patched);
 
 assert.match(patched,/\["admin", "manager", "director"\]\.includes\(user\.role\)/,"Gerente y Director deben tener alcance global de sucursales.");
-assert.match(patched,/\["admin", "director", "manager", "supervisor"\]\.includes\(request\.body\?\.role\)/,"El rol Director debe aceptarse en altas y ediciones.");
+assert.match(patched,/\["admin", "director", "manager", "supervisor"\]\.includes\(request\.body\?\.role\)/,"El rol Director debe aceptarse en altas.");
+assert.match(patched,/user\.role = \["admin", "director", "manager", "supervisor"\]\.includes\(request\.body\.role\)/,"El rol Director debe aceptarse en ediciones.");
 assert.match(patched,/Esta configuración técnica es exclusiva del Administrador/,"El servidor debe bloquear configuración técnica a no administradores.");
-assert.match(patched,/^.*\/api\\\/\(connect\|disconnect\).*$/m,"La conexión WhatsApp principal debe considerarse técnica.");
+assert.match(patched,/\/api\\\/\(connect\|disconnect\)/,"La conexión WhatsApp principal debe considerarse técnica.");
 assert.match(patched,/v269TechnicalRequest\(request\)/,"Debe existir una barrera global para endpoints técnicos.");
 assert.match(patched,/botEnabled: user\.botEnabled !== false/,"El estado público debe incluir el switch de bot por usuario.");
 assert.match(patched,/aiHelpEnabled: user\.aiHelpEnabled !== false/,"El estado público debe incluir el switch de ayuda IA.");
@@ -64,6 +65,7 @@ assert.match(patched,/v269Owner\?\.botEnabled === false/,"El bot automático deb
 assert.match(patched,/user\.aiHelpEnabled===false/,"Las herramientas IA deben respetar el switch del empleado.");
 assert.match(patched,/modules: user \? v269EffectiveModules/,"Los módulos deben filtrarse en servidor por usuario.");
 assert.match(patched,/\["admin", "manager", "director"\]\.includes\(user\.role\) \|\| user\.permissions\?\.globalReports/,"Gerente y Director deben disponer de reporte global por política de rol.");
+assert.match(patched,/function v269AccessAnchorShim/,"El wrapper debe instalar un anclaje estable sin alterar la lógica de negocio.");
 
 const generated=path.join(appDir,".v26-9-generated-check.mjs");
 await writeFile(generated,patched,"utf8");
@@ -90,5 +92,5 @@ assert.match(loader,/\/v26-9\.css\?v=26090/,"El loader debe cargar el estilo V26
 assert.match(sw,/whatsbot-mobile-v26-9-production-shell/,"La PWA debe usar caché V26.9.");
 assert.match(sw,/"\/v26-9\.js"/,"La PWA debe cachear V26.9 JS.");
 assert.match(sw,/"\/v26-9\.css"/,"La PWA debe cachear V26.9 CSS.");
-assert.match(server,/applyV269AccessControlPatches/,"El servidor debe activar V26.9.");
+assert.match(server,/applyV269AccessControlStable/,"El servidor debe activar V26.9 mediante el wrapper estable.");
 console.log("OK · V26.9 gerente global, jefe por sucursal, director ejecutivo y permisos granulares validados.");
