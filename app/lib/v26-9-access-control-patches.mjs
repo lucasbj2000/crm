@@ -249,12 +249,17 @@ app.use((request, response, next) => {
 export function applyV269AccessControlPatches(source) {
   let patched = source;
 
-  patched = replaceAllRequired(
+  patched = replaceOnce(
     patched,
     '["admin", "manager", "supervisor"].includes(request.body?.role)',
     '["admin", "director", "manager", "supervisor"].includes(request.body?.role)',
-    "whitelist de rol en alta/edición",
-    2,
+    "rol Director en alta de usuario",
+  );
+  patched = replaceOnce(
+    patched,
+    'user.role = ["admin", "manager", "supervisor"].includes(request.body.role) ? request.body.role : "agent";',
+    'user.role = ["admin", "director", "manager", "supervisor"].includes(request.body.role) ? request.body.role : "agent";',
+    "rol Director en edición de usuario",
   );
 
   patched = replaceOnce(
