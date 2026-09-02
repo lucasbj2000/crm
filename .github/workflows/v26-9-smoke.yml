@@ -16,5 +16,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci --omit=dev
       - name: Validate V26.9 generator
         run: node app/test/v26-9-access-control.mjs
+      - name: Validate V26.9 runtime startup
+        shell: bash
+        run: |
+          set -u
+          TMP="$(mktemp -d)"
+          LOG="$TMP/server.log"
+          PORT=6199 WHATSBOT_HOST=127.0.0.1 WHATSBOT_DATA_DIR="$TMP/data" WHATSAPP_MOCK=1 NO_OPEN=1 CRM_TENANT_SLUG=v269-runtime CRM_PUBLIC_BASE_URL=http://127.0.0.1:6199 node app/server.mjs >"$LOG" 2>&1 &
+          PID=$!
+          OK=0
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:6199/api/health >/dev/null 2>&1; then OK=1; break; fi
+            if ! kill -0 "$PID" 2>/dev/null; then break; fi
+            sleep .2
+          done
+          cat "$LOG" || true
+          if kill -0 "$PID" 2>/dev/null; then kill "$PID" || true; wait "$PID" || true; fi
+          test "$OK" -eq 1
