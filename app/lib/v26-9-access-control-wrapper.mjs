@@ -13,6 +13,7 @@ export function applyV269AccessControlStable(source) {
     "  return next();",
     "}",
     "",
+    "",
   ].join("\n");
 
   return applyV269AccessControlPatches(source.slice(0, index) + shim + source.slice(index));
