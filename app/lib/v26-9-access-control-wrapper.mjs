@@ -1,5 +1,11 @@
 import { applyV269AccessControlPatches } from "./v26-9-access-control-patches.mjs";
 
+function replaceRequired(source, find, replacement, label) {
+  const index = source.indexOf(find);
+  if (index < 0) throw new Error(`V26.9 acceso: no se encontró ${label}.`);
+  return source.slice(0, index) + replacement + source.slice(index + find.length);
+}
+
 export function applyV269AccessControlStable(source) {
   const marker = "function userCanAccessBranch(user, branchId) {";
   const index = source.indexOf(marker);
@@ -17,6 +23,33 @@ export function applyV269AccessControlStable(source) {
   ].join("\n");
 
   let patched = applyV269AccessControlPatches(source.slice(0, index) + shim + source.slice(index));
+
+  // WhatsApp tiene dos capas distintas: conversación operativa y configuración técnica.
+  // La bandeja se puede delegar; QR, conexiones, tokens y configuración siguen siendo solo Admin.
+  patched = replaceRequired(
+    patched,
+    'const V269_SAFE_MODULES = Object.freeze([\n  "crm", "branches",',
+    'const V269_SAFE_MODULES = Object.freeze([\n  "crm", "whatsapp", "branches",',
+    "WhatsApp dentro de módulos operativos seguros",
+  );
+  patched = replaceRequired(
+    patched,
+    'const V269_TECHNICAL_MODULES = new Set([\n  "whatsapp", "data",',
+    'const V269_TECHNICAL_MODULES = new Set([\n  "data",',
+    "separación de WhatsApp del catálogo técnico",
+  );
+  patched = replaceRequired(
+    patched,
+    '    crm: true, attendance: true, stock: true,',
+    '    crm: true, whatsapp: true, attendance: true, stock: true,',
+    "WhatsApp operativo por defecto para agentes",
+  );
+  patched = replaceRequired(
+    patched,
+    '  result.whatsapp = false;\n',
+    "",
+    "eliminación del bloqueo global de la bandeja WhatsApp",
+  );
 
   const middlewareStartText = "app.use((request, response, next) => {\n  const pathname = String(request.path || \"\");\n  if (!pathname.startsWith(\"/api/\")) return next();\n  const user = currentUser(request);";
   const middlewareStart = patched.indexOf(middlewareStartText);
