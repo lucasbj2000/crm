@@ -1,3 +1,4 @@
+// Smoke aislado V26.9: este archivo valida también el servidor final generado.
 import assert from "node:assert/strict";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
