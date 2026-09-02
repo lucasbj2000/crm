@@ -21,6 +21,8 @@ jobs:
         run: npm ci --omit=dev
       - name: Validate V26.9 generator
         run: node app/test/v26-9-access-control.mjs
+      - name: Validate V26.9.2 branding contract
+        run: node app/test/v26-9-branding-access.mjs
       - name: Validate V26.9 runtime startup
         shell: bash
         run: |
