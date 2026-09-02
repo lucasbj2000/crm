@@ -2,18 +2,39 @@
   "use strict";
 
   // Compatibilidad V26.2.1 preservada: /v26-2.css?v=26021 · /v26-2.js?v=26021
-  // V26.8 agrega soporte visual de mensajes editados sobre V26.7.
+  // V26.9 agrega control granular de roles, sectores, bot e IA sobre V26.8.
   const $=(selector,root=document)=>root?.querySelector?.(selector)||null;
   const $$=(selector,root=document)=>Array.from(root?.querySelectorAll?.(selector)||[]);
   let attempts=0;
 
-  function loadV268Assets(){
-    if(document.querySelector("script[data-v268]"))return;
+  function loadV269Assets(){
+    if(!document.querySelector("link[data-v269]")){
+      const link=document.createElement("link");
+      link.rel="stylesheet";
+      link.href="/v26-9.css?v=26090";
+      link.dataset.v269="1";
+      document.head.appendChild(link);
+    }
+    if(document.querySelector("script[data-v269]"))return;
     const script=document.createElement("script");
-    script.src="/v26-8.js?v=26080";
+    script.src="/v26-9.js?v=26090";
     script.async=false;
-    script.dataset.v268="1";
+    script.dataset.v269="1";
     document.head.appendChild(script);
+  }
+
+  function loadV268Assets(){
+    const existing=document.querySelector("script[data-v268]");
+    if(!existing){
+      const script=document.createElement("script");
+      script.src="/v26-8.js?v=26080";
+      script.async=false;
+      script.dataset.v268="1";
+      script.onload=loadV269Assets;
+      document.head.appendChild(script);
+    }else{
+      loadV269Assets();
+    }
   }
 
   function loadV267Assets(){
