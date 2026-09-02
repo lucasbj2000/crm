@@ -51,6 +51,16 @@ export function applyV269AccessControlStable(source) {
     "eliminación del bloqueo global de la bandeja WhatsApp",
   );
 
+  // La identidad visual es información de presentación, no un permiso técnico.
+  // Debe poder LEERSE antes del login y por cualquier usuario para mantener logo/colores consistentes.
+  // Crear, modificar o eliminar branding continúa protegido como operación exclusiva del Administrador.
+  patched = replaceRequired(
+    patched,
+    '  if (/^\\/api\\/(settings|platform|branding|backup|data|admin-assistant)(?:\\/|$)/.test(pathname)) return true;',
+    '  if (/^\\/api\\/branding\\/(public|logo)$/.test(pathname) && method === "GET") return false;\n  if (/^\\/api\\/(settings|platform|branding|backup|data|admin-assistant)(?:\\/|$)/.test(pathname)) return true;',
+    "lectura pública de identidad visual",
+  );
+
   const middlewareStartText = "app.use((request, response, next) => {\n  const pathname = String(request.path || \"\");\n  if (!pathname.startsWith(\"/api/\")) return next();\n  const user = currentUser(request);";
   const middlewareStart = patched.indexOf(middlewareStartText);
   if (middlewareStart < 0) throw new Error("V26.9 acceso: no se encontró la barrera de seguridad generada.");
