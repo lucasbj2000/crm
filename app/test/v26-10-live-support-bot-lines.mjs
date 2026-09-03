@@ -1,0 +1,105 @@
+import assert from "node:assert/strict";
+import { readFile, rm, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { applyV24ServerPatches } from "../lib/v24-server-patches.mjs";
+import { applyV24CloudPatches } from "../lib/v24-cloud-patches.mjs";
+import { applyV241ServerPatches } from "../lib/v24-1-server-patches.mjs";
+import { applyV254ServerPatches } from "../lib/v25-4-server-patches.mjs";
+import { applyV257FormPatches } from "../lib/v25-7-form-patches.mjs";
+import { applyV256SecurityPatches } from "../lib/v25-6-security-patches.mjs";
+import { applyV258ReportAiPatches } from "../lib/v25-8-report-ai-patches.mjs";
+import { applyV259SupportPatches } from "../lib/v25-9-support-patches.mjs";
+import { applyV2510SocialPatches } from "../lib/v25-10-social-patches.mjs";
+import { applyV2511OmnichannelPatches } from "../lib/v25-11-omnichannel-patches.mjs";
+import { applyV2512SocialPlatformPatches } from "../lib/v25-12-social-platform-patches.mjs";
+import { applyV262WhatsappPatches } from "../lib/v26-2-whatsapp-patches.mjs";
+import { applyV263QrRecoveryPatches } from "../lib/v26-3-qr-recovery-patches.mjs";
+import { applyV264PlatformReliabilityCatalogPatches } from "../lib/v26-4-platform-reliability-catalog-patches.mjs";
+import { applyV265MediaReliabilityPatches } from "../lib/v26-5-media-reliability-patches.mjs";
+import { applyV266MediaRetryPatches } from "../lib/v26-6-media-retry-patches.mjs";
+import { applyV268WhatsappEditPatches } from "../lib/v26-8-whatsapp-edit-patches.mjs";
+import { applyV269AccessControlStable } from "../lib/v26-9-access-control-wrapper.mjs";
+import { applyV2610LiveSupportBotLinePatches } from "../lib/v26-10-live-support-bot-lines-patches.mjs";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const appDir = path.resolve(here, "..");
+function restoreGeneratedTemplates(source,startMarker,endMarker){const start=source.indexOf(startMarker),end=source.indexOf(endMarker,start+startMarker.length);assert.ok(start>=0&&end>start,`No se encontró ${startMarker}`);const block=source.slice(start,end).replaceAll("\\`","`").replaceAll("\\${","${");return source.slice(0,start)+block+source.slice(end);}
+
+const core = await readFile(path.join(appDir, "server-core.mjs"), "utf8");
+let patched = applyV24ServerPatches(core);
+patched = applyV24CloudPatches(patched);
+patched = applyV241ServerPatches(patched);
+patched = applyV254ServerPatches(patched);
+patched = restoreGeneratedTemplates(patched,"async function v24TranscribeMediaAttachment","async function maybeReplyWithBot");
+patched = restoreGeneratedTemplates(patched,'function v24ActiveObserverGrant','app.post("/api/deals/:id/transfer"');
+patched = applyV257FormPatches(patched);
+patched = applyV256SecurityPatches(patched);
+patched = applyV258ReportAiPatches(patched);
+patched = applyV259SupportPatches(patched);
+patched = applyV2510SocialPatches(patched);
+patched = applyV2511OmnichannelPatches(patched);
+patched = applyV2512SocialPlatformPatches(patched);
+patched = applyV262WhatsappPatches(patched);
+patched = applyV263QrRecoveryPatches(patched);
+patched = applyV264PlatformReliabilityCatalogPatches(patched);
+patched = applyV265MediaReliabilityPatches(patched);
+patched = applyV266MediaRetryPatches(patched);
+patched = applyV268WhatsappEditPatches(patched);
+patched = applyV269AccessControlStable(patched);
+patched = applyV2610LiveSupportBotLinePatches(patched);
+
+assert.match(patched,/app\.get\("\/api\/live-support\/agents", requireAdmin/,"Solo Admin debe listar usuarios para soporte en vivo.");
+assert.match(patched,/mode === "urgent" \? "active" : "requested"/,"Urgente debe iniciar activo y normal debe solicitar aprobación.");
+assert.match(patched,/soporte_vivo_urgente_iniciado/,"El acceso urgente debe quedar auditado.");
+assert.match(patched,/soporte_vivo_solicitado/,"La solicitud normal debe quedar auditada.");
+assert.match(patched,/soporte_vivo_aceptado/,"La aceptación del agente debe quedar auditada.");
+assert.match(patched,/soporte_vivo_finalizado/,"El fin del soporte debe quedar auditado.");
+assert.match(patched,/Content-Type", "text\/event-stream"/,"La vista en vivo debe usar un canal SSE dedicado.");
+assert.match(patched,/session\.agentUserId !== user\.id/,"Solo el agente objetivo puede publicar su telemetría.");
+assert.match(patched,/cleanText\(input\.html, 92000\)/,"La instantánea del CRM debe tener límite de tamaño.");
+assert.match(patched,/app\.post\("\/api\/whatsapp-lines\/:id\/bot-config", requireAdmin/,"La configuración del bot por número debe ser exclusiva del Admin.");
+assert.match(patched,/botConfig:v2610PublicBotConfig\(line\)/,"Cada línea pública debe exponer su configuración de bot sin secretos.");
+assert.match(patched,/v2610BotBaseInstructions\(deal\)/,"La respuesta automática debe usar instrucciones por número.");
+assert.match(patched,/model: v2610BotModelFor\(deal\)/,"La respuesta automática debe usar modelo por número.");
+assert.match(patched,/if \(!v2610BotCanReserveFor\(deal\)\)/,"La reserva automática debe respetar la configuración de la línea.");
+assert.match(patched,/!v2610BotFollowupEnabled\(deal\)/,"El seguimiento debe poder activarse o desactivarse por número.");
+assert.match(patched,/v2610BotFollowupMessage\(deal\)/,"El texto de seguimiento debe poder ser distinto por número.");
+
+const generated = path.join(appDir, ".v26-10-generated-check.mjs");
+await writeFile(generated, patched, "utf8");
+const syntax = spawnSync(process.execPath, ["--check", generated], { encoding: "utf8" });
+await rm(generated, { force: true });
+assert.equal(syntax.status, 0, `El servidor generado V26.10 debe ser válido: ${syntax.stderr || syntax.stdout}`);
+
+const ui = await readFile(path.join(appDir, "public", "v26-10.js"), "utf8");
+const css = await readFile(path.join(appDir, "public", "v26-10.css"), "utf8");
+const loader = await readFile(path.join(appDir, "public", "v26-1.js"), "utf8");
+const sw = await readFile(path.join(appDir, "public", "sw.js"), "utf8");
+const server = await readFile(path.join(appDir, "server.mjs"), "utf8");
+
+assert.match(ui,/Solicitar vista/,"Admin debe tener modo de solicitud con aprobación.");
+assert.match(ui,/Ingresar urgente/,"Admin debe tener modo urgente directo.");
+assert.match(ui,/Soporte urgente activo/,"El agente debe ver un indicador explícito en acceso urgente.");
+assert.match(ui,/No accede a otras aplicaciones ni al escritorio/,"La solicitud debe aclarar que el alcance es solo CRM.");
+assert.match(ui,/Solo CRM · sin acceso al escritorio del empleado/,"El visor del Admin debe mostrar el alcance limitado.");
+assert.match(ui,/new EventSource\(/,"La UI debe recibir cambios en vivo sin refrescar toda la página.");
+assert.match(ui,/input\[type='hidden'\]/,"La instantánea debe excluir campos ocultos.");
+assert.match(ui,/actual\.type === "password" \|\| actual\.type === "file"/,"Contraseñas y archivos deben quedar fuera de la instantánea.");
+assert.match(ui,/blockedSelector = "script,iframe,object,embed,video,audio,source/,"La vista remota debe sanear contenido ejecutable y multimedia embebido.");
+assert.doesNotMatch(ui,/new MutationObserver/,"V26.10 no debe reintroducir refrescos visuales por MutationObserver.");
+assert.match(ui,/Bots por número/,"Admin debe tener editor de bots por línea.");
+assert.match(ui,/v2610-bot-instructions/,"Cada número debe aceptar instrucciones propias.");
+assert.match(ui,/v2610-bot-tone/,"Cada número debe aceptar tono propio.");
+assert.match(ui,/v2610-bot-model/,"Cada número debe aceptar modelo propio.");
+assert.match(css,/v2610-agent-indicator/,"El indicador visible del soporte debe tener estilos propios.");
+assert.match(loader,/\/v26-10\.js\?v=26100/,"El loader debe cargar V26.10 JS.");
+assert.match(loader,/\/v26-10\.css\?v=26100/,"El loader debe cargar V26.10 CSS.");
+assert.match(sw,/whatsbot-mobile-v26-10-production-shell/,"La PWA debe renovar caché para V26.10.");
+assert.match(sw,/"\/v26-10\.js"/,"La PWA debe cachear V26.10 JS.");
+assert.match(sw,/"\/v26-10\.css"/,"La PWA debe cachear V26.10 CSS.");
+assert.match(server,/applyV2610LiveSupportBotLinePatches/,"El servidor debe activar V26.10.");
+
+console.log("OK · V26.10 soporte en vivo visible/auditado y bot independiente por número validados.");
