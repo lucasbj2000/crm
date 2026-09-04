@@ -22,6 +22,7 @@ import { applyV269AccessControlStable } from "./lib/v26-9-access-control-wrapper
 import { applyV2610LiveSupportBotLinePatches } from "./lib/v26-10-live-support-bot-lines-patches.mjs";
 import { applyV2611MessageReliabilityPatches } from "./lib/v26-11-message-reliability-patches.mjs";
 import { applyV26111MessageQueueSafetyPatches } from "./lib/v26-11-1-message-queue-safety-patches.mjs";
+import { applyV2613LiveSupportChatPatches } from "./lib/v26-13-live-support-chat-patches.mjs";
 import { applyV2612LiveSupportFluencyPatches } from "./lib/v26-12-live-support-fluency-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
@@ -60,6 +61,7 @@ patched = applyV269AccessControlStable(patched);
 patched = applyV2610LiveSupportBotLinePatches(patched);
 patched = applyV2611MessageReliabilityPatches(patched);
 patched = applyV26111MessageQueueSafetyPatches(patched);
+patched = applyV2613LiveSupportChatPatches(patched);
 patched = applyV2612LiveSupportFluencyPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
