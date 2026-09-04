@@ -2,24 +2,42 @@
   "use strict";
 
   // Compatibilidad V26.2.1 preservada: /v26-2.css?v=26021 · /v26-2.js?v=26021
-  // V26.10 agrega soporte en vivo visible/auditado y bot independiente por número.
+  // V26.14 retira soporte en vivo, conserva bots por número y prioriza rendimiento.
   const $=(selector,root=document)=>root?.querySelector?.(selector)||null;
   const $$=(selector,root=document)=>Array.from(root?.querySelectorAll?.(selector)||[]);
   let attempts=0;
+
+  function loadV2614Assets(){
+    if(!document.querySelector("link[data-v2614]")){
+      const link=document.createElement("link");
+      link.rel="stylesheet";
+      link.href="/v26-14.css?v=26140";
+      link.dataset.v2614="1";
+      document.head.appendChild(link);
+    }
+    if(document.querySelector("script[data-v2614]"))return;
+    const script=document.createElement("script");
+    script.src="/v26-14.js?v=26140";
+    script.async=false;
+    script.dataset.v2614="1";
+    document.head.appendChild(script);
+  }
 
   function loadV2610Assets(){
     if(!document.querySelector("link[data-v2610]")){
       const link=document.createElement("link");
       link.rel="stylesheet";
-      link.href="/v26-10.css?v=26100";
+      link.href="/v26-10.css?v=26140";
       link.dataset.v2610="1";
       document.head.appendChild(link);
     }
-    if(document.querySelector("script[data-v2610]"))return;
+    const existing=document.querySelector("script[data-v2610]");
+    if(existing){loadV2614Assets();return;}
     const script=document.createElement("script");
-    script.src="/v26-10.js?v=26100";
+    script.src="/v26-10.js?v=26140";
     script.async=false;
     script.dataset.v2610="1";
+    script.onload=loadV2614Assets;
     document.head.appendChild(script);
   }
 
