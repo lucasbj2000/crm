@@ -24,6 +24,7 @@ import { applyV268WhatsappEditPatches } from "../lib/v26-8-whatsapp-edit-patches
 import { applyV269AccessControlStable } from "../lib/v26-9-access-control-wrapper.mjs";
 import { applyV2610LiveSupportBotLinePatches } from "../lib/v26-10-live-support-bot-lines-patches.mjs";
 import { applyV2611MessageReliabilityPatches } from "../lib/v26-11-message-reliability-patches.mjs";
+import { applyV26111MessageQueueSafetyPatches } from "../lib/v26-11-1-message-queue-safety-patches.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(here, "..");
@@ -52,6 +53,7 @@ patched = applyV268WhatsappEditPatches(patched);
 patched = applyV269AccessControlStable(patched);
 patched = applyV2610LiveSupportBotLinePatches(patched);
 patched = applyV2611MessageReliabilityPatches(patched);
+patched = applyV26111MessageQueueSafetyPatches(patched);
 
 assert.match(patched,/const v2611IncomingQueues = new Map\(\)/,"Los mensajes entrantes deben serializarse por línea.");
 assert.match(patched,/const v2611OutgoingQueues = new Map\(\)/,"Los mensajes salientes deben serializarse por línea.");
@@ -68,14 +70,17 @@ assert.match(patched,/no pudo procesarse tras 4 intentos/,"Un fallo entrante def
 assert.doesNotMatch(patched,/return result\.messages\?\.\[0\]\?\.id\|\|makeId\("cloudmessage"\)/,"Cloud API no debe fabricar un ID cuando el proveedor no confirmó el envío.");
 assert.doesNotMatch(patched,/return sent\?\.key\?\.id\|\|makeId\("qrmessage"\)/,"QR no debe fabricar un ID cuando el proveedor no confirmó el envío.");
 assert.doesNotMatch(patched,/messages\.upsert[\s\S]{0,180}void handleIncomingMessages\(/,"messages.upsert no debe saltarse la cola confiable.");
+assert.doesNotMatch(patched,/next\.finally\(/,"Las colas no deben crear rechazos secundarios no manejados.");
+assert.match(patched,/void next\.then\(/,"La limpieza de colas debe manejar tanto éxito como error.");
 
 const generated = path.join(appDir, ".v26-11-generated-check.mjs");
 await writeFile(generated, patched, "utf8");
 const syntax = spawnSync(process.execPath, ["--check", generated], { encoding: "utf8" });
 await rm(generated, { force: true });
-assert.equal(syntax.status, 0, `El servidor generado V26.11 debe ser válido: ${syntax.stderr || syntax.stdout}`);
+assert.equal(syntax.status, 0, `El servidor generado V26.11.1 debe ser válido: ${syntax.stderr || syntax.stdout}`);
 
 const server = await readFile(path.join(appDir, "server.mjs"), "utf8");
 assert.match(server,/applyV2611MessageReliabilityPatches/,"El servidor debe activar V26.11.");
+assert.match(server,/applyV26111MessageQueueSafetyPatches/,"El servidor debe activar la seguridad V26.11.1.");
 
-console.log("OK · V26.11 mensajería confiable: colas, reintentos, deduplicación y acuses validados.");
+console.log("OK · V26.11.1 mensajería confiable: colas, reintentos, deduplicación, acuses y limpieza segura validados.");
