@@ -1,4 +1,4 @@
-name: V26.11 reliable messaging smoke
+name: V26.12 live support smoke
 
 on:
   push:
@@ -27,13 +27,15 @@ jobs:
         run: node app/test/v26-10-live-support-bot-lines.mjs
       - name: Validate V26.11 reliable messaging
         run: node app/test/v26-11-message-reliability.mjs
-      - name: Validate V26.11 runtime startup
+      - name: Validate V26.12 live support fluency
+        run: node app/test/v26-12-live-support-fluency.mjs
+      - name: Validate V26.12 runtime startup
         shell: bash
         run: |
           set -u
           TMP="$(mktemp -d)"
           LOG="$TMP/server.log"
-          PORT=6199 WHATSBOT_HOST=127.0.0.1 WHATSBOT_DATA_DIR="$TMP/data" WHATSAPP_MOCK=1 NO_OPEN=1 CRM_TENANT_SLUG=v2611-runtime CRM_PUBLIC_BASE_URL=http://127.0.0.1:6199 node app/server.mjs >"$LOG" 2>&1 &
+          PORT=6199 WHATSBOT_HOST=127.0.0.1 WHATSBOT_DATA_DIR="$TMP/data" WHATSAPP_MOCK=1 NO_OPEN=1 CRM_TENANT_SLUG=v2612-runtime CRM_PUBLIC_BASE_URL=http://127.0.0.1:6199 node app/server.mjs >"$LOG" 2>&1 &
           PID=$!
           OK=0
           for i in $(seq 1 30); do
