@@ -20,6 +20,7 @@ import { applyV266MediaRetryPatches } from "./lib/v26-6-media-retry-patches.mjs"
 import { applyV268WhatsappEditPatches } from "./lib/v26-8-whatsapp-edit-patches.mjs";
 import { applyV269AccessControlStable } from "./lib/v26-9-access-control-wrapper.mjs";
 import { applyV2610LiveSupportBotLinePatches } from "./lib/v26-10-live-support-bot-lines-patches.mjs";
+import { applyV2611MessageReliabilityPatches } from "./lib/v26-11-message-reliability-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -55,5 +56,6 @@ patched = applyV266MediaRetryPatches(patched);
 patched = applyV268WhatsappEditPatches(patched);
 patched = applyV269AccessControlStable(patched);
 patched = applyV2610LiveSupportBotLinePatches(patched);
+patched = applyV2611MessageReliabilityPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
