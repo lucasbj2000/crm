@@ -1,0 +1,11 @@
+/* V26.14 · rendimiento y fluidez */
+html.v2614-fast-ui{scroll-behavior:auto}
+html.v2614-fast-ui .deal-list,html.v2614-fast-ui #v2511-list,html.v2614-fast-ui #v2511-messages,html.v2614-fast-ui #drawer-messages,html.v2614-fast-ui .table-scroll{contain:layout style}
+html.v2614-fast-ui .deal-card,html.v2614-fast-ui .v2511-row,html.v2614-fast-ui .news-card,html.v2614-fast-ui .quick-reply-card,html.v2614-fast-ui .activity-row{content-visibility:auto;contain-intrinsic-size:72px}
+html.v2614-fast-ui .v2511-messages img,html.v2614-fast-ui #drawer-messages img{content-visibility:auto}
+html.v2614-fast-ui .view-motion-enter{animation-duration:.16s!important}
+html.v2614-fast-ui .motion-enter{animation-duration:.18s!important}
+html.v2614-fast-ui .toast,html.v2614-fast-ui dialog,html.v2614-fast-ui .drawer{will-change:auto!important}
+html.v2614-low-motion .motion-enter,html.v2614-low-motion .view-motion-enter,html.v2614-low-motion .attention-pop,html.v2614-low-motion .activity-swap,html.v2614-low-motion .preview-pop{animation:none!important}
+html.v2614-low-motion .deal-card,html.v2614-low-motion .nav-item,html.v2614-low-motion button,html.v2614-low-motion .drawer,html.v2614-low-motion dialog{transition-duration:.08s!important}
+@media(max-width:720px){html.v2614-fast-ui .deal-card,html.v2614-fast-ui .v2511-row{contain-intrinsic-size:66px}}
