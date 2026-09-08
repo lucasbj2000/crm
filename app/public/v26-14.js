@@ -29,4 +29,12 @@
   if ((navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) || (navigator.deviceMemory && navigator.deviceMemory <= 2)) {
     root.classList.add("v2614-low-motion");
   }
+
+  if (!document.querySelector("script[data-v2617]")) {
+    const script = document.createElement("script");
+    script.src = "/v26-17.js?v=26170";
+    script.async = false;
+    script.dataset.v2617 = "1";
+    document.head.appendChild(script);
+  }
 })();
