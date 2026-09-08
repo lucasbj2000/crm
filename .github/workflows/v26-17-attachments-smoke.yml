@@ -1,0 +1,46 @@
+name: V26.17 message attachments smoke
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  attachments:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci --omit=dev
+      - name: Syntax checks
+        run: |
+          node --check app/public/v26-14.js
+          node --check app/public/v26-17.js
+          node --check app/public/sw.js
+          bash -n scripts/deploy-vps.sh
+      - name: Validate V26.17 message attachments
+        run: node app/test/v26-17-message-attachments.mjs
+      - name: Validate generated runtime startup
+        shell: bash
+        run: |
+          set -u
+          TMP="$(mktemp -d)"
+          LOG="$TMP/server.log"
+          PORT=6201 WHATSBOT_HOST=127.0.0.1 WHATSBOT_DATA_DIR="$TMP/data" WHATSAPP_MOCK=1 NO_OPEN=1 CRM_TENANT_SLUG=v2617-runtime CRM_PUBLIC_BASE_URL=http://127.0.0.1:6201 node app/server.mjs >"$LOG" 2>&1 &
+          PID=$!
+          OK=0
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:6201/api/health >/dev/null 2>&1; then OK=1; break; fi
+            if ! kill -0 "$PID" 2>/dev/null; then break; fi
+            sleep .2
+          done
+          cat "$LOG" || true
+          if kill -0 "$PID" 2>/dev/null; then kill "$PID" || true; wait "$PID" || true; fi
+          test "$OK" -eq 1
