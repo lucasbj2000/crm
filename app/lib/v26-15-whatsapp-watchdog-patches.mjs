@@ -67,7 +67,7 @@ async function v2615WithTimeout(promise, timeoutMs, label) {
     return await Promise.race([
       Promise.resolve(promise),
       new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error(`${label} excedió ${timeoutMs} ms`)), timeoutMs);
+        timer = setTimeout(() => reject(new Error(String(label) + " excedió " + String(timeoutMs) + " ms")), timeoutMs);
       }),
     ]);
   } finally {
@@ -116,7 +116,7 @@ function v2615StartWatch({ health, label, getSocket, getStatus, recover }) {
       v2615Touch(health);
     } catch (error) {
       health.failures = Number(health.failures || 0) + 1;
-      console.warn(`[whatsapp watchdog ${label}] probe ${health.failures}/${v2615FailureLimit}:`, error?.message || error);
+      console.warn("[whatsapp watchdog " + String(label) + "] probe " + String(health.failures) + "/" + String(v2615FailureLimit) + ":", error?.message || error);
       if (health.failures >= v2615FailureLimit) {
         await recover(cleanText(error?.message || "la sesión dejó de responder", 240));
       }
@@ -165,7 +165,7 @@ async function v2615RecoverPrimary(reason = "conexión sin respuesta") {
     lastError = "Recuperando automáticamente una conexión de WhatsApp sin respuesta…";
     data.sync.lastActiveAt = timestamp();
     await store.save().catch(() => {});
-    addLog(`WhatsApp: se detectó una sesión conectada pero sin respuesta (${cleanText(reason, 180)}). Recuperando automáticamente…`, "warning");
+    addLog("WhatsApp: se detectó una sesión conectada pero sin respuesta (" + cleanText(reason, 180) + "). Recuperando automáticamente…", "warning");
     await v2615SoftClose(oldSocket);
     await v2615Delay(650);
     connectionStatus = "disconnected";
@@ -174,7 +174,7 @@ async function v2615RecoverPrimary(reason = "conexión sin respuesta") {
   } catch (error) {
     connectionStatus = "error";
     lastError = cleanText(error?.message || "Falló la recuperación automática de WhatsApp.", 300);
-    addLog(`WhatsApp: ${lastError}`, "warning");
+    addLog("WhatsApp: " + lastError, "warning");
   } finally {
     health.recovering = false;
   }
@@ -196,7 +196,7 @@ async function v2615RecoverBranch(branchId, reason = "conexión sin respuesta") 
     runtime.syncing = true;
     runtime.status = "starting";
     runtime.error = "Recuperando automáticamente una conexión sin respuesta…";
-    addLog(`${getBranch(branchId)?.name || "Sucursal"}: sesión de WhatsApp sin respuesta (${cleanText(reason, 180)}). Recuperando automáticamente…`, "warning");
+    addLog((getBranch(branchId)?.name || "Sucursal") + ": sesión de WhatsApp sin respuesta (" + cleanText(reason, 180) + "). Recuperando automáticamente…", "warning");
     await v2615SoftClose(oldSocket);
     await v2615Delay(650);
     runtime.status = "disconnected";
@@ -205,7 +205,7 @@ async function v2615RecoverBranch(branchId, reason = "conexión sin respuesta") 
   } catch (error) {
     runtime.status = "error";
     runtime.error = cleanText(error?.message || "Falló la recuperación automática de WhatsApp.", 300);
-    addLog(`${getBranch(branchId)?.name || "Sucursal"}: ${runtime.error}`, "warning");
+    addLog((getBranch(branchId)?.name || "Sucursal") + ": " + runtime.error, "warning");
   } finally {
     health.recovering = false;
   }
@@ -229,7 +229,7 @@ async function v2615RecoverLine(lineId, reason = "conexión sin respuesta") {
     runtime.syncing = true;
     runtime.status = "starting";
     runtime.error = "Recuperando automáticamente una conexión sin respuesta…";
-    addLog(`${line.name}: sesión de WhatsApp sin respuesta (${cleanText(reason, 180)}). Recuperando automáticamente…`, "warning");
+    addLog(line.name + ": sesión de WhatsApp sin respuesta (" + cleanText(reason, 180) + "). Recuperando automáticamente…", "warning");
     await v2615SoftClose(oldSocket);
     await v2615Delay(650);
     runtime.status = "disconnected";
@@ -238,7 +238,7 @@ async function v2615RecoverLine(lineId, reason = "conexión sin respuesta") {
   } catch (error) {
     runtime.status = "error";
     runtime.error = cleanText(error?.message || "Falló la recuperación automática de WhatsApp.", 300);
-    addLog(`${line.name}: ${runtime.error}`, "warning");
+    addLog(line.name + ": " + runtime.error, "warning");
   } finally {
     health.recovering = false;
   }
@@ -269,7 +269,6 @@ export function applyV2615WhatsappWatchdogPatches(source) {
     "health por línea",
   );
 
-  // Principal: cada evento confirma actividad real; el probe detecta el estado conectado-pero-mudo.
   patched = replaceOnce(
     patched,
     'whatsappSocket.ev.on("messages.upsert", (event) => {\n        void handleIncomingMessages(event, { branchId: primaryBranchId() });\n      });',
@@ -317,7 +316,6 @@ export function applyV2615WhatsappWatchdogPatches(source) {
     "detener watchdog al desvincular principal",
   );
 
-  // Sucursales legacy adicionales.
   patched = replaceOnce(
     patched,
     'runtime.socket.ev.on("messages.upsert", (event) => { void handleIncomingMessages(event, { branchId }); });',
@@ -365,7 +363,6 @@ export function applyV2615WhatsappWatchdogPatches(source) {
     "detener watchdog al desvincular sucursal",
   );
 
-  // Líneas QR independientes.
   patched = replaceOnce(
     patched,
     'runtime.socket.ev.on("messages.upsert",(event)=>{void handleIncomingMessages(event,{branchId:line.branchId,lineId:line.id});});',
@@ -413,7 +410,6 @@ export function applyV2615WhatsappWatchdogPatches(source) {
     "detener watchdog al desvincular línea",
   );
 
-  // Exponer salud del transporte para diagnóstico sin revelar credenciales.
   patched = replaceFirstAfter(
     patched,
     'function connectionState() {',
