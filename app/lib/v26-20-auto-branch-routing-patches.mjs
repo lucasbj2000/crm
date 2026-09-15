@@ -15,7 +15,8 @@ function replaceFirstAfter(source, startMarker, find, replacement, label) {
 }
 
 function replaceRegexOnce(source, pattern, replacement, label) {
-  const matches = [...source.matchAll(new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`))];
+  const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+  const matches = [...source.matchAll(new RegExp(pattern.source, flags))];
   if (matches.length !== 1) throw new Error(`V26.20 derivación automática: ${label} esperaba 1 coincidencia y encontró ${matches.length}.`);
   return source.replace(pattern, replacement);
 }
@@ -41,14 +42,13 @@ function v2620ActiveBranches() {
 function v2620ExplicitTransferRequest(text = "") {
   const value = v2620Normalize(text);
   if (!value) return false;
-  return /(otra sucursal|otra sede|otro local|cambiar de sucursal|cambiar sucursal|derivame|derivar|derivacion|transferir|transferime|pasame con|comunicarme con|atenderme en|quiero otra sucursal|prefiero otra sucursal)/i.test(value);
+  return /(otra sucursal|otra sede|otro local|cambiar de sucursal|cambiar sucursal|derivame|derivar|derivacion|transferir|transferime|pasame con|comunicarme con|atenderme en|quiero otra sucursal|prefiero otra sucursal|sucursal.*(cerca|cercana|proxima))/i.test(value);
 }
 
 function v2620BranchMention(text = "") {
   const value = v2620Normalize(text);
   if (!value) return null;
-  const branches = v2620ActiveBranches();
-  return branches.find((branch) => {
+  return v2620ActiveBranches().find((branch) => {
     const candidates = [branch.name, branch.code, branch.city]
       .map(v2620Normalize)
       .filter((item) => item.length >= 3);
@@ -83,23 +83,23 @@ async function v2620Geocode(value) {
   if (!query) return null;
   const key = v2620Normalize(query);
   const cached = v2620GeoCache.get(key);
-  if (cached && Date.now() - cached.at < 24 * 60 * 60 * 1000) return cached.point;
+  if (cached && Date.now() - cached.at < 86400000) return cached.point;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 3500);
   timer.unref?.();
   try {
     const params = new URLSearchParams({
-      q: `${query}, Paraguay`,
+      q: query + ", Paraguay",
       format: "jsonv2",
       limit: "1",
       countrycodes: "py",
       "accept-language": "es",
     });
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+    const response = await fetch("https://nominatim.openstreetmap.org/search?" + params.toString(), {
       headers: { "User-Agent": "ICIIA-CRM/26.20 automatic-branch-routing" },
       signal: controller.signal,
     });
-    if (!response.ok) throw new Error(`Geocodificación HTTP ${response.status}`);
+    if (!response.ok) throw new Error("Geocodificación HTTP " + response.status);
     const rows = await response.json();
     const row = Array.isArray(rows) ? rows[0] : null;
     const lat = Number(row?.lat);
@@ -116,9 +116,13 @@ async function v2620Geocode(value) {
 }
 
 async function v2620BranchPoint(branch) {
-  const lat = Number(branch?.weatherLatitude);
-  const lon = Number(branch?.weatherLongitude);
-  if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon };
+  const hasLat = branch?.weatherLatitude !== null && branch?.weatherLatitude !== undefined && branch?.weatherLatitude !== "";
+  const hasLon = branch?.weatherLongitude !== null && branch?.weatherLongitude !== undefined && branch?.weatherLongitude !== "";
+  if (hasLat && hasLon) {
+    const lat = Number(branch.weatherLatitude);
+    const lon = Number(branch.weatherLongitude);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon };
+  }
   const place = [branch?.address, branch?.city].filter(Boolean).join(", ") || branch?.name || "";
   return v2620Geocode(place);
 }
@@ -156,7 +160,8 @@ function v2620ClientCity(deal, text = "") {
   const client = findClient(data, deal?.clientId);
   const stored = normalizeCityName(client?.city || "");
   if (stored) return stored;
-  const labelled = cleanText(text, 160).match(/(?:ciudad|soy de|estoy en|vivo en|me encuentro en)\s*[:\-]?\s*([A-Za-zÁÉÍÓÚÑáéíóúñ .'-]{3,80})/i)?.[1] || "";
+  const match = cleanText(text, 160).match(/(?:ciudad|soy de|estoy en|vivo en|me encuentro en)\s*[:\-]?\s*([A-Za-zÁÉÍÓÚÑáéíóúñ .'-]{3,80})/i);
+  const labelled = match?.[1] || "";
   if (labelled) return normalizeCityName(labelled);
   if (deal?.v2620CityAskedAt && v2620LooksLikeCityAnswer(text)) return normalizeCityName(text);
   return "";
@@ -183,17 +188,15 @@ function v2620MarkSameBranchSelected(deal, branch) {
 async function v2620AskCity(deal, text = "") {
   if (!deal) return true;
   const asked = Date.parse(deal.v2620CityAskedAt || 0) || 0;
-  if (Date.now() - asked < 2 * 60 * 1000) return true;
+  if (Date.now() - asked < 120000) return true;
   deal.v2620CityAskedAt = timestamp();
   deal.updatedAt = timestamp();
-  const alreadyExplainedNeed = cleanText(text, 500).length > 18 && !/^(hola|buenas|buen dia|buenas tardes|buenas noches)/i.test(v2620Normalize(text));
+  const normalized = v2620Normalize(text);
+  const alreadyExplainedNeed = cleanText(text, 500).length > 18 && !/^(hola|buenas|buen dia|buenas tardes|buenas noches)/i.test(normalized);
   const message = alreadyExplainedNeed
     ? "Para derivarte automáticamente a la sucursal más cercana, ¿en qué ciudad te encontrás? No hace falta que elijas un número de sucursal."
     : "Para ubicarte con la sucursal más cercana, ¿en qué ciudad te encontrás? También contame qué necesitás y voy adelantando tu consulta. No hace falta que elijas un número de sucursal.";
-  try { await sendBotMessage(deal, message, "branch-selector"); }
-  catch (error) {
-    if (error?.code !== "BOT_HUMAN_HANDOFF") throw error;
-  }
+  await sendBotMessage(deal, message, "branch-selector");
   await store.save();
   return true;
 }
@@ -207,6 +210,13 @@ async function v2620MaybeAutoRouteBranch(deal, text = "", { created = false, for
   const pendingSelection = deal.branchSelection?.status === "pending";
   const unattended = !v2620HasHumanReply(deal) && (created || deal.stage === STAGES.NEW || !deal.ownerUserId || pendingSelection);
   if (!forceSelection && !explicit && !unattended) return false;
+
+  if (explicit && deal.botHumanHandoff === true) {
+    deal.botHumanHandoff = false;
+    deal.botActive = true;
+    deal.botMode = "auto";
+    deal.botPauseReason = "";
+  }
 
   const client = findClient(data, deal.clientId);
   let city = v2620ClientCity(deal, text);
@@ -249,20 +259,9 @@ async function v2620MaybeAutoRouteBranch(deal, text = "", { created = false, for
     deal.v2620RoutingCity = city || targetBranch.city || "";
     deal.v2620RoutingReason = explicit ? "Solicitud expresa del cliente" : "Sucursal más cercana según ciudad";
 
-    // Si el cliente pidió expresamente otra sucursal después de una intervención humana,
-    // el cambio de sucursal vuelve a habilitar el bot únicamente para la transición.
-    if (explicit && deal.botHumanHandoff === true) {
-      deal.botHumanHandoff = false;
-      deal.botActive = true;
-      deal.botMode = "auto";
-      deal.botPauseReason = "";
-    }
-
     const targetDeal = await v212RouteSelectedBranch(deal, targetBranch);
     if (!targetDeal || targetDeal.id === deal.id) return false;
 
-    // La sucursal destino debe recibirlo como NUEVO INGRESO. No heredamos un responsable:
-    // el primer agente que responda/tome la conversación se convierte en responsable.
     targetDeal.ownerUserId = null;
     targetDeal.ownerName = "";
     targetDeal.assignedUserId = null;
@@ -285,7 +284,8 @@ async function v2620MaybeAutoRouteBranch(deal, text = "", { created = false, for
       at: timestamp(),
     };
     targetDeal.updatedAt = timestamp();
-    addActivity(data, `${deal.name || client?.name || "Cliente"}: derivación automática a ${targetBranch.name}${city ? ` por ubicación en ${normalizeCityName(city)}` : ""}. Quedó como nuevo ingreso sin responsable.`, "success");
+    const routingDetail = (deal.name || client?.name || "Cliente") + ": derivación automática a " + targetBranch.name + (city ? " por ubicación en " + normalizeCityName(city) : "") + ". Quedó como nuevo ingreso sin responsable.";
+    addActivity(data, routingDetail, "success");
     recordAuditEvent(null, "derivacion_automatica_sucursal_cercana", {
       sourceDealId: deal.id,
       targetDealId: targetDeal.id,
@@ -310,7 +310,7 @@ async function v2620RouteIncomingOrBot(deal, text = "", { created = false, lineE
     }
     return false;
   } catch (error) {
-    addLog(`Derivación automática: ${cleanText(error?.message || error, 300)}`, "warning");
+    addLog("Derivación automática: " + cleanText(error?.message || error, 300), "warning");
     if (data.settings.botEnabled && lineEnabled !== false && deal.botActive && deal.botHumanHandoff !== true && text) {
       await maybeReplyWithBot(deal, text).catch(() => {});
     }
@@ -325,14 +325,14 @@ export function applyV2620AutoBranchRoutingPatches(source) {
   patched = replaceOnce(
     patched,
     "async function maybeHandleBranchSelection(deal, text) {",
-    `${AUTO_ROUTING_HELPERS.trim()}\n\nasync function maybeHandleBranchSelection(deal, text) {`,
+    AUTO_ROUTING_HELPERS.trim() + "\n\nasync function maybeHandleBranchSelection(deal, text) {",
     "helpers antes de selección de sucursal",
   );
 
   patched = replaceRegexOnce(
     patched,
     /async function maybeHandleBranchSelection\(deal, text\) \{[\s\S]*?\n\}/,
-    `async function maybeHandleBranchSelection(deal, text) {\n  if (deal?.branchSelection?.status !== "pending") return false;\n  return v2620MaybeAutoRouteBranch(deal, text, { forceSelection: true });\n}`,
+    'async function maybeHandleBranchSelection(deal, text) {\n  if (deal?.branchSelection?.status !== "pending") return false;\n  return v2620MaybeAutoRouteBranch(deal, text, { forceSelection: true });\n}',
     "selector numérico legacy",
   );
 
@@ -347,7 +347,7 @@ export function applyV2620AutoBranchRoutingPatches(source) {
     patched,
     "async function v212RouteSelectedBranch(sourceDeal, targetBranch) {",
     "  targetDeal.botActive = false;",
-    "  targetDeal.botActive = true;\n  targetDeal.botHumanHandoff = false;\n  targetDeal.botMode = \"auto\";\n  targetDeal.botPauseReason = \"\";",
+    '  targetDeal.botActive = true;\n  targetDeal.botHumanHandoff = false;\n  targetDeal.botMode = "auto";\n  targetDeal.botPauseReason = "";',
     "bot activo en destino",
   );
 
@@ -362,15 +362,15 @@ export function applyV2620AutoBranchRoutingPatches(source) {
   patched = replaceFirstAfter(
     patched,
     "async function v212RouteSelectedBranch(sourceDeal, targetBranch) {",
-    "      const intro = `Hola${sourceDeal.contactPersonName ? ` ${sourceDeal.contactPersonName}` : \"\"}. Soy del equipo de ${targetBranch.name}. Recibimos tu consulta y continuamos desde acá.`;",
-    "      const intro = `Hola${sourceDeal.contactPersonName ? ` ${sourceDeal.contactPersonName}` : \"\"}. Te derivamos al equipo de ${targetBranch.name}${sourceDeal.v2620RoutingCity ? ` por tu ubicación en ${normalizeCityName(sourceDeal.v2620RoutingCity)}` : \"\"}. Ya tenemos el contexto de tu consulta. Mientras un agente toma la conversación, puedo seguir ayudándote por acá.`;",
+    '      const intro = `Hola${sourceDeal.contactPersonName ? ` ${sourceDeal.contactPersonName}` : ""}. Soy del equipo de ${targetBranch.name}. Recibimos tu consulta y continuamos desde acá.`;',
+    '      const intro = "Hola" + (sourceDeal.contactPersonName ? " " + sourceDeal.contactPersonName : "") + ". Te derivamos al equipo de " + targetBranch.name + (sourceDeal.v2620RoutingCity ? " por tu ubicación en " + normalizeCityName(sourceDeal.v2620RoutingCity) : "") + ". Ya tenemos el contexto de tu consulta. Mientras un agente toma la conversación, puedo seguir ayudándote por acá.";',
     "mensaje de bienvenida desde la nueva sucursal",
   );
 
   patched = replaceRegexOnce(
     patched,
     /const messageId = await sendProviderText\(targetDeal, intro\);\n\s*recordHumanOutgoing\(data, \{ jid: targetDeal\.jid, name: targetDeal\.name, text: intro, messageId, userId: targetOwner\?\.id \|\| null, userName: targetOwner\?\.name \|\| targetBranch\.name, branchId: targetBranch\.id, lineId: targetLine\.id \}\);\n\s*targetDeal\.stage = STAGES\.CONTACTED;\n\s*targetDeal\.updatedAt = timestamp\(\);/,
-    `const messageId = await sendProviderText(targetDeal, intro);\n      rememberSeen(messageId);\n      recordBotOutgoing(data, { deal: targetDeal, text: intro, messageId, origin: "branch-selector" });\n      targetDeal.stage = STAGES.NEW;\n      targetDeal.botActive = true;\n      targetDeal.botHumanHandoff = false;\n      targetDeal.botMode = "auto";\n      targetDeal.updatedAt = timestamp();`,
+    'const messageId = await sendProviderText(targetDeal, intro);\n      rememberSeen(messageId);\n      recordBotOutgoing(data, { deal: targetDeal, text: intro, messageId, origin: "branch-selector" });\n      targetDeal.stage = STAGES.NEW;\n      targetDeal.botActive = true;\n      targetDeal.botHumanHandoff = false;\n      targetDeal.botMode = "auto";\n      targetDeal.updatedAt = timestamp();',
     "bienvenida automática registrada como bot",
   );
 
