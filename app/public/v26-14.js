@@ -30,12 +30,27 @@
     root.classList.add("v2614-low-motion");
   }
 
+  function loadV26182() {
+    if (document.querySelector("script[data-v26182]")) return;
+    const script = document.createElement("script");
+    script.src = "/v26-18-2.js?v=26182";
+    script.async = false;
+    script.dataset.v26182 = "1";
+    document.head.appendChild(script);
+  }
+
   function loadV26181() {
-    if (document.querySelector("script[data-v26181]")) return;
+    const existing = document.querySelector("script[data-v26181]");
+    if (existing) {
+      loadV26182();
+      return;
+    }
     const script = document.createElement("script");
     script.src = "/v26-18-1.js?v=26181";
     script.async = false;
     script.dataset.v26181 = "1";
+    script.onload = loadV26182;
+    script.onerror = loadV26182;
     document.head.appendChild(script);
   }
 
@@ -50,10 +65,9 @@
     document.head.appendChild(script);
   } else if (existingV2617.dataset.v26181Chained !== "1") {
     existingV2617.dataset.v26181Chained = "1";
-    if (existingV2617.readyState === "complete") loadV26181();
-    else {
-      existingV2617.addEventListener("load", loadV26181, { once: true });
-      setTimeout(loadV26181, 1200);
-    }
+    existingV2617.addEventListener("load", loadV26181, { once: true });
+    setTimeout(loadV26181, 250);
+  } else {
+    loadV26181();
   }
 })();
