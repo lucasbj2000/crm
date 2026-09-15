@@ -22,7 +22,6 @@ import { applyV269AccessControlStable } from "./lib/v26-9-access-control-wrapper
 import { applyV2610LiveSupportBotLinePatches } from "./lib/v26-10-live-support-bot-lines-patches.mjs";
 import { applyV2611MessageReliabilityPatches } from "./lib/v26-11-message-reliability-patches.mjs";
 import { applyV26111MessageQueueSafetyPatches } from "./lib/v26-11-1-message-queue-safety-patches.mjs";
-import { applyV2614PerformancePatches } from "./lib/v26-14-performance-patches.mjs";
 import { applyV2615WhatsappWatchdogPatches } from "./lib/v26-15-whatsapp-watchdog-patches.mjs";
 import { applyV2616NewContactIntakePatches } from "./lib/v26-16-new-contact-intake-patches.mjs";
 import { applyV2617ChatRefreshPatches } from "./lib/v26-17-chat-refresh-patches.mjs";
@@ -40,9 +39,14 @@ function restoreGeneratedTemplates(source, startMarker, endMarker) {
   return source.slice(0, start) + block + source.slice(end);
 }
 
+// Primero estabilizamos el drawer de conversación en el app.js físico.
+// Recién después cargamos V26.14, porque ese módulo genera en memoria la versión
+// optimizada que realmente se sirve en /app.js. Si se importaba antes, el navegador
+// seguía recibiendo el bundle anterior aunque el archivo en disco ya estuviera corregido.
 const publicAppSource = await readFile(publicAppPath, "utf8");
 const patchedPublicApp = applyV2617ChatRefreshPatches(publicAppSource);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
+const { applyV2614PerformancePatches } = await import("./lib/v26-14-performance-patches.mjs");
 
 const source = await readFile(corePath, "utf8");
 let patched = applyV24ServerPatches(source);
