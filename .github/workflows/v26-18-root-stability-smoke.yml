@@ -1,0 +1,42 @@
+name: V26.18 root stability smoke
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+      - "fix/**"
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  v2618:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax
+        run: |
+          node --check gateway/lib/v26-18-always-on-patches.mjs
+          node --check gateway/v25-gateway.mjs
+          node --check gateway/test/v26-18-always-on.mjs
+          node --check app/lib/v26-14-performance-patches.mjs
+          node --check app/test/v26-18-root-ui.mjs
+          bash -n start-vps.sh
+          bash -n scripts/deploy-vps.sh
+      - name: Gateway always-on contracts
+        run: node gateway/test/v26-18-always-on.mjs
+      - name: Frontend incremental render contracts
+        run: node app/test/v26-18-root-ui.mjs
+      - name: Regression V26.14 performance
+        run: node app/test/v26-14-performance.mjs
+      - name: Regression gateway security
+        run: node gateway/test/v25-6-security.mjs
+      - name: Regression tenant reliability
+        run: node gateway/test/v26-4-tenant-reliability.mjs
