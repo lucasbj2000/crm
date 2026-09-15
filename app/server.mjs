@@ -25,6 +25,7 @@ import { applyV26111MessageQueueSafetyPatches } from "./lib/v26-11-1-message-que
 import { applyV2615WhatsappWatchdogPatches } from "./lib/v26-15-whatsapp-watchdog-patches.mjs";
 import { applyV2616NewContactIntakePatches } from "./lib/v26-16-new-contact-intake-patches.mjs";
 import { applyV2617ChatRefreshPatches } from "./lib/v26-17-chat-refresh-patches.mjs";
+import { applyV2620AutoBranchRoutingPatches } from "./lib/v26-20-auto-branch-routing-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -75,5 +76,6 @@ patched = applyV26111MessageQueueSafetyPatches(patched);
 patched = applyV2614PerformancePatches(patched);
 patched = applyV2615WhatsappWatchdogPatches(patched);
 patched = applyV2616NewContactIntakePatches(patched);
+patched = applyV2620AutoBranchRoutingPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
