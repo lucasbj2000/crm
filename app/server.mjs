@@ -25,10 +25,12 @@ import { applyV26111MessageQueueSafetyPatches } from "./lib/v26-11-1-message-que
 import { applyV2614PerformancePatches } from "./lib/v26-14-performance-patches.mjs";
 import { applyV2615WhatsappWatchdogPatches } from "./lib/v26-15-whatsapp-watchdog-patches.mjs";
 import { applyV2616NewContactIntakePatches } from "./lib/v26-16-new-contact-intake-patches.mjs";
+import { applyV2617ChatRefreshPatches } from "./lib/v26-17-chat-refresh-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
 const generatedPath = path.join(appDir, ".server-v24.generated.mjs");
+const publicAppPath = path.join(appDir, "public", "app.js");
 
 function restoreGeneratedTemplates(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -37,6 +39,10 @@ function restoreGeneratedTemplates(source, startMarker, endMarker) {
   const block = source.slice(start, end).replaceAll("\\`", "`").replaceAll("\\${", "${");
   return source.slice(0, start) + block + source.slice(end);
 }
+
+const publicAppSource = await readFile(publicAppPath, "utf8");
+const patchedPublicApp = applyV2617ChatRefreshPatches(publicAppSource);
+if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
 
 const source = await readFile(corePath, "utf8");
 let patched = applyV24ServerPatches(source);
