@@ -28,7 +28,7 @@ import { applyV26111MessageQueueSafetyPatches } from "../lib/v26-11-1-message-qu
 import { applyV2614PerformancePatches } from "../lib/v26-14-performance-patches.mjs";
 import { applyV2615WhatsappWatchdogPatches } from "../lib/v26-15-whatsapp-watchdog-patches.mjs";
 import { applyV2616NewContactIntakePatches } from "../lib/v26-16-new-contact-intake-patches.mjs";
-import { applyV2620AutoBranchRoutingPatches } from "../lib/v26-20-auto-branch-routing-patches.mjs";
+import { applyV2620AutoBranchRoutingStable } from "../lib/v26-20-auto-branch-routing-wrapper.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(here, "..");
@@ -68,7 +68,7 @@ patched = applyV26111MessageQueueSafetyPatches(patched);
 patched = applyV2614PerformancePatches(patched);
 patched = applyV2615WhatsappWatchdogPatches(patched);
 patched = applyV2616NewContactIntakePatches(patched);
-patched = applyV2620AutoBranchRoutingPatches(patched);
+patched = applyV2620AutoBranchRoutingStable(patched);
 
 assert.match(patched, /v2620NearestBranchForCity/, "Debe calcular la sucursal más cercana según ciudad.");
 assert.match(patched, /nominatim\.openstreetmap\.org/, "Debe poder geocodificar ciudades paraguayas cuando no hay coincidencia exacta.");
@@ -80,7 +80,7 @@ assert.match(patched, /targetDeal\.ownerUserId = null/, "La sucursal destino deb
 assert.match(patched, /targetDeal\.stage = STAGES\.NEW/, "La derivación debe entrar como nuevo ingreso.");
 assert.match(patched, /targetDeal\.botActive = true/, "El bot debe seguir activo en la sucursal destino mientras ningún agente tome el caso.");
 assert.match(patched, /recordBotOutgoing\(data, \{ deal: targetDeal/, "La bienvenida de la nueva línea debe registrarse como bot, no como respuesta humana.");
-assert.match(patched, /v2620RouteIncomingOrBot\(deal,text,\{created,lineEnabled:line\.botEnabled!==false\}\)/, "Cada nuevo mensaje debe evaluar primero la derivación automática.");
+assert.match(patched, /v2620RouteIncomingOrBot\(deal,v24BotText\|\|text,\{created,lineEnabled:line\.botEnabled!==false\}\)/, "Cada nuevo mensaje debe evaluar primero la derivación automática conservando la comprensión multimedia V24.");
 assert.match(patched, /app\.post\("\/api\/deals\/:id\/transfer"/, "La derivación manual debe seguir disponible.");
 
 const generated = path.join(appDir, ".v26-20-generated-check.mjs");
