@@ -1,0 +1,33 @@
+name: V26.18.1 fetch stability smoke
+
+on:
+  push:
+    branches:
+      - main
+      - "fix/v26-18-1-fetch-stability"
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax
+        run: |
+          node --check app/public/v26-18-1.js
+          node --check app/public/v26-14.js
+          node --check app/public/sw.js
+          node --check gateway/lib/v26-18-1-runtime-stability-patches.mjs
+          node --check gateway/v25-gateway.mjs
+      - name: Frontend fetch stability
+        run: node app/test/v26-18-1-fetch-stability.mjs
+      - name: Gateway runtime stability
+        run: node gateway/test/v26-18-1-runtime-stability.mjs
