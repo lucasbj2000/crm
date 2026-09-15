@@ -6,6 +6,7 @@ import { applyV255GatewayPatches } from "./lib/v25-5-gateway-patches.mjs";
 import { applyV256GatewaySecurityPatches } from "./lib/v25-6-gateway-security-patches.mjs";
 import { applyV2512GatewaySocialPlatformPatches } from "./lib/v25-12-social-platform-patches.mjs";
 import { applyV264TenantReliabilityPatches } from "./lib/v26-4-tenant-reliability-patches.mjs";
+import { applyV2618GatewayAlwaysOnPatches } from "./lib/v26-18-always-on-patches.mjs";
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const corePath=path.join(here,"gateway.mjs");
@@ -16,5 +17,6 @@ patched=applyV255GatewayPatches(patched);
 patched=applyV256GatewaySecurityPatches(patched);
 patched=applyV2512GatewaySocialPlatformPatches(patched);
 patched=applyV264TenantReliabilityPatches(patched);
+patched=applyV2618GatewayAlwaysOnPatches(patched);
 await writeFile(generatedPath,patched,"utf8");
 await import(`${pathToFileURL(generatedPath).href}?v25=${Date.now()}`);
