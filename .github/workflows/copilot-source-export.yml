@@ -1,0 +1,233 @@
+name: Copilot source export
+
+on:
+  push:
+    branches:
+      - copilot-source-export-20260915
+
+permissions:
+  contents: read
+
+jobs:
+  export-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Build redacted consolidated source export
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from __future__ import annotations
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          ROOT = Path.cwd()
+          OUT = ROOT / "copilot-source-export"
+          OUT.mkdir(exist_ok=True)
+
+          # Keep parts manageable for AI file readers while never splitting a source file.
+          PART_LIMIT = 1_800_000
+
+          EXCLUDED_DIR_NAMES = {"node_modules", ".git", "dist", "build"}
+          BINARY_EXTS = {
+              ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".bmp", ".tif", ".tiff",
+              ".pdf", ".zip", ".gz", ".tgz", ".tar", ".7z", ".rar", ".woff", ".woff2", ".ttf", ".otf",
+              ".mp3", ".wav", ".ogg", ".m4a", ".mp4", ".mov", ".avi", ".webm", ".sqlite", ".db", ".bin",
+              ".exe", ".dll", ".so", ".dylib", ".class", ".jar", ".pyc"
+          }
+
+          # Keys whose values must never be exported verbatim.
+          SECRET_KEY_RE = re.compile(
+              r"(?i)(secret|token|password|passwd|pwd|api[_-]?key|private[_-]?key|client[_-]?secret|access[_-]?token|refresh[_-]?token|auth[_-]?token|webhook[_-]?secret|signing[_-]?key|connection[_-]?string)"
+          )
+          ASSIGN_RE = re.compile(r"^(\s*)([A-Za-z_][A-Za-z0-9_.-]*)(\s*[:=]\s*)(.*)$")
+          JSON_SECRET_RE = re.compile(
+              r'''(?i)(["'](?:secret|token|password|passwd|pwd|api[_-]?key|private[_-]?key|client[_-]?secret|access[_-]?token|refresh[_-]?token|auth[_-]?token|webhook[_-]?secret|signing[_-]?key|connection[_-]?string)["']\s*:\s*)(["'])(.*?)(\2)'''
+          )
+          BEARER_RE = re.compile(r"(?i)(authorization\s*[:=]\s*[\"']?bearer\s+)[A-Za-z0-9._~+/=-]+")
+          PEM_RE = re.compile(
+              r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----.*?-----END (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----",
+              re.S,
+          )
+
+          def tracked_files():
+              raw = subprocess.check_output(["git", "ls-files", "-z"])
+              return [p.decode("utf-8", "surrogateescape") for p in raw.split(b"\0") if p]
+
+          def excluded_path(path: str) -> bool:
+              parts = Path(path).parts
+              if any(p in EXCLUDED_DIR_NAMES for p in parts):
+                  return True
+              if Path(path).suffix.lower() in BINARY_EXTS:
+                  return True
+              return False
+
+          def read_text(path: Path):
+              data = path.read_bytes()
+              if b"\x00" in data:
+                  return None
+              try:
+                  return data.decode("utf-8")
+              except UnicodeDecodeError:
+                  try:
+                      return data.decode("latin-1")
+                  except Exception:
+                      return None
+
+          def redact_env_like(text: str) -> str:
+              out = []
+              for line in text.splitlines(keepends=True):
+                  ending = "\n" if line.endswith("\n") else ""
+                  body = line[:-1] if ending else line
+                  m = ASSIGN_RE.match(body)
+                  if m and SECRET_KEY_RE.search(m.group(2)):
+                      out.append(f"{m.group(1)}{m.group(2)}{m.group(3)}***REDACTED***{ending}")
+                  else:
+                      out.append(line)
+              return "".join(out)
+
+          def redact_secrets(path: str, text: str) -> str:
+              # .env-style files: preserve variable names/structure, redact every value.
+              name = Path(path).name.lower()
+              if name == ".env" or name.startswith(".env.") or name.endswith(".env"):
+                  out = []
+                  for line in text.splitlines(keepends=True):
+                      ending = "\n" if line.endswith("\n") else ""
+                      body = line[:-1] if ending else line
+                      stripped = body.strip()
+                      if not stripped or stripped.startswith("#"):
+                          out.append(line)
+                          continue
+                      m = ASSIGN_RE.match(body)
+                      if m:
+                          out.append(f"{m.group(1)}{m.group(2)}{m.group(3)}***REDACTED***{ending}")
+                      else:
+                          out.append("***REDACTED***" + ending)
+                  text = "".join(out)
+              else:
+                  text = redact_env_like(text)
+
+              text = JSON_SECRET_RE.sub(lambda m: f"{m.group(1)}{m.group(2)}***REDACTED***{m.group(4)}", text)
+              text = BEARER_RE.sub(r"\1***REDACTED***", text)
+              text = PEM_RE.sub("***REDACTED_PRIVATE_KEY***", text)
+              return text
+
+          all_paths = tracked_files()
+          selected = []
+          skipped_binary = []
+          for rel in all_paths:
+              if excluded_path(rel):
+                  skipped_binary.append(rel)
+                  continue
+              p = ROOT / rel
+              if not p.is_file():
+                  continue
+              text = read_text(p)
+              if text is None:
+                  skipped_binary.append(rel)
+                  continue
+              selected.append((rel, redact_secrets(rel, text)))
+
+          selected.sort(key=lambda x: x[0].lower())
+
+          # Build a tree only from files actually represented in the export.
+          def make_tree(paths):
+              root = {}
+              for path in paths:
+                  node = root
+                  parts = Path(path).parts
+                  for part in parts[:-1]:
+                      node = node.setdefault(part, {})
+                  node.setdefault("__files__", []).append(parts[-1])
+
+              lines = ["."]
+              def walk(node, prefix=""):
+                  dirs = sorted([k for k in node.keys() if k != "__files__"], key=str.lower)
+                  files = sorted(node.get("__files__", []), key=str.lower)
+                  entries = [(d, True) for d in dirs] + [(f, False) for f in files]
+                  for idx, (name, is_dir) in enumerate(entries):
+                      last = idx == len(entries) - 1
+                      branch = "└── " if last else "├── "
+                      lines.append(prefix + branch + name + ("/" if is_dir else ""))
+                      if is_dir:
+                          walk(node[name], prefix + ("    " if last else "│   "))
+              walk(root)
+              return "\n".join(lines)
+
+          tree_text = make_tree([p for p, _ in selected])
+          commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+
+          preamble = (
+              "ICIIA CRM - EXPORTACIÓN CONSOLIDADA PARA REVISIÓN TÉCNICA\n"
+              f"Commit fuente (main antes de la rama de exportación): d105d8b978c00a786421f6847d81db841b360ddb\n"
+              f"Commit de rama de exportación: {commit}\n"
+              "Repositorio: github.com/lucasbj2000/crm\n"
+              "NOTA DE SEGURIDAD: valores detectados como secretos fueron reemplazados por ***REDACTED***.\n"
+              "Se excluyeron binarios y directorios node_modules/.git/dist/build.\n\n"
+              "===== ÁRBOL DE DIRECTORIOS INCLUIDO =====\n"
+              f"{tree_text}\n"
+              "===== FIN ÁRBOL DE DIRECTORIOS =====\n\n"
+          )
+
+          blocks = []
+          for rel, text in selected:
+              blocks.append(
+                  f"===== INICIO ARCHIVO: {rel} =====\n"
+                  f"{text}"
+                  + ("\n" if text and not text.endswith("\n") else "")
+                  + f"===== FIN ARCHIVO: {rel} =====\n\n"
+              )
+
+          parts = []
+          current = preamble
+          current_files = []
+          for (rel, _), block in zip(selected, blocks):
+              if current_files and len(current.encode("utf-8")) + len(block.encode("utf-8")) > PART_LIMIT:
+                  parts.append((current, current_files))
+                  current = ""
+                  current_files = []
+              current += block
+              current_files.append(rel)
+          if current_files or current:
+              parts.append((current, current_files))
+
+          total = len(parts)
+          manifest_lines = [
+              "ICIIA CRM - MANIFIESTO DE EXPORTACIÓN PARA COPILOT",
+              f"Commit fuente: d105d8b978c00a786421f6847d81db841b360ddb",
+              f"Archivos de texto incluidos: {len(selected)}",
+              f"Archivos binarios/no textuales excluidos: {len(skipped_binary)}",
+              f"Partes: {total}",
+              "",
+          ]
+          for idx, (_, files) in enumerate(parts, 1):
+              filename = f"ICIIA_CRM_Codigo_Consolidado_parte_{idx}_de_{total}.txt"
+              manifest_lines.append(f"{filename}  |  {len(files)} archivos  |  {files[0] if files else '-'} -> {files[-1] if files else '-'}")
+
+          for idx, (body, files) in enumerate(parts, 1):
+              filename = OUT / f"ICIIA_CRM_Codigo_Consolidado_parte_{idx}_de_{total}.txt"
+              header = (
+                  f"PARTE {idx} DE {total}\n"
+                  "Leer las partes en orden numérico. Los archivos nunca fueron divididos entre partes.\n\n"
+              )
+              filename.write_text(header + body, encoding="utf-8")
+
+          (OUT / "MANIFIESTO.txt").write_text("\n".join(manifest_lines) + "\n", encoding="utf-8")
+          (OUT / "ARCHIVOS_EXCLUIDOS_BINARIOS.txt").write_text("\n".join(skipped_binary) + "\n", encoding="utf-8")
+
+          print("\n".join(manifest_lines))
+          PY
+
+      - name: Upload consolidated source
+        uses: actions/upload-artifact@v4
+        with:
+          name: iciia-crm-copilot-source-export
+          path: copilot-source-export/
+          if-no-files-found: error
+          retention-days: 7
