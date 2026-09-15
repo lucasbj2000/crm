@@ -21,6 +21,28 @@
     document.documentElement.classList.add("v267-stable-conversation");
   }
 
+  function drawerSemanticSignatureFromRoot(root){
+    const rows=Array.from(root?.children||[]).filter((node)=>node?.matches?.(".message,[data-v262-message]"));
+    if(!rows.length)return "";
+    return JSON.stringify(rows.map((node)=>{
+      const text=node.querySelector("p")?.textContent||"";
+      const footer=node.querySelector("small")?.textContent||"";
+      const origin=footer.includes(" · ")?footer.split(" · ")[0]:footer;
+      const image=node.querySelector("img")?.getAttribute("src")||"";
+      const media=node.querySelector("audio,video")?.getAttribute("src")||"";
+      const link=node.querySelector("a")?.getAttribute("href")||"";
+      const attachment=node.querySelector(".attachment,.v266-document")?.textContent||"";
+      const direction=node.classList.contains("outgoing")?"outgoing":node.classList.contains("system")?"system":"incoming";
+      return [direction,origin,text,image,media,link,attachment.trim()];
+    }));
+  }
+
+  function drawerSemanticSignatureFromHtml(html){
+    const template=document.createElement("template");
+    template.innerHTML=String(html||"");
+    return drawerSemanticSignatureFromRoot(template.content);
+  }
+
   function installInnerHtmlGuard(){
     const descriptor=Object.getOwnPropertyDescriptor(Element.prototype,"innerHTML");
     if(!descriptor?.get||!descriptor?.set||descriptor.set.__v267StableConversation)return;
@@ -32,6 +54,12 @@
       let current="";
       try{current=nativeGet.call(this);}catch{}
       if(current===next)return;
+
+      if(this.id==="drawer-messages"){
+        const currentSemantic=drawerSemanticSignatureFromRoot(this);
+        const nextSemantic=drawerSemanticSignatureFromHtml(next);
+        if(currentSemantic&&currentSemantic===nextSemantic)return;
+      }
 
       const top=Number(this.scrollTop||0);
       const height=Number(this.scrollHeight||0);
