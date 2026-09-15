@@ -24,6 +24,9 @@ assert.match(patch, /v2615Touch\(v2615HealthForIncoming\(lineId, branchId\), "me
 assert.match(patch, /v2615StartWatch\(\{health:v2615PrimaryHealth/, "La conexión principal debe iniciar su watchdog al abrir.");
 assert.match(patch, /watchdog: cloud \? null : v2615PublicHealth/, "La salud del watchdog debe quedar disponible para diagnóstico.");
 assert.match(server, /applyV2615WhatsappWatchdogPatches/, "server.mjs debe activar V26.15.");
-assert.ok(server.indexOf("applyV2615WhatsappWatchdogPatches") > server.indexOf("applyV2614PerformancePatches"), "El watchdog debe aplicarse después de las capas anteriores.");
+const performanceApplication = server.indexOf("patched = applyV2614PerformancePatches(patched)");
+const watchdogApplication = server.indexOf("patched = applyV2615WhatsappWatchdogPatches(patched)");
+assert.ok(performanceApplication >= 0, "server.mjs debe aplicar V26.14 antes del watchdog.");
+assert.ok(watchdogApplication > performanceApplication, "El watchdog debe aplicarse después de las capas anteriores.");
 
 console.log("OK · V26.15 watchdog de WhatsApp: probe real, doble fallo, actividad centralizada y autorrecuperación sin logout validados.");
