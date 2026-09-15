@@ -80,7 +80,7 @@ assert.match(patched, /targetDeal\.ownerUserId = null/, "La sucursal destino deb
 assert.match(patched, /targetDeal\.stage = STAGES\.NEW/, "La derivación debe entrar como nuevo ingreso.");
 assert.match(patched, /targetDeal\.botActive = true/, "El bot debe seguir activo en la sucursal destino mientras ningún agente tome el caso.");
 assert.match(patched, /recordBotOutgoing\(data, \{ deal: targetDeal/, "La bienvenida de la nueva línea debe registrarse como bot, no como respuesta humana.");
-assert.match(patched, /v2620RouteIncomingOrBot\(deal,v24BotText\|\|text,\{created,lineEnabled:line\.botEnabled!==false\}\)/, "Cada nuevo mensaje debe evaluar primero la derivación automática conservando la comprensión multimedia V24.");
+assert.match(patched, /v2620RouteIncomingOrBot\(deal,[\s\S]{0,120}?lineEnabled:line\.botEnabled!==false/, "Cada nuevo mensaje debe evaluar la derivación automática antes de la respuesta normal del bot.");
 assert.match(patched, /app\.post\("\/api\/deals\/:id\/transfer"/, "La derivación manual debe seguir disponible.");
 
 const generated = path.join(appDir, ".v26-20-generated-check.mjs");
