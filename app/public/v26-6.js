@@ -4,6 +4,7 @@
   const $=(selector,root=document)=>root?.querySelector?.(selector)||null;
   let backgroundStateObject=null;
   let lastLiveCompletedAt=0;
+  let lastLiveRevision=0;
   let installed=false;
 
   function appVisible(){
@@ -77,9 +78,15 @@
     const wrapped=async function(url,options={},...rest){
       const result=await original.call(this,url,options,...rest);
       const path=String(url||"").split("?")[0];
-      if(path==="/api/live")lastLiveCompletedAt=performance.now();
-      if(path==="/api/state"&&performance.now()-lastLiveCompletedAt<1800&&!(options&&options.__v266UserRefresh)){
-        backgroundStateObject=result;
+      if(path==="/api/live"){
+        lastLiveCompletedAt=performance.now();
+        lastLiveRevision=Number(result?.revision||0);
+      }
+      if(path==="/api/state"&&!(options&&options.__v266UserRefresh)){
+        const stateRevision=Number(result?.revision||0);
+        const recentLive=lastLiveCompletedAt>0&&performance.now()-lastLiveCompletedAt<30000;
+        const matchesBackgroundRevision=lastLiveRevision>0&&stateRevision>=lastLiveRevision;
+        if(recentLive&&matchesBackgroundRevision)backgroundStateObject=result;
       }
       return result;
     };
@@ -114,7 +121,11 @@
     const button=$("#refresh-button");
     if(!button||button.dataset.v266ManualRefresh==="1")return;
     button.dataset.v266ManualRefresh="1";
-    button.addEventListener("click",()=>{lastLiveCompletedAt=0;backgroundStateObject=null;},{capture:true});
+    button.addEventListener("click",()=>{
+      lastLiveCompletedAt=0;
+      lastLiveRevision=0;
+      backgroundStateObject=null;
+    },{capture:true});
   }
 
   function install(){
