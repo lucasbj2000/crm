@@ -23,16 +23,16 @@ function v2621EnsureBulkDealStyles() {
   if (document.querySelector("#v2621-bulk-deal-styles")) return;
   const style = document.createElement("style");
   style.id = "v2621-bulk-deal-styles";
-  style.textContent = `
-    .v2621-bulk-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;margin:0 0 12px;border:1px solid rgba(20,60,47,.14);border-radius:14px;background:var(--xp-surface,#fff);box-shadow:0 8px 24px rgba(20,40,32,.06)}
-    .v2621-bulk-bar[hidden]{display:none!important}.v2621-bulk-bar strong{margin-right:auto}.v2621-bulk-bar small{opacity:.7}
-    #crm-board.v2621-selecting .deal-card{position:relative;padding-left:46px;cursor:pointer}
-    .v2621-deal-check{display:none;position:absolute;left:14px;top:16px;width:22px;height:22px;border-radius:7px;border:2px solid rgba(20,60,47,.28);background:#fff;align-items:center;justify-content:center;font-size:14px;font-weight:900;line-height:1;z-index:2}
-    #crm-board.v2621-selecting .v2621-deal-check{display:flex}.deal-card.v2621-selected{outline:2px solid var(--green,#143c2f);outline-offset:-2px;background:color-mix(in srgb,var(--green,#143c2f) 6%,white)}
-    .deal-card.v2621-selected .v2621-deal-check{background:var(--green,#143c2f);border-color:var(--green,#143c2f);color:#fff}
-    #v2621-bulk-delete{background:#b42318;color:#fff;border-color:#b42318}#v2621-bulk-delete:disabled{opacity:.45;cursor:not-allowed}
-    @media(max-width:760px){.v2621-bulk-bar{align-items:stretch}.v2621-bulk-bar strong{width:100%}.v2621-bulk-bar .button{flex:1 1 auto}}
-  `;
+  style.textContent = [
+    ".v2621-bulk-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;margin:0 0 12px;border:1px solid rgba(20,60,47,.14);border-radius:14px;background:var(--xp-surface,#fff);box-shadow:0 8px 24px rgba(20,40,32,.06)}",
+    ".v2621-bulk-bar[hidden]{display:none!important}.v2621-bulk-bar strong{margin-right:auto}.v2621-bulk-bar small{opacity:.7}",
+    "#crm-board.v2621-selecting .deal-card{position:relative;padding-left:46px;cursor:pointer}",
+    ".v2621-deal-check{display:none;position:absolute;left:14px;top:16px;width:22px;height:22px;border-radius:7px;border:2px solid rgba(20,60,47,.28);background:#fff;align-items:center;justify-content:center;font-size:14px;font-weight:900;line-height:1;z-index:2}",
+    "#crm-board.v2621-selecting .v2621-deal-check{display:flex}.deal-card.v2621-selected{outline:2px solid var(--green,#143c2f);outline-offset:-2px;background:rgba(20,60,47,.06)}",
+    ".deal-card.v2621-selected .v2621-deal-check{background:var(--green,#143c2f);border-color:var(--green,#143c2f);color:#fff}",
+    "#v2621-bulk-delete{background:#b42318;color:#fff;border-color:#b42318}#v2621-bulk-delete:disabled{opacity:.45;cursor:not-allowed}",
+    "@media(max-width:760px){.v2621-bulk-bar{align-items:stretch}.v2621-bulk-bar strong{width:100%}.v2621-bulk-bar .button{flex:1 1 auto}}"
+  ].join("\n");
   document.head.appendChild(style);
 }
 
@@ -141,10 +141,8 @@ async function v2621DeleteSelectedDeals() {
   if (!v2621CanBulkDeleteDeals()) return showToast("Solo un administrador puede eliminar negociaciones masivamente.", "warning");
   const ids = Array.from(v2621SelectedDealIds);
   if (!ids.length) return;
-  const ok = await confirmAction(
-    "Eliminar negociaciones",
-    `Se eliminarán ${ids.length} negociacion${ids.length === 1 ? "" : "es"}. Esta acción no se puede deshacer. Las reservas activas asociadas volverán al stock disponible.`
-  );
+  const detail = "Se eliminarán " + ids.length + " negociación" + (ids.length === 1 ? "" : "es") + ". Esta acción no se puede deshacer. Las reservas activas asociadas volverán al stock disponible.";
+  const ok = await confirmAction("Eliminar negociaciones", detail);
   if (!ok) return;
   const button = document.querySelector("#v2621-bulk-delete");
   if (button) { button.disabled = true; button.textContent = "Eliminando…"; }
@@ -156,7 +154,9 @@ async function v2621DeleteSelectedDeals() {
     if (result?.state) setState(result.state);
     else await poll();
     v2621SyncBulkDealUi();
-    showToast(`${Number(result?.deletedCount || ids.length)} negociaciones eliminadas${Number(result?.restoredReservations || 0) ? ` · ${Number(result.restoredReservations)} reservas devueltas al stock` : ""}`);
+    let message = String(Number(result?.deletedCount || ids.length)) + " negociaciones eliminadas";
+    if (Number(result?.restoredReservations || 0)) message += " · " + String(Number(result.restoredReservations)) + " reservas devueltas al stock";
+    showToast(message);
   } catch (error) {
     showToast(error.message || "No se pudieron eliminar las negociaciones.", "warning");
   } finally {
@@ -253,10 +253,11 @@ export function applyV2621CoreUiPatches(source) {
 export function applyV2621InboxUiPatches(source) {
   if (source.includes(INBOX_MARKER)) return source;
   let patched = source;
+  const indentedHelpers = inboxHelpers.trim().split("\n").map((line) => "  " + line).join("\n");
   patched = replaceOnce(
     patched,
     "  let socialGridObserver = null;",
-    `  let socialGridObserver = null;\n${inboxHelpers.trim().split("\n").map((line) => `  ${line}`).join("\n")}`,
+    "  let socialGridObserver = null;\n" + indentedHelpers,
     "estado de autoscroll de bandeja",
   );
   patched = replaceOnce(
@@ -312,7 +313,7 @@ app.post("/api/deals/bulk-delete", requireAdmin, async (request, response, next)
       deletedCount: deletedIds.size,
       restoredReservations,
     }, actor?.branchId || null, "human");
-    addActivity(data, `${actor?.name || "Administrador"} eliminó ${deletedIds.size} negociación${deletedIds.size === 1 ? "" : "es"} de forma masiva.`, "warning");
+    addActivity(data, (actor?.name || "Administrador") + " eliminó " + deletedIds.size + " negociación" + (deletedIds.size === 1 ? "" : "es") + " de forma masiva.", "warning");
     await store.save();
     response.json({ ok: true, deletedCount: deletedIds.size, restoredReservations, state: stateResponse(request) });
   } catch (error) { next(error); }
