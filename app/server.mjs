@@ -27,6 +27,7 @@ import { applyV2616NewContactIntakePatches } from "./lib/v26-16-new-contact-inta
 import { applyV2617ChatRefreshPatches } from "./lib/v26-17-chat-refresh-patches.mjs";
 import { applyV2620AutoBranchRoutingStable } from "./lib/v26-20-auto-branch-routing-wrapper.mjs";
 import { applyV2621CoreUiPatches, applyV2621InboxUiPatches, applyV2621ServerPatches } from "./lib/v26-21-chat-scroll-bulk-deals-patches.mjs";
+import { applyV2623CoreUiPatches, applyV2623ServerPatches } from "./lib/v26-23-deal-amount-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -47,6 +48,7 @@ function restoreGeneratedTemplates(source, startMarker, endMarker) {
 const publicAppSource = await readFile(publicAppPath, "utf8");
 let patchedPublicApp = applyV2617ChatRefreshPatches(publicAppSource);
 patchedPublicApp = applyV2621CoreUiPatches(patchedPublicApp);
+patchedPublicApp = applyV2623CoreUiPatches(patchedPublicApp);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
 
 const publicInboxSource = await readFile(publicInboxPath, "utf8");
@@ -84,5 +86,6 @@ patched = applyV2615WhatsappWatchdogPatches(patched);
 patched = applyV2616NewContactIntakePatches(patched);
 patched = applyV2620AutoBranchRoutingStable(patched);
 patched = applyV2621ServerPatches(patched);
+patched = applyV2623ServerPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
