@@ -26,7 +26,7 @@ jobs:
           node --check app/server.mjs
       - name: Validate V26.21 behavior
         run: node app/test/v26-21-chat-scroll-bulk-deals.mjs
-      - name: Validate generated runtime startup
+      - name: Validate generated runtime and served bundles
         shell: bash
         run: |
           set -u
@@ -40,6 +40,10 @@ jobs:
             if ! kill -0 "$PID" 2>/dev/null; then break; fi
             sleep .2
           done
+          if test "$OK" -eq 1; then
+            curl -fsS http://127.0.0.1:6221/app.js | grep -q "V26.21 BULK_DEAL_DELETE_UI"
+            curl -fsS http://127.0.0.1:6221/v25-11.js | grep -q "V26.21 CHAT_ALWAYS_LATEST"
+          fi
           cat "$LOG" || true
           if kill -0 "$PID" 2>/dev/null; then kill "$PID" || true; wait "$PID" || true; fi
           test "$OK" -eq 1
