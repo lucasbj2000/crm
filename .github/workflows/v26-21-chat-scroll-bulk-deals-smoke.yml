@@ -41,8 +41,10 @@ jobs:
             sleep .2
           done
           if test "$OK" -eq 1; then
-            curl -fsS http://127.0.0.1:6221/app.js | grep -q "V26.21 BULK_DEAL_DELETE_UI"
-            curl -fsS http://127.0.0.1:6221/v25-11.js | grep -q "V26.21 CHAT_ALWAYS_LATEST"
+            curl -fsS http://127.0.0.1:6221/app.js -o "$TMP/app.js"
+            curl -fsS http://127.0.0.1:6221/v25-11.js -o "$TMP/v25-11.js"
+            grep -q "V26.21 BULK_DEAL_DELETE_UI" "$TMP/app.js"
+            grep -q "V26.21 CHAT_ALWAYS_LATEST" "$TMP/v25-11.js"
           fi
           cat "$LOG" || true
           if kill -0 "$PID" 2>/dev/null; then kill "$PID" || true; wait "$PID" || true; fi
