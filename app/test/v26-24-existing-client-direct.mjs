@@ -77,9 +77,11 @@ try {
   const phone = "+595981262424";
 
   await login(agentA.username, agentPassword);
-  state = await api("/api/clients", { method: "POST", body: { name: "Cliente Compartido", phone } });
-  const dealA = state.deals.find((deal) => deal.name === "Cliente Compartido" && deal.branchId === branchA.id);
-  assert(dealA?.ownerUserId === agentA.id, "La negociación inicial no quedó asignada al agente A.");
+  await api("/api/clients", { method: "POST", body: { name: "Cliente Compartido", phone } });
+  await login("admin", adminPassword);
+  state = await api("/api/state");
+  const dealA = state.deals.find((deal) => deal.name === "Cliente Compartido" && deal.branchId === branchA.id && deal.ownerUserId === agentA.id);
+  assert(dealA, "La negociación inicial no quedó guardada para el agente A en la sucursal A.");
   const clientId = dealA.clientId;
 
   await login(agentB.username, agentPassword);
