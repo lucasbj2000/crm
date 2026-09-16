@@ -28,6 +28,7 @@ import { applyV2617ChatRefreshPatches } from "./lib/v26-17-chat-refresh-patches.
 import { applyV2620AutoBranchRoutingStable } from "./lib/v26-20-auto-branch-routing-wrapper.mjs";
 import { applyV2621CoreUiPatches, applyV2621InboxUiPatches, applyV2621ServerPatches } from "./lib/v26-21-chat-scroll-bulk-deals-patches.mjs";
 import { applyV2623CoreUiPatches, applyV2623ServerPatches } from "./lib/v26-23-deal-amount-patches.mjs";
+import { applyV2624CoreUiPatches, applyV2624ServerPatches } from "./lib/v26-24-existing-client-direct-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -49,6 +50,7 @@ const publicAppSource = await readFile(publicAppPath, "utf8");
 let patchedPublicApp = applyV2617ChatRefreshPatches(publicAppSource);
 patchedPublicApp = applyV2621CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2623CoreUiPatches(patchedPublicApp);
+patchedPublicApp = applyV2624CoreUiPatches(patchedPublicApp);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
 
 const publicInboxSource = await readFile(publicInboxPath, "utf8");
@@ -87,5 +89,6 @@ patched = applyV2616NewContactIntakePatches(patched);
 patched = applyV2620AutoBranchRoutingStable(patched);
 patched = applyV2621ServerPatches(patched);
 patched = applyV2623ServerPatches(patched);
+patched = applyV2624ServerPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
