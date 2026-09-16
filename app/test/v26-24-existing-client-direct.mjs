@@ -78,7 +78,7 @@ try {
 
   await login(agentA.username, agentPassword);
   state = await api("/api/clients", { method: "POST", body: { name: "Cliente Compartido", phone } });
-  const dealA = state.deals.find((deal) => String(deal.phone || "").replace(/\D/g, "") === phone.replace(/\D/g, ""));
+  const dealA = state.deals.find((deal) => deal.name === "Cliente Compartido" && deal.branchId === branchA.id);
   assert(dealA?.ownerUserId === agentA.id, "La negociación inicial no quedó asignada al agente A.");
   const clientId = dealA.clientId;
 
