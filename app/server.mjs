@@ -26,11 +26,13 @@ import { applyV2615WhatsappWatchdogPatches } from "./lib/v26-15-whatsapp-watchdo
 import { applyV2616NewContactIntakePatches } from "./lib/v26-16-new-contact-intake-patches.mjs";
 import { applyV2617ChatRefreshPatches } from "./lib/v26-17-chat-refresh-patches.mjs";
 import { applyV2620AutoBranchRoutingStable } from "./lib/v26-20-auto-branch-routing-wrapper.mjs";
+import { applyV2621CoreUiPatches, applyV2621InboxUiPatches, applyV2621ServerPatches } from "./lib/v26-21-chat-scroll-bulk-deals-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
 const generatedPath = path.join(appDir, ".server-v24.generated.mjs");
 const publicAppPath = path.join(appDir, "public", "app.js");
+const publicInboxPath = path.join(appDir, "public", "v25-11.js");
 
 function restoreGeneratedTemplates(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -40,13 +42,17 @@ function restoreGeneratedTemplates(source, startMarker, endMarker) {
   return source.slice(0, start) + block + source.slice(end);
 }
 
-// Primero estabilizamos el drawer de conversación en el app.js físico.
-// Recién después cargamos V26.14, porque ese módulo genera en memoria la versión
-// optimizada que realmente se sirve en /app.js. Si se importaba antes, el navegador
-// seguía recibiendo el bundle anterior aunque el archivo en disco ya estuviera corregido.
+// Las capas que modifican los bundles públicos deben ejecutarse antes de cargar V26.14,
+// porque V26.14 captura y optimiza app.js/v25-11.js en memoria al importarse.
 const publicAppSource = await readFile(publicAppPath, "utf8");
-const patchedPublicApp = applyV2617ChatRefreshPatches(publicAppSource);
+let patchedPublicApp = applyV2617ChatRefreshPatches(publicAppSource);
+patchedPublicApp = applyV2621CoreUiPatches(patchedPublicApp);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
+
+const publicInboxSource = await readFile(publicInboxPath, "utf8");
+const patchedPublicInbox = applyV2621InboxUiPatches(publicInboxSource);
+if (patchedPublicInbox !== publicInboxSource) await writeFile(publicInboxPath, patchedPublicInbox, "utf8");
+
 const { applyV2614PerformancePatches } = await import("./lib/v26-14-performance-patches.mjs");
 
 const source = await readFile(corePath, "utf8");
@@ -77,5 +83,6 @@ patched = applyV2614PerformancePatches(patched);
 patched = applyV2615WhatsappWatchdogPatches(patched);
 patched = applyV2616NewContactIntakePatches(patched);
 patched = applyV2620AutoBranchRoutingStable(patched);
+patched = applyV2621ServerPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
