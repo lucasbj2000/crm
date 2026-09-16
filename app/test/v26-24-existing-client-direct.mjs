@@ -62,18 +62,20 @@ try {
 
   state = await api("/api/branches", { method: "POST", body: { name: "Sucursal B", code: "BRB", city: "San Lorenzo" } });
   const branchB = state.branches.find((branch) => branch.code === "BRB");
-  assert(branchB, "No se creó la segunda sucursal.");
+  const lineA = state.whatsappLines.find((line) => line.branchId === branchA.id && line.active !== false);
+  const lineB = state.whatsappLines.find((line) => line.branchId === branchB?.id && line.active !== false);
+  assert(branchB && lineA && lineB, "No se creó la segunda sucursal o faltan líneas de WhatsApp de prueba.");
 
-  const createUser = async (username, name, branchId) => {
-    state = await api("/api/users", { method: "POST", body: { username, name, password: agentPassword, role: "agent", branchId, clientDailyLimit: 50 } });
+  const createUser = async (username, name, branchId, lineId) => {
+    state = await api("/api/users", { method: "POST", body: { username, name, password: agentPassword, role: "agent", branchId, clientDailyLimit: 50, whatsappLineIds: [lineId] } });
     const user = state.users.find((entry) => entry.username === username);
     assert(user, `No se creó ${username}.`);
     return user;
   };
 
-  const agentA = await createUser("agente.a.2624", "Agente A", branchA.id);
-  const agentB = await createUser("agente.b.2624", "Agente B", branchB.id);
-  const agentC = await createUser("agente.c.2624", "Agente C", branchB.id);
+  const agentA = await createUser("agente.a.2624", "Agente A", branchA.id, lineA.id);
+  const agentB = await createUser("agente.b.2624", "Agente B", branchB.id, lineB.id);
+  const agentC = await createUser("agente.c.2624", "Agente C", branchB.id, lineB.id);
   const phone = "+595981262424";
 
   await login(agentA.username, agentPassword);
