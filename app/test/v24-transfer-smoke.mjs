@@ -104,7 +104,7 @@ try {
   assert((changedDeal?.messages || []).some((m) => m.origin === "transfer-intro"), "No quedó trazabilidad de la presentación de cambio de número.");
 
   await login(sameLineTarget.username, userPassword);
-  await api(`/api/deals/${encodeURIComponent(sameDealId)}/won`, { method: "POST", body: {} });
+  await api(`/api/deals/${encodeURIComponent(sameDealId)}/won`, { method: "POST", body: { amountConfirmed: true, closingAmount: 100000 } });
   await login(source.username, userPassword);
   sourceState = await api("/api/state");
   assert(!sourceState.deals.some((d) => d.id === sameDealId), "El observador conservó acceso después de cerrar el caso.");
