@@ -58,8 +58,8 @@ function roleDisplayName`,
     source,
     /    const line = dealWhatsappLine\(deal\);\n    const assignedOwner = chooseWhatsappLineOwner\(line\);\n    if \(assignedOwner\) \{[\s\S]*?\n    \}\n    deal\.stage = STAGES\.NEW;\n    deal\.botActive = true;/,
     `    const line = dealWhatsappLine(deal);
-    // Los contactos nuevos quedan sin responsable. Todos los agentes de la sucursal
-    // los ven en Nuevos hasta que el primero inicia la gestión.
+    // Un contacto nuevo entra al pool de la sucursal sin responsable.
+    // Todos los agentes de esa sucursal lo ven hasta que el primero inicia la gestión.
     const assignedOwner = null;
     deal.ownerUserId = null;
     deal.ownerName = "";
@@ -73,31 +73,44 @@ function roleDisplayName`,
 
   source = replaceOnce(
     source,
-    `  let branchId = cleanText(request.query.branchId, 120);
-  let ownerUserId = cleanText(request.query.userId, 120);`,
-    `  let branchId = cleanText(request.query.branchId, 120);
-  let ownerUserId = cleanText(request.query.userId, 120);
-  // Un agente nunca puede ampliar el alcance de reportes mediante parámetros o permisos heredados.
-  // Sus métricas se calculan exclusivamente sobre sus propias negociaciones.
-  if (user?.role === "agent") {
-    branchId = user.branchId || primaryBranchId();
-    ownerUserId = user.id;
-  }`,
+    `  let branchId = cleanText(request.query.branchId, 120);\n  let ownerUserId = cleanText(request.query.userId, 120);`,
+    `  let branchId = cleanText(request.query.branchId, 120);\n  let ownerUserId = cleanText(request.query.userId, 120);\n  // Un agente solo obtiene métricas de sus propias negociaciones, sin alcance de sucursal/equipo.\n  if (user?.role === "agent") {\n    branchId = "";\n    ownerUserId = user.id;\n  }`,
     "alcance inicial de reportes"
   );
 
   source = replaceRegexOnce(
     source,
+    /function reportPermissions\(user\) \{\n  return \{/,
+    `function reportPermissions(user) {\n  if (user?.role === "agent") return { own: true, branch: false, team: false, global: false, audit: false };\n  return {`,
+    "permisos de reportes"
+  );
+
+  source = replaceOnce(
+    source,
+    `    if (targetId !== actor.id && actor.role !== "admin" && actor.role !== "manager") throw new Error("No tenés permiso para reasignar clientes.");`,
+    `    if (targetId !== actor.id && !["admin", "manager", "supervisor"].includes(actor.role)) throw new Error("No tenés permiso para reasignar clientes.");`,
+    "permiso base de reasignación"
+  );
+
+  source = replaceRegexOnce(
+    source,
     /    const target = data\.users\.find\(\(entry\) => entry\.id === targetId && entry\.active !== false\);\n    if \(!target\) throw new Error\("Usuario no encontrado\."\);\n    const line=dealWhatsappLine\(deal\);/,
-    `    const target = data.users.find((entry) => entry.id === targetId && entry.active !== false);
-    if (!target) throw new Error("Usuario no encontrado.");
-    if (actor.role === "manager") {
-      const managerBranchId = actor.branchId || null;
-      if (!managerBranchId || (deal.branchId || primaryBranchId()) !== managerBranchId) throw new Error("Solo podés reasignar negociaciones de tu sucursal.");
-      if (target.role !== "agent" || target.branchId !== managerBranchId) throw new Error("Solo podés asignar la negociación a un agente activo de tu sucursal.");
-    }
-    const line=dealWhatsappLine(deal);`,
+    `    const target = data.users.find((entry) => entry.id === targetId && entry.active !== false);\n    if (!target) throw new Error("Usuario no encontrado.");\n    if (["manager", "supervisor"].includes(actor.role)) {\n      const managerBranchId = actor.branchId || null;\n      if (!managerBranchId || (deal.branchId || primaryBranchId()) !== managerBranchId) throw new Error("Solo podés reasignar negociaciones de tu sucursal.");\n      if (target.role !== "agent" || target.branchId !== managerBranchId) throw new Error("Solo podés asignar la negociación a un agente activo de tu sucursal.");\n    }\n    const line=dealWhatsappLine(deal);`,
     "restricción de reasignación del jefe"
+  );
+
+  source = replaceOnce(
+    source,
+    `    if (deal.ownerUserId && deal.ownerUserId !== actor.id && actor.role !== "admin") throw new Error(\`Esta conversación pertenece a \${deal.ownerName || "otro asesor"}.\`);`,
+    `    if (deal.ownerUserId && deal.ownerUserId !== actor.id && !["admin", "manager", "supervisor"].includes(actor.role)) throw new Error(\`Esta conversación pertenece a \${deal.ownerName || "otro asesor"}.\`);`,
+    "bloqueo del responsable actual"
+  );
+
+  source = replaceOnce(
+    source,
+    `  if (!permissions.global) report.branchSummaries = report.branchSummaries.filter((entry) => entry.id === (user?.branchId || branchId));`,
+    `  if (user?.role === "agent") report.branchSummaries = [];\n  else if (!permissions.global) report.branchSummaries = report.branchSummaries.filter((entry) => entry.id === (user?.branchId || branchId));`,
+    "resumen de sucursales del reporte"
   );
 
   return source;
@@ -108,17 +121,8 @@ export function applyV2629CoreUiPatches(source) {
 
   source = replaceOnce(
     source,
-    `  const activeUsers = (appState.users || []).filter((entry) => entry.active !== false && entry.branchId === deal.branchId && (["admin", "manager", "supervisor"].includes(user.role) || entry.id === user.id));
-  $("#drawer-owner-select").innerHTML = activeUsers.map((entry) => \`<option value="\${escapeHtml(entry.id)}"\${entry.id === (deal.ownerUserId || user.id) ? " selected" : ""}>\${escapeHtml(entry.name)}\${entry.online ? " · en línea" : ""}</option>\`).join("");
-  const canManageOwner = ["admin", "manager", "supervisor"].includes(user.role);`,
-    `  const activeUsers = (appState.users || []).filter((entry) => {
-    if (entry.active === false) return false;
-    if (user.role === "admin") return entry.branchId === deal.branchId;
-    if (user.role === "manager") return entry.role === "agent" && entry.branchId === user.branchId && entry.branchId === deal.branchId;
-    return entry.id === user.id;
-  });
-  $("#drawer-owner-select").innerHTML = activeUsers.map((entry) => \`<option value="\${escapeHtml(entry.id)}"\${entry.id === deal.ownerUserId ? " selected" : ""}>\${escapeHtml(entry.name)}\${entry.online ? " · en línea" : ""}</option>\`).join("");
-  const canManageOwner = ["admin", "manager"].includes(user.role);`,
+    `  const activeUsers = (appState.users || []).filter((entry) => entry.active !== false && entry.branchId === deal.branchId && (["admin", "manager", "supervisor"].includes(user.role) || entry.id === user.id));\n  $("#drawer-owner-select").innerHTML = activeUsers.map((entry) => \`<option value="\${escapeHtml(entry.id)}"\${entry.id === (deal.ownerUserId || user.id) ? " selected" : ""}>\${escapeHtml(entry.name)}\${entry.online ? " · en línea" : ""}</option>\`).join("");\n  const canManageOwner = ["admin", "manager", "supervisor"].includes(user.role);`,
+    `  const activeUsers = (appState.users || []).filter((entry) => {\n    if (entry.active === false) return false;\n    if (user.role === "admin") return entry.branchId === deal.branchId;\n    if (["manager", "supervisor"].includes(user.role)) return entry.role === "agent" && entry.branchId === user.branchId && entry.branchId === deal.branchId;\n    return entry.id === user.id;\n  });\n  $("#drawer-owner-select").innerHTML = activeUsers.map((entry) => \`<option value="\${escapeHtml(entry.id)}"\${entry.id === deal.ownerUserId ? " selected" : ""}>\${escapeHtml(entry.name)}\${entry.online ? " · en línea" : ""}</option>\`).join("");\n  const canManageOwner = ["admin", "manager", "supervisor"].includes(user.role);`,
     "selector de responsable"
   );
 
