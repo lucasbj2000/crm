@@ -23,6 +23,8 @@ jobs:
         run: |
           node --check app/server.mjs
           node --check app/lib/v26-28-emoji-message-replies-patches.mjs
+          node --check app/lib/v26-28-core-escape-fix-patches.mjs
+          node --check app/lib/v26-28-message-replies-reliable-server-patches.mjs
       - name: Start CRM in mock mode
         env:
           WHATSAPP_MOCK: "1"
@@ -43,6 +45,7 @@ jobs:
           curl -fsS http://127.0.0.1:3048/app.js -o /tmp/v2628-app.js
           node --check /tmp/v2628-app.js
           grep -F "V26.28 EMOJI_MESSAGE_REPLIES" /tmp/v2628-app.js
+          grep -F "V26.28 CORE_ESCAPE_FIX" /tmp/v2628-app.js
           grep -F "v2628-emoji-button" /tmp/v2628-app.js
           grep -F "replyToMessageId" /tmp/v2628-app.js
           grep -F "v2628-reply-message" /tmp/v2628-app.js
@@ -50,8 +53,8 @@ jobs:
         run: |
           test -f app/.server-v24.generated.mjs
           node --check app/.server-v24.generated.mjs
-          grep -F 'payload.context={message_id:String(replySource.id)}' app/.server-v24.generated.mjs
-          grep -F 'quoted?{quoted}:{}' app/.server-v24.generated.mjs
+          grep -F 'message_id: String(replySource.id)' app/.server-v24.generated.mjs
+          grep -F 'sendOptions.quoted = quoted' app/.server-v24.generated.mjs
           grep -F 'storedReply.replyTo = v2628ReplySnapshot(replySource)' app/.server-v24.generated.mjs
       - name: Stop mock CRM
         if: always()
