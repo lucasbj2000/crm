@@ -33,6 +33,7 @@ import { applyV2625CoreUiPatches } from "./lib/v26-25-agent-messaging-ux-patches
 import { applyV2626CoreUiPatches } from "./lib/v26-26-messaging-scroll-draft-fix-patches.mjs";
 import { applyV2627CoreUiPatches } from "./lib/v26-27-drawer-history-scroll-patches.mjs";
 import { applyV2628CoreUiPatches } from "./lib/v26-28-emoji-message-replies-patches.mjs";
+import { applyV2628CoreFixPatches } from "./lib/v26-28-core-escape-fix-patches.mjs";
 import { applyV2628ServerPatches } from "./lib/v26-28-message-replies-reliable-server-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
@@ -60,6 +61,7 @@ patchedPublicApp = applyV2625CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2626CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2627CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2628CoreUiPatches(patchedPublicApp);
+patchedPublicApp = applyV2628CoreFixPatches(patchedPublicApp);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
 
 const publicInboxSource = await readFile(publicInboxPath, "utf8");
