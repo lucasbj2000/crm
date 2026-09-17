@@ -8,19 +8,19 @@ function replaceOnce(source, search, replacement, label) {
   return source.slice(0, first) + replacement + source.slice(first + search.length);
 }
 
+function replaceRegexOnce(source, pattern, replacement, label) {
+  const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+  const matches = [...source.matchAll(new RegExp(pattern.source, flags))];
+  if (matches.length !== 1) throw new Error(`V26.29: ${label} esperaba 1 coincidencia y encontró ${matches.length}.`);
+  return source.replace(pattern, replacement);
+}
+
 export function applyV2629ServerPatches(source) {
   if (source.includes(SERVER_MARKER)) return source;
 
-  source = replaceOnce(
+  source = replaceRegexOnce(
     source,
-    `function userCanAccessDeal(user, deal) {
-  if(!user||!deal)return false;
-  if(user.role==="admin")return true;
-  const scopeAllowed=userCanAccessBranch(user,deal.branchId||primaryBranchId())||canUserUseWhatsappLine(user,dealWhatsappLine(deal));
-  if(!scopeAllowed)return false;
-  if(user.role==="agent"&&deal.ownerUserId&&deal.ownerUserId!==user.id&&!v214ActiveCommunicationGrant(deal,user))return false;
-  return true;
-}`,
+    /function userCanAccessDeal\(user, deal\) \{[\s\S]*?\n\}\n\n+function roleDisplayName/,
     `function userCanAccessDeal(user, deal) {
   if(!user||!deal)return false;
   if(user.role==="admin")return true;
@@ -36,7 +36,8 @@ export function applyV2629ServerPatches(source) {
   return true;
 }
 
-${SERVER_MARKER}`,
+${SERVER_MARKER}
+function roleDisplayName`,
     "control de acceso de negociaciones"
   );
 
