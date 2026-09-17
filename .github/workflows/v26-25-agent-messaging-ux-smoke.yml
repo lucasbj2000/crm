@@ -1,0 +1,54 @@
+name: V26.25 agent messaging experience smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  messaging-ux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci --omit=dev
+      - name: Syntax checks
+        run: |
+          node --check app/lib/v26-25-agent-messaging-ux-patches.mjs
+          node --check app/server.mjs
+          node --check app/test/v26-25-agent-messaging-ux.mjs
+      - name: Validate messaging UX contract
+        run: node app/test/v26-25-agent-messaging-ux.mjs
+      - name: Validate served app bundle
+        shell: bash
+        run: |
+          set -u
+          TMP="$(mktemp -d)"
+          LOG="$TMP/server.log"
+          BUNDLE="$TMP/app.js"
+          PORT=6250 WHATSBOT_HOST=127.0.0.1 WHATSBOT_DATA_DIR="$TMP/data" WHATSAPP_MOCK=1 NO_OPEN=1 CRM_TENANT_SLUG=v2625-bundle CRM_PUBLIC_BASE_URL=http://127.0.0.1:6250 node app/server.mjs >"$LOG" 2>&1 &
+          PID=$!
+          OK=0
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:6250/api/health >/dev/null 2>&1; then OK=1; break; fi
+            if ! kill -0 "$PID" 2>/dev/null; then break; fi
+            sleep .2
+          done
+          if test "$OK" -eq 1; then
+            curl -fsS http://127.0.0.1:6250/app.js -o "$BUNDLE"
+            grep -q "V26.25 AGENT_MESSAGING_EXPERIENCE" "$BUNDLE"
+            grep -q "Solo conversación" "$BUNDLE"
+            grep -q "Último mensaje" "$BUNDLE"
+            grep -q "deal-draft" "$BUNDLE"
+          fi
+          cat "$LOG" || true
+          if kill -0 "$PID" 2>/dev/null; then kill "$PID" || true; wait "$PID" || true; fi
+          test "$OK" -eq 1
