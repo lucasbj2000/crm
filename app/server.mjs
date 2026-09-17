@@ -30,6 +30,7 @@ import { applyV2621CoreUiPatches, applyV2621InboxUiPatches, applyV2621ServerPatc
 import { applyV2623CoreUiPatches, applyV2623ServerPatches } from "./lib/v26-23-deal-amount-patches.mjs";
 import { applyV2624CoreUiPatches, applyV2624ServerPatches } from "./lib/v26-24-existing-client-direct-patches.mjs";
 import { applyV2625CoreUiPatches } from "./lib/v26-25-agent-messaging-ux-patches.mjs";
+import { applyV2626CoreUiPatches } from "./lib/v26-26-messaging-scroll-draft-fix-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -53,6 +54,7 @@ patchedPublicApp = applyV2621CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2623CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2624CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2625CoreUiPatches(patchedPublicApp);
+patchedPublicApp = applyV2626CoreUiPatches(patchedPublicApp);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
 
 const publicInboxSource = await readFile(publicInboxPath, "utf8");
