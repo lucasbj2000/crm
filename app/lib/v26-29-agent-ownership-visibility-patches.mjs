@@ -41,16 +41,9 @@ function roleDisplayName`,
     "control de acceso de negociaciones"
   );
 
-  source = replaceOnce(
+  source = replaceRegexOnce(
     source,
-    `    if (user.role === "agent") {
-      payload.deals = payload.deals.filter((deal) => {
-        const line=dealWhatsappLine(deal);
-        if(line && !canUserUseWhatsappLine(user,line)) return false;
-        const available = isAgentAvailable(user, line ? null : (user.branchId || primaryBranchId()));
-        return deal.ownerUserId === user.id || (available && !deal.ownerUserId) || Boolean(v214ActiveCommunicationGrant(deal, user));
-      });
-    }`,
+    /    if \(user\.role === "agent"\) \{\n      payload\.deals = payload\.deals\.filter\(\(deal\) => \{[\s\S]*?\n      \}\);\n    \}/,
     `    if (user.role === "agent") {
       payload.deals = payload.deals.filter((deal) => {
         if (deal.ownerUserId) return deal.ownerUserId === user.id || Boolean(v214ActiveCommunicationGrant(deal, user));
@@ -61,19 +54,9 @@ function roleDisplayName`,
     "filtro del estado para agentes"
   );
 
-  source = replaceOnce(
+  source = replaceRegexOnce(
     source,
-    `    const line = dealWhatsappLine(deal);
-    const assignedOwner = chooseWhatsappLineOwner(line);
-    if (assignedOwner) {
-      deal.ownerUserId = assignedOwner.id;
-      deal.ownerName = assignedOwner.name;
-      deal.assignmentSource = "whatsapp_line";
-      deal.assignmentLineId = line?.id || null;
-      deal.assignmentAt = timestamp();
-    }
-    deal.stage = STAGES.NEW;
-    deal.botActive = true;`,
+    /    const line = dealWhatsappLine\(deal\);\n    const assignedOwner = chooseWhatsappLineOwner\(line\);\n    if \(assignedOwner\) \{[\s\S]*?\n    \}\n    deal\.stage = STAGES\.NEW;\n    deal\.botActive = true;/,
     `    const line = dealWhatsappLine(deal);
     // Los contactos nuevos quedan sin responsable. Todos los agentes de la sucursal
     // los ven en Nuevos hasta que el primero inicia la gestión.
@@ -102,11 +85,9 @@ function roleDisplayName`,
     "alcance inicial de reportes"
   );
 
-  source = replaceOnce(
+  source = replaceRegexOnce(
     source,
-    `    const target = data.users.find((entry) => entry.id === targetId && entry.active !== false);
-    if (!target) throw new Error("Usuario no encontrado.");
-    const line=dealWhatsappLine(deal);`,
+    /    const target = data\.users\.find\(\(entry\) => entry\.id === targetId && entry\.active !== false\);\n    if \(!target\) throw new Error\("Usuario no encontrado\."\);\n    const line=dealWhatsappLine\(deal\);/,
     `    const target = data.users.find((entry) => entry.id === targetId && entry.active !== false);
     if (!target) throw new Error("Usuario no encontrado.");
     if (actor.role === "manager") {
