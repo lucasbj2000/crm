@@ -1,0 +1,54 @@
+name: V26.27 drawer history scroll smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  drawer-history-scroll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci --omit=dev
+      - name: Syntax checks
+        run: |
+          node --check app/lib/v26-27-drawer-history-scroll-patches.mjs
+          node --check app/server.mjs
+          node --check app/test/v26-27-drawer-history-scroll.mjs
+      - name: Validate drawer history behavior contract
+        run: node app/test/v26-27-drawer-history-scroll.mjs
+      - name: Validate served app bundle
+        shell: bash
+        run: |
+          set -u
+          TMP="$(mktemp -d)"
+          LOG="$TMP/server.log"
+          BUNDLE="$TMP/app.js"
+          PORT=6244 WHATSBOT_HOST=127.0.0.1 WHATSBOT_DATA_DIR="$TMP/data" WHATSAPP_MOCK=1 NO_OPEN=1 CRM_TENANT_SLUG=v2627-bundle CRM_PUBLIC_BASE_URL=http://127.0.0.1:6244 node app/server.mjs >"$LOG" 2>&1 &
+          PID=$!
+          OK=0
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:6244/api/health >/dev/null 2>&1; then OK=1; break; fi
+            if ! kill -0 "$PID" 2>/dev/null; then break; fi
+            sleep .2
+          done
+          if test "$OK" -eq 1; then
+            curl -fsS http://127.0.0.1:6244/app.js -o "$BUNDLE"
+            grep -q "V26.27 DRAWER_HISTORY_SCROLL" "$BUNDLE"
+            grep -q "v2627BindHistoryWheel" "$BUNDLE"
+            grep -q "drawer-section-title{display:none!important}" "$BUNDLE"
+            grep -q "list.scrollTop = next" "$BUNDLE"
+          fi
+          cat "$LOG" || true
+          if kill -0 "$PID" 2>/dev/null; then kill "$PID" || true; wait "$PID" || true; fi
+          test "$OK" -eq 1
