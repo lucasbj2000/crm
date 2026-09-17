@@ -36,6 +36,7 @@ import { applyV2628CoreUiPatches } from "./lib/v26-28-emoji-message-replies-patc
 import { applyV2628CoreFixPatches } from "./lib/v26-28-core-escape-fix-patches.mjs";
 import { applyV2628ServerPatches } from "./lib/v26-28-message-replies-reliable-server-patches.mjs";
 import { applyV2629CoreUiPatches, applyV2629ServerPatches } from "./lib/v26-29-agent-ownership-visibility-patches.mjs";
+import { applyV2630CoreUiPatches, applyV2630ServerPatches } from "./lib/v26-30-mobile-location-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -64,6 +65,7 @@ patchedPublicApp = applyV2627CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2628CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2628CoreFixPatches(patchedPublicApp);
 patchedPublicApp = applyV2629CoreUiPatches(patchedPublicApp);
+patchedPublicApp = applyV2630CoreUiPatches(patchedPublicApp);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
 
 const publicInboxSource = await readFile(publicInboxPath, "utf8");
@@ -105,5 +107,6 @@ patched = applyV2623ServerPatches(patched);
 patched = applyV2624ServerPatches(patched);
 patched = applyV2628ServerPatches(patched);
 patched = applyV2629ServerPatches(patched);
+patched = applyV2630ServerPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
