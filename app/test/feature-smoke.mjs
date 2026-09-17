@@ -61,7 +61,7 @@ try{
 
   state=await api("/api/mock/incoming",{method:"POST",body:{phone:"595982345678",name:"Contacto entrante multilínea",text:"Hola, necesito información",lineId:secondLine.id}});
   const automaticallyRouted=state.deals.find((deal)=>deal.phone?.includes("595982345678")||deal.jid?.includes("595982345678"));
-  assert(automaticallyRouted?.ownerUserId===agent.id,"El contacto entrante no fue asignado automáticamente al agente de la conexión.");
+  assert(automaticallyRouted&&!automaticallyRouted.ownerUserId,"El contacto entrante nuevo debe quedar sin responsable hasta la primera respuesta del agente.");
 
   const clientState=await api("/api/clients",{method:"POST",body:{name:"Cliente de otra sucursal",phone:"+595981234567",branchId:secondBranch.id}});
   const crossBranchDeal=clientState.deals.find((deal)=>deal.phone?.includes("595981234567")||deal.jid?.includes("595981234567"));
