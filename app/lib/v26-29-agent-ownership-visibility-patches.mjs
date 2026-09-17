@@ -60,6 +60,7 @@ function roleDisplayName`,
     `    const line = dealWhatsappLine(deal);
     // Los contactos nuevos quedan sin responsable. Todos los agentes de la sucursal
     // los ven en Nuevos hasta que el primero inicia la gestión.
+    const assignedOwner = null;
     deal.ownerUserId = null;
     deal.ownerName = "";
     deal.assignmentSource = "first_response";
