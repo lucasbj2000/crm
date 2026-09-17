@@ -1,0 +1,60 @@
+name: V26.29 agent ownership visibility smoke
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  ownership-visibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+      - name: Syntax checks
+        run: |
+          node --check app/server.mjs
+          node --check app/lib/v26-29-agent-ownership-visibility-patches.mjs
+      - name: Start CRM in mock mode
+        env:
+          WHATSAPP_MOCK: "1"
+          PORT: "3049"
+          WHATSBOT_HOST: "127.0.0.1"
+          WHATSBOT_DATA_DIR: ${{ runner.temp }}/v2629-data
+        run: |
+          node app/server.mjs > /tmp/v2629-server.log 2>&1 &
+          echo $! > /tmp/v2629-server.pid
+          for i in $(seq 1 50); do
+            if curl -fsS http://127.0.0.1:3049/api/health >/tmp/v2629-health.json; then exit 0; fi
+            sleep 0.3
+          done
+          cat /tmp/v2629-server.log
+          exit 1
+      - name: Validate generated ownership rules
+        run: |
+          test -f app/.server-v24.generated.mjs
+          node --check app/.server-v24.generated.mjs
+          grep -F 'deal.stage===STAGES.NEW' app/.server-v24.generated.mjs
+          grep -F 'deal.assignmentSource = "first_response"' app/.server-v24.generated.mjs
+          grep -F 'ownerUserId = user.id' app/.server-v24.generated.mjs
+          grep -F 'Solo podés reasignar negociaciones de tu sucursal.' app/.server-v24.generated.mjs
+          grep -F 'Solo podés asignar la negociación a un agente activo de tu sucursal.' app/.server-v24.generated.mjs
+      - name: Validate served manager UI
+        run: |
+          curl -fsS http://127.0.0.1:3049/app.js -o /tmp/v2629-app.js
+          node --check /tmp/v2629-app.js
+          grep -F 'V26.29 MANAGER_OWNER_UI' /tmp/v2629-app.js
+          grep -F 'entry.role === "agent" && entry.branchId === user.branchId' /tmp/v2629-app.js
+      - name: Stop mock CRM
+        if: always()
+        run: |
+          if [ -f /tmp/v2629-server.pid ]; then kill $(cat /tmp/v2629-server.pid) 2>/dev/null || true; fi
+          if [ -f /tmp/v2629-server.log ]; then tail -80 /tmp/v2629-server.log || true; fi
