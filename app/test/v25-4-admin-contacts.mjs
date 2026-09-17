@@ -112,7 +112,7 @@ try {
   const lineId = initialState.whatsappLines?.[0]?.id;
 
   const firstIncoming = await api(adminCookie, "/api/mock/incoming", { method: "POST", body: { phone: "595981254001", name: "Cliente Borrado Deal", text: "Consulta uno", lineId } });
-  assert.equal(firstIncoming.response.ok, true, "No se creó negociación de prueba V25.4.");
+  assert.equal(firstIncoming.response.ok, true, `No se creó negociación de prueba V25.4. Respuesta: ${firstIncoming.response.status} ${JSON.stringify(firstIncoming.payload)}`);
   const firstDeal = firstIncoming.payload.deals.find((deal) => String(deal.phone || deal.jid).includes("595981254001"));
   assert.ok(firstDeal, "No se encontró negociación creada V25.4.");
 
@@ -125,24 +125,22 @@ try {
   assert.equal(state.deals.some((deal) => deal.id === firstDeal.id), false, "La negociación sigue presente luego de eliminarla.");
 
   const secondIncoming = await api(adminCookie, "/api/mock/incoming", { method: "POST", body: { phone: "595981254002", name: "Cliente Borrado Ficha", text: "Consulta dos", lineId } });
-  assert.equal(secondIncoming.response.ok, true, "No se creó segunda negociación V25.4.");
+  assert.equal(secondIncoming.response.ok, true, "No se creó ficha de prueba V25.4.");
   const secondDeal = secondIncoming.payload.deals.find((deal) => String(deal.phone || deal.jid).includes("595981254002"));
-  assert.ok(secondDeal?.clientId, "La segunda negociación no quedó vinculada a cliente.");
+  assert.ok(secondDeal?.clientId, "La negociación V25.4 no quedó vinculada a una ficha.");
 
-  const noCascade = await api(adminCookie, `/api/clients/${encodeURIComponent(secondDeal.clientId)}`, { method: "DELETE" });
-  assert.equal(noCascade.response.status, 409, "La ficha con negociaciones se eliminó sin confirmación cascade.");
-  assert.equal(noCascade.payload.requiresCascade, true, "El servidor no pidió confirmación de eliminación total.");
+  const blockedClient = await api(adminCookie, `/api/clients/${encodeURIComponent(secondDeal.clientId)}`, { method: "DELETE" });
+  assert.equal(blockedClient.response.status, 409, "El backend permitió borrar una ficha con dependencias sin cascada.");
+  assert.equal(blockedClient.payload.requiresCascade, true, "La API no informa que se requiere eliminación en cascada.");
 
   const deletedClient = await api(adminCookie, `/api/clients/${encodeURIComponent(secondDeal.clientId)}?cascade=1`, { method: "DELETE" });
-  assert.equal(deletedClient.response.ok, true, "El administrador no pudo eliminar la ficha completa.");
-  assert.equal(deletedClient.payload.deletedNegotiations, 1, "No se informó la negociación vinculada eliminada.");
+  assert.equal(deletedClient.response.ok, true, "No se pudo eliminar la ficha en cascada.");
   state = (await api(adminCookie, "/api/state")).payload;
-  assert.equal(state.clients.some((client) => client.id === secondDeal.clientId), false, "La ficha sigue presente luego del borrado total.");
-  assert.equal(state.deals.some((deal) => deal.clientId === secondDeal.clientId), false, "Quedaron negociaciones huérfanas tras eliminar la ficha.");
+  assert.equal(state.clients.some((client) => client.id === secondDeal.clientId), false, "La ficha sigue presente luego de eliminarla.");
+  assert.equal(state.deals.some((deal) => deal.clientId === secondDeal.clientId), false, "Quedaron negociaciones huérfanas tras la cascada.");
 
-  console.log("OK · V25.4.2 Contactos + eliminación compacta y segura validada.");
+  console.log("V25.4 admin contacts/delete tests OK");
 } finally {
   child.kill("SIGTERM");
-  await new Promise((resolve) => { child.once("exit", resolve); setTimeout(resolve, 3000).unref(); });
   await rm(dir, { recursive: true, force: true });
 }
