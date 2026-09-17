@@ -1,0 +1,60 @@
+name: V26.28 emoji and message replies smoke
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  emoji-replies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+      - name: Syntax checks
+        run: |
+          node --check app/server.mjs
+          node --check app/lib/v26-28-emoji-message-replies-patches.mjs
+      - name: Start CRM in mock mode
+        env:
+          WHATSAPP_MOCK: "1"
+          PORT: "3048"
+          WHATSBOT_HOST: "127.0.0.1"
+          WHATSBOT_DATA_DIR: ${{ runner.temp }}/v2628-data
+        run: |
+          node app/server.mjs > /tmp/v2628-server.log 2>&1 &
+          echo $! > /tmp/v2628-server.pid
+          for i in $(seq 1 50); do
+            if curl -fsS http://127.0.0.1:3048/api/health >/tmp/v2628-health.json; then exit 0; fi
+            sleep 0.3
+          done
+          cat /tmp/v2628-server.log
+          exit 1
+      - name: Validate served browser bundle
+        run: |
+          curl -fsS http://127.0.0.1:3048/app.js -o /tmp/v2628-app.js
+          node --check /tmp/v2628-app.js
+          grep -F "V26.28 EMOJI_MESSAGE_REPLIES" /tmp/v2628-app.js
+          grep -F "v2628-emoji-button" /tmp/v2628-app.js
+          grep -F "replyToMessageId" /tmp/v2628-app.js
+          grep -F "v2628-reply-message" /tmp/v2628-app.js
+      - name: Validate provider quote support
+        run: |
+          test -f app/.server-v24.generated.mjs
+          node --check app/.server-v24.generated.mjs
+          grep -F 'payload.context={message_id:String(replySource.id)}' app/.server-v24.generated.mjs
+          grep -F 'quoted?{quoted}:{}' app/.server-v24.generated.mjs
+          grep -F 'storedReply.replyTo = v2628ReplySnapshot(replySource)' app/.server-v24.generated.mjs
+      - name: Stop mock CRM
+        if: always()
+        run: |
+          if [ -f /tmp/v2628-server.pid ]; then kill $(cat /tmp/v2628-server.pid) 2>/dev/null || true; fi
+          if [ -f /tmp/v2628-server.log ]; then tail -80 /tmp/v2628-server.log || true; fi
