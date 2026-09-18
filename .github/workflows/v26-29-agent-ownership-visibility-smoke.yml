@@ -43,7 +43,12 @@ jobs:
           test -f app/.server-v24.generated.mjs
           node --check app/.server-v24.generated.mjs
           grep -F 'deal.stage===STAGES.NEW' app/.server-v24.generated.mjs
-          grep -F 'deal.assignmentSource = "first_response"' app/.server-v24.generated.mjs
+          if grep -F 'V26.31 PUSH_FAIR_LEADS' app/.server-v24.generated.mjs >/dev/null; then
+            grep -F 'fair_active_round_robin' app/.server-v24.generated.mjs
+            grep -F 'function v2631ChooseFairActiveOwner' app/.server-v24.generated.mjs
+          else
+            grep -F 'deal.assignmentSource = "first_response"' app/.server-v24.generated.mjs
+          fi
           grep -F 'ownerUserId = user.id' app/.server-v24.generated.mjs
           grep -F 'Solo podés reasignar negociaciones de tu sucursal.' app/.server-v24.generated.mjs
           grep -F 'Solo podés asignar la negociación a un agente activo de tu sucursal.' app/.server-v24.generated.mjs
