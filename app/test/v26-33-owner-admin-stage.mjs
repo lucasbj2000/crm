@@ -121,7 +121,8 @@ try {
   assert(current.items.some((item) => item.status === "released"), "La reserva no fue liberada al pasar a Perdido.");
   assert(Number(afterLostProduct.available) === 10 && Number(afterLostProduct.reserved) === 0, "El stock no quedó correcto después de cerrar como Perdido.");
 
-  const audit = state.auditEvents || [];
+  const reports = await api("/api/reports?days=30");
+  const audit = reports.auditEvents || [];
   assert(audit.filter((entry) => entry.action === "etapa_negociacion_cambiada_admin" && entry.details?.dealId === deal.id).length >= 3, "Faltan eventos de auditoría de cambio de etapa.");
 
   const appJs = await (await fetch(`${base}/app.js`)).text();
