@@ -7921,6 +7921,119 @@ app.post("/api/clients", async (request, response, next) => {
   } catch (error) { next(error); }
 });
 
+app.post("/api/deals/:id/admin-stage", requireAdmin, async (request, response, next) => {
+  try {
+    const actor = request.currentUser;
+    const deal = findDeal(data, request.params.id);
+    if (!deal) throw new Error("Negociación no encontrada.");
+
+    const targetStage = cleanText(request.body?.stage, 30);
+    const allowedStages = new Set([STAGES.NEW, STAGES.CONTACTED, STAGES.WAITING, STAGES.WON, STAGES.LOST]);
+    if (!allowedStages.has(targetStage)) throw new Error("Seleccioná una etapa válida.");
+    const fromStage = deal.stage;
+    if (fromStage === targetStage) return response.json(stateResponse(request));
+
+    const reopenIfNeeded = () => {
+      if (OPEN_STAGES.has(deal.stage)) return;
+      // Si una venta ganada se reabre, las unidades vendidas vuelven a ser reservas
+      // cuando el producto aún existe. Así el stock disponible no se duplica.
+      if (deal.stage === STAGES.WON) {
+        for (const item of deal.items || []) {
+          if (item.status !== "sold") continue;
+          const product = (data.products || []).find((entry) => entry.id === item.productId);
+          if (product) {
+            product.reserved = Math.max(0, Number(product.reserved || 0)) + Math.max(0, Number(item.quantity || 0));
+            product.updatedAt = timestamp();
+            item.status = "reserved";
+          } else {
+            item.status = "released";
+          }
+          item.updatedAt = timestamp();
+        }
+      }
+      if (!Number.isFinite(Number(deal.negotiationAmount)) && Number.isFinite(Number(deal.closingAmount))) {
+        deal.negotiationAmount = Math.max(0, Math.round(Number(deal.closingAmount)));
+        deal.negotiationAmountSource = "admin_reopen";
+      }
+      deal.stage = STAGES.CONTACTED;
+      deal.outcomeAt = null;
+      deal.lossReasonId = null;
+      deal.lossReasonName = null;
+      deal.waitingSince = null;
+      deal.closingAmount = null;
+      deal.closingAmountSource = null;
+      deal.closingAmountConfirmedAt = null;
+      deal.closingAmountConfirmedByUserId = null;
+      deal.closingAmountConfirmedByName = "";
+      deal.reopenedAt = timestamp();
+      deal.reopenedByUserId = actor.id;
+      deal.reopenedByName = actor.name;
+      deal.updatedAt = timestamp();
+    };
+
+    if ([STAGES.NEW, STAGES.CONTACTED, STAGES.WAITING].includes(targetStage)) {
+      reopenIfNeeded();
+      deal.stage = targetStage;
+      deal.outcomeAt = null;
+      deal.lossReasonId = null;
+      deal.lossReasonName = null;
+      deal.waitingSince = targetStage === STAGES.WAITING ? timestamp() : null;
+      deal.updatedAt = timestamp();
+    } else if (targetStage === STAGES.WON) {
+      reopenIfNeeded();
+      const closingAmount = Number(request.body?.closingAmount);
+      if (request.body?.amountConfirmed !== true || !Number.isFinite(closingAmount) || closingAmount <= 0) {
+        throw new Error("Para marcar como Ganado, confirmá un monto mayor a cero.");
+      }
+      const rounded = Math.round(closingAmount);
+      deal.negotiationAmount = rounded;
+      deal.negotiationAmountSource = "admin_stage";
+      deal.closingAmount = rounded;
+      deal.closingAmountSource = "admin_stage";
+      deal.closingAmountConfirmedAt = timestamp();
+      deal.closingAmountConfirmedByUserId = actor.id;
+      deal.closingAmountConfirmedByName = actor.name;
+      recordAuditEvent(actor, "monto_cierre_confirmado", { dealId: deal.id, amount: rounded, outcome: "won", source: "admin_stage" }, deal.branchId, "human");
+      closeWon(data, deal.id);
+      markCampaignConversion(deal.clientId, deal.id);
+    } else if (targetStage === STAGES.LOST) {
+      reopenIfNeeded();
+      const closingAmount = Number(request.body?.closingAmount);
+      if (request.body?.amountConfirmed !== true || !Number.isFinite(closingAmount) || closingAmount < 0) {
+        throw new Error("Confirmá un monto de cierre válido.");
+      }
+      const reasonId = cleanText(request.body?.reasonId, 160);
+      const reason = (data.settings.lossReasons || []).find((entry) => entry.id === reasonId);
+      if (!reason) throw new Error("Seleccioná un motivo de pérdida.");
+      const rounded = Math.round(closingAmount);
+      deal.negotiationAmount = rounded;
+      deal.negotiationAmountSource = "admin_stage";
+      deal.closingAmount = rounded;
+      deal.closingAmountSource = "admin_stage";
+      deal.closingAmountConfirmedAt = timestamp();
+      deal.closingAmountConfirmedByUserId = actor.id;
+      deal.closingAmountConfirmedByName = actor.name;
+      recordAuditEvent(actor, "monto_cierre_confirmado", { dealId: deal.id, amount: rounded, outcome: "lost", source: "admin_stage" }, deal.branchId, "human");
+      closeLost(data, deal.id, reasonId);
+    }
+
+    refreshDealCommercialStatus(deal, true);
+    recordAuditEvent(actor, "etapa_negociacion_cambiada_admin", {
+      dealId: deal.id,
+      clientId: deal.clientId || null,
+      clientName: deal.name,
+      fromStage,
+      toStage: deal.stage,
+      closingAmount: Number.isFinite(Number(deal.closingAmount)) ? Number(deal.closingAmount) : null,
+      lossReasonName: deal.lossReasonName || null,
+    }, deal.branchId);
+    addActivity(data, `${actor.name} cambió la etapa de ${deal.name}: ${fromStage} → ${deal.stage}.`, "success");
+    queueSuperAutomationEvent({ type:"stage_changed", deal, client:automationClientForDeal(deal), line:dealWhatsappLine(deal), branch:getBranch(deal.branchId), fromStage, toStage:deal.stage, text:"" });
+    await store.save();
+    response.json(stateResponse(request));
+  } catch (error) { next(error); }
+});
+
 app.post("/api/deals/:id/assign", async (request, response, next) => {
   try {
     const actor = currentUser(request);
