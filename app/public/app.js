@@ -622,12 +622,16 @@ function renderActivity() {
 }
 
 function renderStock() {
+  const resetButton = $("#reset-stock-button");
+  if (resetButton) resetButton.hidden = appState.currentUser?.role !== "admin";
   const search = $("#stock-search").value.trim().toLowerCase();
   let products = (appState.products || []).filter((product) => product.active !== false);
   if (search) products = products.filter((product) => [product.name, product.sku, product.description]
     .some((value) => String(value || "").toLowerCase().includes(search)));
+  const totalMatches = products.length;
+  const visibleProducts = products.slice(0, 500);
   const body = $("#stock-table-body");
-  body.innerHTML = products.map((product) => {
+  body.innerHTML = visibleProducts.map((product) => {
     const low = Number(product.available) <= Number(product.minStock);
     return `<tr>
       <td><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.description || "Sin descripción")}</small></td>
@@ -638,6 +642,9 @@ function renderStock() {
       <td><div class="row-actions">${["admin", "manager"].includes(appState.currentUser?.role) ? `<button type="button" data-product-action="adjust" data-product-id="${escapeHtml(product.id)}">Ajustar</button><button type="button" data-product-action="edit" data-product-id="${escapeHtml(product.id)}">Editar</button><button type="button" data-product-action="archive" data-product-id="${escapeHtml(product.id)}">Archivar</button>` : ""}</div></td>
     </tr>`;
   }).join("");
+  if (totalMatches > visibleProducts.length) {
+    body.insertAdjacentHTML("beforeend", `<tr><td colspan="7"><div class="column-empty">Mostrando 500 de ${totalMatches.toLocaleString("es-PY")} productos. Usá el buscador para filtrar sin cargar toda la tabla en pantalla.</div></td></tr>`);
+  }
   $("#stock-empty").classList.toggle("visible", products.length === 0);
   $(".table-scroll", $("#stock-table-body").closest(".panel")).hidden = products.length === 0;
 
@@ -2680,6 +2687,26 @@ $("#client-form").addEventListener("submit", async (event) => {
     await mutate("/api/clients", "POST", { name: $("#client-name").value, phone: $("#client-phone").value, branchId: $("#client-branch").value || appState.currentUser?.branchId });
     $("#client-dialog").close();
     showToast("Cliente cargado y asignado a tu usuario");
+  } catch (error) { showToast(error.message, "warning"); }
+});
+
+$("#reset-stock-button")?.addEventListener("click", async () => {
+  const total = (appState.products || []).length;
+  if (!total) { showToast("El stock ya está vacío."); return; }
+  const confirmed = await confirmAction(
+    "Eliminar stock completo",
+    `Se eliminarán ${total.toLocaleString("es-PY")} productos y los movimientos de stock. Las ventas históricas se conservarán y las reservas abiertas quedarán liberadas.`,
+  );
+  if (!confirmed) return;
+  const phrase = window.prompt('Confirmación final: escribí ELIMINAR para vaciar todo el stock.');
+  if (String(phrase || "").trim().toUpperCase() !== "ELIMINAR") {
+    showToast("Eliminación cancelada.", "warning");
+    return;
+  }
+  try {
+    const next = await mutate("/api/products/reset-all", "DELETE");
+    const result = next.resetResult || {};
+    showToast(`Stock eliminado: ${Number(result.productCount || total).toLocaleString("es-PY")} producto(s).`);
   } catch (error) { showToast(error.message, "warning"); }
 });
 
