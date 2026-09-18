@@ -542,7 +542,7 @@ export function applyV2631CoreUiPatches(source) {
     notificationButton();
     inspectAssignedActivity();
     tryOpenPendingDeal();
-    if (Notification?.permission === "granted" && appState?.currentUser && subscriptionUserId !== appState.currentUser.id) void enableNotifications(false);
+    if (pushSupported() && Notification.permission === "granted" && appState?.currentUser && subscriptionUserId !== appState.currentUser.id) void enableNotifications(false);
   }
 
   if ("serviceWorker" in navigator) {
