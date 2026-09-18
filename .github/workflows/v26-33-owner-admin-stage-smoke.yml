@@ -1,0 +1,57 @@
+name: V26.33 owner visibility and admin stage smoke
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  owner-admin-stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+      - name: Syntax checks
+        run: |
+          node --check app/server.mjs
+          node --check app/server-core.mjs
+          node --check app/public/app.js
+      - name: Validate V26.33 behavior
+        run: node app/test/v26-33-owner-admin-stage.mjs
+      - name: Validate generated server and served UI
+        env:
+          WHATSAPP_MOCK: "1"
+          PORT: "3053"
+          WHATSBOT_HOST: "127.0.0.1"
+        run: |
+          export WHATSBOT_DATA_DIR="$RUNNER_TEMP/v2633-generated"
+          node app/server.mjs > /tmp/v2633-server.log 2>&1 &
+          echo $! > /tmp/v2633-server.pid
+          for i in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:3053/api/health >/dev/null; then break; fi
+            sleep 0.3
+          done
+          test -f app/.server-v24.generated.mjs
+          node --check app/.server-v24.generated.mjs
+          grep -F 'app.post("/api/deals/:id/admin-stage"' app/.server-v24.generated.mjs
+          grep -F 'etapa_negociacion_cambiada_admin' app/.server-v24.generated.mjs
+          curl -fsS http://127.0.0.1:3053/app.js -o /tmp/v2633-app.js
+          node --check /tmp/v2633-app.js
+          grep -F 'deal-owner' /tmp/v2633-app.js
+          grep -F 'Responsable' /tmp/v2633-app.js
+          grep -F '/admin-stage' /tmp/v2633-app.js
+          curl -fsS http://127.0.0.1:3053/ -o /tmp/v2633-index.html
+          grep -F 'id="admin-stage-card"' /tmp/v2633-index.html
+      - name: Stop mock CRM
+        if: always()
+        run: |
+          if [ -f /tmp/v2633-server.pid ]; then kill $(cat /tmp/v2633-server.pid) 2>/dev/null || true; fi
+          if [ -f /tmp/v2633-server.log ]; then tail -120 /tmp/v2633-server.log || true; fi

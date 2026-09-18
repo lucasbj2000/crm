@@ -599,7 +599,7 @@ function renderBoard() {
       return `<button class="deal-card${heat}" type="button" data-deal-id="${escapeHtml(deal.id)}">
         <span class="deal-top"><span class="avatar">${escapeHtml(initials(deal.name))}</span><span><strong>${escapeHtml(deal.name)}</strong><small>${escapeHtml(deal.contactPersonName ? `${deal.contactPersonName}${deal.contactRole ? ` · ${deal.contactRole}` : ""} · ${deal.phone}` : deal.phone)}</small></span><span class="bot-badge${deal.botActive ? "" : " off"}">${deal.botActive ? "BOT" : deal.botHumanHandoff ? "COPILOTO" : "PAUSADO"}</span></span>
         <span class="deal-message">${escapeHtml(deal.lastMessage || "Sin mensajes todavía")}</span>
-        <span class="deal-owner ${deal.ownerUserId ? "assigned" : "unassigned"}">${deal.ownerUserId ? `● ${escapeHtml(deal.ownerName || "Asignado")}` : "○ Sin responsable"}</span>
+        <span class="deal-owner ${deal.ownerUserId ? "assigned" : "unassigned"}"><i>${deal.ownerUserId ? "●" : "○"}</i><span><small>Responsable</small><strong>${deal.ownerUserId ? escapeHtml(deal.ownerName || "Asignado") : "Sin responsable"}</strong></span></span>
         <span class="deal-branch-badge">⌂ ${escapeHtml(dealBranch(deal)?.name || "Sucursal")}${deal.lineId ? ` · ◉ ${escapeHtml((appState.whatsappLines||[]).find(line=>line.id===deal.lineId)?.name || "Línea")}` : ""}</span>
         <span class="deal-footer">${time}${reserved ? `<span class="item-badge">${reserved} reserv.</span>` : ""}</span>
       </button>`;
@@ -1286,6 +1286,41 @@ function clearPendingMedia() {
   renderMediaComposer();
 }
 
+function adminStageAmountForDeal(deal) {
+  if (!deal) return 0;
+  if (Number.isFinite(Number(deal.closingAmount)) && Number(deal.closingAmount) >= 0) return Math.round(Number(deal.closingAmount));
+  if (Number.isFinite(Number(deal.negotiationAmount)) && Number(deal.negotiationAmount) >= 0) return Math.round(Number(deal.negotiationAmount));
+  return Math.round((deal.items || []).filter((item) => ["reserved", "sold"].includes(item.status)).reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unitPrice || 0), 0));
+}
+
+function renderAdminStageControl(deal) {
+  const card = $("#admin-stage-card");
+  if (!card) return;
+  const isAdmin = appState.currentUser?.role === "admin";
+  card.hidden = !isAdmin;
+  if (!isAdmin || !deal) return;
+
+  const select = $("#admin-stage-select");
+  const supported = ["new", "contacted", "waiting", "won", "lost"];
+  select.value = supported.includes(deal.stage) ? deal.stage : "new";
+  select.dataset.currentStage = deal.stage || "";
+  $("#admin-stage-amount").value = String(adminStageAmountForDeal(deal) || "");
+  $("#admin-stage-loss-reason").innerHTML = (appState.settings?.lossReasons || []).map((reason) => `<option value="${escapeHtml(reason.id)}">${escapeHtml(reason.name)}</option>`).join("");
+  renderAdminStageFields();
+}
+
+function renderAdminStageFields() {
+  const select = $("#admin-stage-select");
+  const fields = $("#admin-stage-close-fields");
+  const lostRow = $("#admin-stage-loss-row");
+  const button = $("#admin-stage-apply");
+  if (!select || !fields || !lostRow || !button) return;
+  const closing = ["won", "lost"].includes(select.value);
+  fields.hidden = !closing;
+  lostRow.hidden = select.value !== "lost";
+  button.disabled = select.value === select.dataset.currentStage;
+}
+
 function renderDrawer() {
   const drawer = $("#deal-drawer");
   if (!selectedDealId) return;
@@ -1323,6 +1358,7 @@ function renderDrawer() {
   $("#drawer-owner-select").hidden = !canManageOwner;
   $("#assign-owner-button").hidden = !canManageOwner;
   $("#assign-owner-button").textContent = deal.ownerUserId ? "Reasignar" : "Asignar responsable";
+  renderAdminStageControl(deal);
   const wait = $("#drawer-wait");
   if (deal.stage === "waiting") {
     wait.innerHTML = `<span class="wait-chip${["red", "critical"].includes(deal.heat?.level) ? " urgent" : ""}">${escapeHtml(elapsedLabel(deal.heat?.minutes))}</span>`;
@@ -2534,6 +2570,42 @@ $("#assign-owner-button").addEventListener("click", async () => {
   try {
     await mutate(`/api/deals/${encodeURIComponent(selectedDealId)}/assign`, "POST", { userId: $("#drawer-owner-select").value || appState.currentUser?.id });
     showToast("Responsable actualizado");
+  } catch (error) { showToast(error.message, "warning"); }
+});
+
+$("#admin-stage-select")?.addEventListener("change", renderAdminStageFields);
+
+$("#admin-stage-apply")?.addEventListener("click", async () => {
+  if (!selectedDealId || appState.currentUser?.role !== "admin") return;
+  const deal = (appState.deals || []).find((entry) => entry.id === selectedDealId);
+  if (!deal) return;
+  const stage = $("#admin-stage-select").value;
+  if (stage === deal.stage) return;
+
+  const payload = { stage };
+  if (["won", "lost"].includes(stage)) {
+    const raw = String($("#admin-stage-amount").value || "").trim();
+    const amount = Number(raw);
+    if (!raw || !Number.isFinite(amount) || amount < 0 || (stage === "won" && amount <= 0)) {
+      showToast(stage === "won" ? "Para Ganado ingresá un monto mayor a cero." : "Ingresá un monto de cierre válido.", "warning");
+      $("#admin-stage-amount").focus();
+      return;
+    }
+    payload.closingAmount = Math.round(amount);
+    payload.amountConfirmed = true;
+    if (stage === "lost") {
+      payload.reasonId = $("#admin-stage-loss-reason").value;
+      if (!payload.reasonId) { showToast("Seleccioná el motivo de pérdida.", "warning"); return; }
+    }
+  }
+
+  const currentLabel = stageLabels[deal.stage] || deal.stage;
+  const nextLabel = stageLabels[stage] || stage;
+  if (!await confirmAction("Cambiar etapa", `Vas a mover “${deal.name}” de ${currentLabel} a ${nextLabel}. El cambio quedará registrado en auditoría.`)) return;
+
+  try {
+    await mutate(`/api/deals/${encodeURIComponent(selectedDealId)}/admin-stage`, "POST", payload);
+    showToast(`Etapa actualizada a ${nextLabel}`);
   } catch (error) { showToast(error.message, "warning"); }
 });
 
