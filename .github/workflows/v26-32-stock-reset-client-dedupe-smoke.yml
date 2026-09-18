@@ -1,0 +1,56 @@
+name: V26.32 stock reset and client dedupe smoke
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  stock-reset-client-dedupe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+      - name: Syntax checks
+        run: |
+          node --check app/server.mjs
+          node --check app/server-core.mjs
+          node --check app/lib/domain.mjs
+          node --check app/lib/reports.mjs
+          node --check app/public/app.js
+      - name: Validate V26.32 behavior
+        run: node app/test/v26-32-stock-reset-client-dedupe.mjs
+      - name: Validate generated server contracts
+        env:
+          WHATSAPP_MOCK: "1"
+          PORT: "3052"
+          WHATSBOT_HOST: "127.0.0.1"
+        run: |
+          export WHATSBOT_DATA_DIR="$RUNNER_TEMP/v2632-generated"
+          node app/server.mjs > /tmp/v2632-server.log 2>&1 &
+          echo $! > /tmp/v2632-server.pid
+          for i in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:3052/api/health >/dev/null; then break; fi
+            sleep 0.3
+          done
+          test -f app/.server-v24.generated.mjs
+          node --check app/.server-v24.generated.mjs
+          grep -F 'function v2632MergeExactClientDuplicates' app/.server-v24.generated.mjs
+          grep -F 'app.delete("/api/products/reset-all"' app/.server-v24.generated.mjs
+          curl -fsS http://127.0.0.1:3052/app.js -o /tmp/v2632-app.js
+          node --check /tmp/v2632-app.js
+          grep -F '/api/products/reset-all' /tmp/v2632-app.js
+          grep -F 'Mostrando 500 de' /tmp/v2632-app.js
+      - name: Stop mock CRM
+        if: always()
+        run: |
+          if [ -f /tmp/v2632-server.pid ]; then kill $(cat /tmp/v2632-server.pid) 2>/dev/null || true; fi
+          if [ -f /tmp/v2632-server.log ]; then tail -120 /tmp/v2632-server.log || true; fi

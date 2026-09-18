@@ -119,7 +119,13 @@ export function normalizeCityName(value) {
 
 
 function identityPhoneDigits(value = "") {
-  return String(value || "").replace(/\D/g, "");
+  let digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+  // V26.32: una única identidad telefónica para Paraguay.
+  // 0981..., 981... y +595981... deben resolver al mismo Cliente Maestro.
+  if (digits.startsWith("0")) digits = `595${digits.slice(1)}`;
+  if (!digits.startsWith("595") && digits.length <= 10) digits = `595${digits}`;
+  return digits;
 }
 
 function normalizeClientPhoneRecord(record = {}, fallback = {}, now = Date.now()) {
