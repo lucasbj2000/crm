@@ -622,21 +622,40 @@ dialog::backdrop { background: rgba(15,40,30,.46); backdrop-filter: blur(3px); }
 .current-user-card b { font-size: 10px; }
 .current-user-card small { margin-top: 3px; color: #9eb5aa; font-size: 8px; }
 .deal-owner {
-  display: inline-flex;
-  width: fit-content;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  width: 100%;
   max-width: 100%;
   align-items: center;
-  padding: 4px 7px;
-  border-radius: 7px;
+  gap: 7px;
+  padding: 7px 9px;
+  border: 1px solid #d7e4dc;
+  border-radius: 9px;
   overflow: hidden;
-  background: #edf3ee;
-  color: #4b6d5a;
-  font-size: 8px;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  background: #f0f6f2;
+  color: #315844;
+  text-align: left;
 }
-.deal-owner.unassigned { background: #fff4df; color: #9c6820; }
+.deal-owner > i {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: #dcebe2;
+  color: #2f674b;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+.deal-owner > span { min-width: 0; }
+.deal-owner small,
+.deal-owner strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deal-owner small { color: #70877a; font-size: 7px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+.deal-owner strong { margin-top: 2px; color: #254d39; font-size: 10px; font-weight: 900; }
+.deal-owner.unassigned { border-color: #efd9ad; background: #fff8e9; color: #9c6820; }
+.deal-owner.unassigned > i { background: #f8e9c7; color: #9c6820; }
+.deal-owner.unassigned strong { color: #8b5b18; }
 .owner-card {
   display: flex;
   align-items: center;
@@ -653,6 +672,31 @@ dialog::backdrop { background: rgba(15,40,30,.46); backdrop-filter: blur(3px); }
 .owner-actions { display: flex; align-items: center; gap: 7px; }
 .owner-actions select { min-width: 145px; height: 36px; }
 .owner-actions .button { min-height: 36px; padding: 0 10px; }
+.admin-stage-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #d9e3dd;
+  border-radius: 12px;
+  background: #fbfcfb;
+}
+.admin-stage-card[hidden] { display: none !important; }
+.admin-stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.admin-stage-head small,
+.admin-stage-head strong { display: block; }
+.admin-stage-head small { color: #7b8c83; font-size: 7px; font-weight: 900; letter-spacing: .08em; }
+.admin-stage-head strong { margin-top: 3px; color: #244836; font-size: 11px; }
+.admin-stage-head > span { padding: 4px 7px; border-radius: 999px; background: #e7efe9; color: #305d46; font-size: 7px; font-weight: 900; }
+.admin-stage-card label { margin: 0; }
+.admin-stage-card label > span { display: block; margin-bottom: 5px; color: #687b71; font-size: 8px; font-weight: 800; }
+.admin-stage-card select,
+.admin-stage-card input { width: 100%; min-height: 38px; }
+.admin-stage-close-fields { display: grid; gap: 9px; grid-template-columns: 1fr; }
+.admin-stage-help { color: #77877f; font-size: 8px; line-height: 1.45; }
+@media (max-width: 900px) {
+  .deal-owner { grid-template-columns: 24px minmax(0,1fr); padding: 8px 10px; }
+  .deal-owner strong { font-size: 11px; }
+}
 .users-panel { margin-top: 18px; }
 .users-list { display: grid; gap: 8px; }
 .user-row {
