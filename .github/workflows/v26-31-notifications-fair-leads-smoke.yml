@@ -1,0 +1,69 @@
+name: V26.31 notifications and fair lead distribution smoke
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  notifications-fair-leads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+      - name: Syntax and contract checks
+        run: |
+          node --check app/server.mjs
+          node --check app/lib/v26-31-notifications-fair-leads-patches.mjs
+          node --check app/public/sw.js
+          node app/test/v26-31-notifications-fair-leads.mjs
+      - name: Start CRM in mock mode
+        env:
+          WHATSAPP_MOCK: "1"
+          PORT: "3051"
+          WHATSBOT_HOST: "127.0.0.1"
+          WHATSBOT_DATA_DIR: ${{ runner.temp }}/v2631-data
+        run: |
+          node app/server.mjs > /tmp/v2631-server.log 2>&1 &
+          echo $! > /tmp/v2631-server.pid
+          for i in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:3051/api/health >/tmp/v2631-health.json; then exit 0; fi
+            sleep 0.3
+          done
+          cat /tmp/v2631-server.log
+          exit 1
+      - name: Validate generated fair distribution and Push server
+        run: |
+          test -f app/.server-v24.generated.mjs
+          node --check app/.server-v24.generated.mjs
+          grep -F 'V26.31 PUSH_FAIR_LEADS' app/.server-v24.generated.mjs
+          grep -F 'function v2631ChooseFairActiveOwner' app/.server-v24.generated.mjs
+          grep -F 'fair_active_round_robin' app/.server-v24.generated.mjs
+          grep -F 'app.post("/api/push/subscribe"' app/.server-v24.generated.mjs
+          grep -F 'app.post("/api/push/notifications/next"' app/.server-v24.generated.mjs
+          grep -F 'v2631DistributePendingLeads' app/.server-v24.generated.mjs
+      - name: Validate served notification UI and Service Worker
+        run: |
+          curl -fsS http://127.0.0.1:3051/app.js -o /tmp/v2631-app.js
+          node --check /tmp/v2631-app.js
+          grep -F 'V26.31 NOTIFICATIONS_FAIR_LEADS' /tmp/v2631-app.js
+          grep -F 'v2631-notification-button' /tmp/v2631-app.js
+          grep -F '/api/push/subscribe' /tmp/v2631-app.js
+          curl -fsS http://127.0.0.1:3051/sw.js -o /tmp/v2631-sw.js
+          node --check /tmp/v2631-sw.js
+          grep -F 'whatsbot-mobile-v26-31-push-shell' /tmp/v2631-sw.js
+          grep -F 'self.addEventListener("push"' /tmp/v2631-sw.js
+          grep -F 'ICIIA_OPEN_DEAL' /tmp/v2631-sw.js
+      - name: Stop mock CRM
+        if: always()
+        run: |
+          if [ -f /tmp/v2631-server.pid ]; then kill $(cat /tmp/v2631-server.pid) 2>/dev/null || true; fi
+          if [ -f /tmp/v2631-server.log ]; then tail -120 /tmp/v2631-server.log || true; fi
