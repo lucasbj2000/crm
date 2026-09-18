@@ -13,28 +13,6 @@ export function applyV2631ServerPatches(source) {
 
   source = replaceOnce(
     source,
-    `import {
-  createHash,
-  randomBytes,
-  randomUUID,
-  scryptSync,
-  timingSafeEqual,
-} from "node:crypto";`,
-    `import {
-  createHash,
-  createPrivateKey,
-  generateKeyPairSync,
-  randomBytes,
-  randomUUID,
-  scryptSync,
-  sign as cryptoSign,
-  timingSafeEqual,
-} from "node:crypto";`,
-    "imports crypto para Web Push",
-  );
-
-  source = replaceOnce(
-    source,
     `if (!Array.isArray(data.attendanceEvents)) data.attendanceEvents = [];`,
     `if (!Array.isArray(data.attendanceEvents)) data.attendanceEvents = [];
 if (!Array.isArray(data.pushSubscriptions)) data.pushSubscriptions = [];
@@ -45,7 +23,7 @@ if (!Array.isArray(data.pushNotifications)) data.pushNotifications = [];`,
   source = replaceOnce(
     source,
     `function applyIncomingRouting(deal, created = false) {`,
-    `function v2631DistributionState(branchId) {
+    `const { createPrivateKey: v2631CreatePrivateKey, generateKeyPairSync: v2631GenerateKeyPairSync, sign: v2631CryptoSign } = await import("node:crypto");\n\nfunction v2631DistributionState(branchId) {
   if (!data.settings.leadDistribution || typeof data.settings.leadDistribution !== "object") data.settings.leadDistribution = {};
   const key = branchId || primaryBranchId() || "default";
   let state = data.settings.leadDistribution[key];
@@ -81,7 +59,7 @@ function v2631EnsurePushConfig() {
   if (!data.settings.webPush || typeof data.settings.webPush !== "object") data.settings.webPush = {};
   const current = data.settings.webPush;
   if (current.privateJwk && current.publicKey) return current;
-  const pair = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
+  const pair = v2631GenerateKeyPairSync("ec", { namedCurve: "prime256v1" });
   const privateJwk = pair.privateKey.export({ format: "jwk" });
   const x = Buffer.from(privateJwk.x, "base64url");
   const y = Buffer.from(privateJwk.y, "base64url");
@@ -106,8 +84,8 @@ function v2631VapidAuthorization(endpoint) {
     sub: config.subject || "https://iciia.online",
   });
   const unsigned = header + "." + payload;
-  const key = createPrivateKey({ key: config.privateJwk, format: "jwk" });
-  const signature = cryptoSign("sha256", Buffer.from(unsigned), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+  const key = v2631CreatePrivateKey({ key: config.privateJwk, format: "jwk" });
+  const signature = v2631CryptoSign("sha256", Buffer.from(unsigned), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
   return "vapid t=" + unsigned + "." + signature + ", k=" + config.publicKey;
 }
 
