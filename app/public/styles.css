@@ -621,6 +621,7 @@ dialog::backdrop { background: rgba(15,40,30,.46); backdrop-filter: blur(3px); }
 .current-user-card b, .current-user-card small { display: block; }
 .current-user-card b { font-size: 10px; }
 .current-user-card small { margin-top: 3px; color: #9eb5aa; font-size: 8px; }
+/* V26.33.1 OWNER_CARD_VISUAL_FIX */
 .deal-owner {
   display: flex !important;
   width: 100% !important;
