@@ -39,6 +39,19 @@ function dayKey(time) {
   return new Date(time).toISOString().slice(0, 10);
 }
 
+function reportPhoneKey(value = "") {
+  let digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("0")) digits = `595${digits.slice(1)}`;
+  if (!digits.startsWith("595") && digits.length <= 10) digits = `595${digits}`;
+  return digits.length >= 10 && digits.length <= 15 ? digits : "";
+}
+
+function reportClientKey(deal) {
+  const phone = reportPhoneKey(deal?.phone);
+  return phone ? `phone:${phone}` : (deal?.clientId || deal?.jid || deal?.id);
+}
+
 function lastDealActivity(deal) {
   const messageAt = Math.max(0, ...(deal.messages || []).map((message) => toTime(message.at)));
   return Math.max(messageAt, toTime(deal.updatedAt), toTime(deal.createdAt));
@@ -127,7 +140,7 @@ export function buildReports(data, { days = 30, ownerUserId = null, branchId = n
     daily.push({
       key,
       label: new Intl.DateTimeFormat("es-PY", { day: "2-digit", month: "short" }).format(new Date(time)),
-      contacts: scopedDeals.filter((deal) => dayKey(toTime(deal.createdAt)) === key).length,
+      contacts: new Set(scopedDeals.filter((deal) => dayKey(toTime(deal.createdAt)) === key).map(reportClientKey)).size,
       incoming: scopedDeals.flatMap((deal) => deal.messages || []).filter((message) => message.direction === "incoming" && dayKey(toTime(message.at)) === key).length,
       won: scopedDeals.filter((deal) => deal.stage === "won" && dayKey(toTime(deal.outcomeAt)) === key).length,
       lost: scopedDeals.filter((deal) => deal.stage === "lost" && dayKey(toTime(deal.outcomeAt)) === key).length,
@@ -174,14 +187,14 @@ export function buildReports(data, { days = 30, ownerUserId = null, branchId = n
 
   const clientDealCounts = new Map();
   for (const deal of periodDeals) {
-    const key = deal.clientId || deal.jid || deal.phone || deal.id;
+    const key = reportClientKey(deal);
     clientDealCounts.set(key, (clientDealCounts.get(key) || 0) + 1);
   }
   const repeatCustomers = [...clientDealCounts.values()].filter((count) => count > 1).length;
 
   const clientSales = new Map();
   for (const deal of won) {
-    const key = deal.clientId || deal.jid || deal.phone || deal.id;
+    const key = reportClientKey(deal);
     const current = clientSales.get(key) || { id: key, name: deal.name || deal.phone || "Cliente", phone: deal.phone || "", purchases: 0, value: 0 };
     current.purchases += 1;
     current.value += salesValueForDeal(deal);
@@ -228,7 +241,7 @@ export function buildReports(data, { days = 30, ownerUserId = null, branchId = n
       code: branch.code,
       name: branch.name,
       city: branch.city,
-      newClients: new Set(period.map((deal) => deal.clientId || deal.jid || deal.phone || deal.id)).size,
+      newClients: new Set(period.map(reportClientKey)).size,
       open: deals.filter((deal) => ["new", "contacted", "waiting"].includes(deal.stage)).length,
       waiting: deals.filter((deal) => deal.stage === "waiting").length,
       won: branchWon.length,
@@ -273,7 +286,7 @@ export function buildReports(data, { days = 30, ownerUserId = null, branchId = n
     availableAgents: attendanceUsers.filter((user)=>user.role === "agent" && user.attendance?.status === "active").length,
   };
 
-  const uniquePeriodClients = new Set(periodDeals.map((deal) => deal.clientId || deal.jid || deal.phone || deal.id)).size;
+  const uniquePeriodClients = new Set(periodDeals.map(reportClientKey)).size;
   const sla15 = responses.length ? round((responses.filter((value) => value <= 15).length / responses.length) * 100) : 0;
 
   return {
