@@ -4508,6 +4508,108 @@ function normalizePhone(value) {
   return digits;
 }
 
+// V26.32 · reconciliación segura de Clientes Maestro duplicados por teléfono exacto.
+function v2632ClientPhoneKeys(client) {
+  const keys = new Set();
+  const add = (value) => {
+    const phone = normalizePhone(value);
+    if (phone && phone.length >= 10 && phone.length <= 15) keys.add(phone);
+  };
+  add(client?.phone);
+  for (const record of client?.phones || []) if (record?.active !== false) add(record.phone);
+  return [...keys];
+}
+
+function v2632MergeClientRecord(target, source) {
+  if (!target || !source || target.id === source.id) return target;
+  const textFields = ["name", "document", "ruc", "email", "company", "city", "address", "birthDate", "jobTitle", "country", "neighborhood", "notes"];
+  for (const field of textFields) if (!target[field] && source[field]) target[field] = source[field];
+  if (!target.age && source.age) target.age = source.age;
+  if ((!target.phone || target.phone === "Sin número") && source.phone) target.phone = source.phone;
+  if (!target.jid && source.jid) target.jid = source.jid;
+  if (!target.ownerUserId && source.ownerUserId) { target.ownerUserId = source.ownerUserId; target.ownerName = source.ownerName || ""; }
+
+  target.tags = [...new Set([...(target.tags || []), ...(source.tags || [])])].slice(0, 50);
+  target.customFields = { ...(source.customFields || {}), ...(target.customFields || {}) };
+  target.branchOwners = { ...(source.branchOwners || {}), ...(target.branchOwners || {}) };
+
+  const phoneKeys = new Set((target.phones || []).map((record) => normalizePhone(record.phone)).filter(Boolean));
+  target.phones = Array.isArray(target.phones) ? target.phones : [];
+  for (const record of source.phones || []) {
+    const key = normalizePhone(record.phone);
+    if (!key || phoneKeys.has(key)) continue;
+    target.phones.push({ ...record });
+    phoneKeys.add(key);
+  }
+
+  const contactKeys = new Set((target.contactPersons || []).map((person) => {
+    const phones = (person.phones || []).map((record) => normalizePhone(record.phone)).filter(Boolean).sort().join(",");
+    return `${String(person.name || "").trim().toLowerCase()}|${phones}`;
+  }));
+  target.contactPersons = Array.isArray(target.contactPersons) ? target.contactPersons : [];
+  for (const person of source.contactPersons || []) {
+    const phones = (person.phones || []).map((record) => normalizePhone(record.phone)).filter(Boolean).sort().join(",");
+    const key = `${String(person.name || "").trim().toLowerCase()}|${phones}`;
+    if (contactKeys.has(key)) continue;
+    target.contactPersons.push({ ...person, phones: (person.phones || []).map((record) => ({ ...record })) });
+    contactKeys.add(key);
+  }
+
+  target.branchRelationships = Array.isArray(target.branchRelationships) ? target.branchRelationships : [];
+  for (const relation of source.branchRelationships || []) {
+    const existing = target.branchRelationships.find((entry) => entry.branchId === relation.branchId);
+    if (!existing) { target.branchRelationships.push({ ...relation }); continue; }
+    existing.active = existing.active !== false || relation.active !== false;
+    existing.manual = existing.manual === true || relation.manual === true;
+    existing.preferred = existing.preferred === true || relation.preferred === true;
+    existing.customerSince = [existing.customerSince, relation.customerSince].filter(Boolean).sort()[0] || null;
+    existing.lastInteractionAt = [existing.lastInteractionAt, relation.lastInteractionAt].filter(Boolean).sort().at(-1) || null;
+    existing.lastPurchaseAt = [existing.lastPurchaseAt, relation.lastPurchaseAt].filter(Boolean).sort().at(-1) || null;
+    existing.purchaseCount = Math.max(Number(existing.purchaseCount || 0), Number(relation.purchaseCount || 0));
+    existing.totalPurchased = Math.max(Number(existing.totalPurchased || 0), Number(relation.totalPurchased || 0));
+    if (!existing.ownerUserId && relation.ownerUserId) { existing.ownerUserId = relation.ownerUserId; existing.ownerName = relation.ownerName || ""; }
+  }
+
+  target.createdAt = [target.createdAt, source.createdAt].filter(Boolean).sort()[0] || target.createdAt || source.createdAt;
+  target.updatedAt = [target.updatedAt, source.updatedAt, timestamp()].filter(Boolean).sort().at(-1);
+
+  for (const deal of data.deals || []) if (deal.clientId === source.id) deal.clientId = target.id;
+  for (const key of ["clientDataSuggestions", "communicationRequests", "surveySessions", "customerMemories", "opportunities", "orders", "visits", "clientAgents", "aiPromises", "aiQualityReviews", "aiPredictions", "aiLearningCorrections"]) {
+    for (const entry of data[key] || []) if (entry?.clientId === source.id) entry.clientId = target.id;
+  }
+  return target;
+}
+
+function v2632MergeExactClientDuplicates() {
+  const clients = (data.clients || []).slice().sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
+  const byPhone = new Map();
+  const removeIds = new Set();
+  let merged = 0;
+  for (const client of clients) {
+    if (removeIds.has(client.id)) continue;
+    const keys = v2632ClientPhoneKeys(client);
+    const target = keys.map((key) => byPhone.get(key)).find(Boolean) || null;
+    if (!target || target.id === client.id) {
+      for (const key of keys) if (!byPhone.has(key)) byPhone.set(key, client);
+      continue;
+    }
+    v2632MergeClientRecord(target, client);
+    removeIds.add(client.id);
+    merged += 1;
+    for (const key of keys) byPhone.set(key, target);
+    for (const key of v2632ClientPhoneKeys(target)) byPhone.set(key, target);
+  }
+  if (removeIds.size) data.clients = (data.clients || []).filter((client) => !removeIds.has(client.id));
+  if (merged) {
+    data.settings.v2632ClientRepair = { merged, at: timestamp() };
+    addActivity(data, `Se consolidaron ${merged} Cliente(s) Maestro duplicados por teléfono exacto.`, "success");
+  }
+  return { merged, removedIds: [...removeIds] };
+}
+
+const v2632StartupClientRepair = v2632MergeExactClientDuplicates();
+if (v2632StartupClientRepair.merged > 0) await store.save();
+
 
 
 function telephonyConfig() {
@@ -7787,6 +7889,8 @@ app.post("/api/clients", async (request, response, next) => {
     const branchId = user.role === "admin" ? (requestedBranchId || primaryBranchId()) : (user.branchId || primaryBranchId());
     if (!getBranch(branchId) || getBranch(branchId).active === false) throw new Error("La sucursal seleccionada no está disponible.");
     if (!userCanAccessBranch(user, branchId)) throw new Error("No tenés acceso a esta sucursal.");
+    const repair = v2632MergeExactClientDuplicates();
+    if (repair.merged > 0) await store.save();
     const exactIdentity = findClientIdentity(data, { phone });
     if (exactIdentity?.client) {
       const owner = v214OwnerForClient(exactIdentity.client, branchId, phone);
@@ -8705,6 +8809,37 @@ app.post("/api/products/:id/adjust", requireManagerOrAdmin, async (request, resp
   } catch (error) {
     next(error);
   }
+});
+
+app.delete("/api/products/reset-all", requireAdmin, async (request, response, next) => {
+  try {
+    const productIds = new Set((data.products || []).map((product) => product.id));
+    const productCount = productIds.size;
+    const movementCount = (data.stockMovements || []).length;
+    let releasedReservations = 0;
+    let affectedDeals = 0;
+
+    for (const deal of data.deals || []) {
+      let changed = false;
+      for (const item of deal.items || []) {
+        if (item.status !== "reserved" || !productIds.has(item.productId)) continue;
+        releasedReservations += Math.max(0, Number(item.quantity) || 0);
+        item.status = "released";
+        item.updatedAt = timestamp();
+        item.releaseReason = "Stock completo eliminado por administrador";
+        changed = true;
+      }
+      if (changed) { deal.updatedAt = timestamp(); affectedDeals += 1; }
+    }
+
+    data.products = [];
+    data.stockMovements = [];
+    if (Array.isArray(data.aiAnomalies)) data.aiAnomalies = data.aiAnomalies.filter((entry) => !["stock", "low_stock"].includes(entry?.type));
+    recordAuditEvent(request.currentUser, "stock_eliminado_completo", { productCount, movementCount, releasedReservations, affectedDeals }, request.currentUser.branchId || primaryBranchId());
+    addActivity(data, `${request.currentUser.name} eliminó el stock completo: ${productCount} producto(s).`, "warning");
+    await store.save();
+    response.json({ ...stateResponse(request), resetResult: { productCount, movementCount, releasedReservations, affectedDeals } });
+  } catch (error) { next(error); }
 });
 
 app.delete("/api/products/:id", requireManagerOrAdmin, async (request, response, next) => {
