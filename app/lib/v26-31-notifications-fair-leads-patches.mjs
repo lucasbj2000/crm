@@ -23,7 +23,7 @@ if (!Array.isArray(data.pushNotifications)) data.pushNotifications = [];`,
   source = replaceOnce(
     source,
     `function applyIncomingRouting(deal, created = false) {`,
-    `const { createPrivateKey: v2631CreatePrivateKey, generateKeyPairSync: v2631GenerateKeyPairSync, sign: v2631CryptoSign } = await import("node:crypto");\n\nfunction v2631DistributionState(branchId) {
+    `const { createHash: v2631CreateHash, createPrivateKey: v2631CreatePrivateKey, generateKeyPairSync: v2631GenerateKeyPairSync, sign: v2631CryptoSign } = await import("node:crypto");\n\nfunction v2631DistributionState(branchId) {
   if (!data.settings.leadDistribution || typeof data.settings.leadDistribution !== "object") data.settings.leadDistribution = {};
   const key = branchId || primaryBranchId() || "default";
   let state = data.settings.leadDistribution[key];
@@ -89,8 +89,23 @@ function v2631VapidAuthorization(endpoint) {
   return "vapid t=" + unsigned + "." + signature + ", k=" + config.publicKey;
 }
 
+function v2631SessionHash(token) {
+  const value = String(token || "");
+  return value ? v2631CreateHash("sha256").update(value).digest("hex") : "";
+}
+
+function v2631SubscriptionSessionActive(subscription) {
+  if (!subscription?.sessionHash || !subscription?.userId) return false;
+  const now = Date.now();
+  for (const [token, session] of sessions.entries()) {
+    if (session?.userId !== subscription.userId || Number(session?.expiresAt || 0) <= now) continue;
+    if (v2631SessionHash(token) === subscription.sessionHash) return true;
+  }
+  return false;
+}
+
 async function v2631SendPushToUser(userId) {
-  const subscriptions = (data.pushSubscriptions || []).filter((entry) => entry.userId === userId && entry.active !== false);
+  const subscriptions = (data.pushSubscriptions || []).filter((entry) => entry.userId === userId && entry.active !== false && v2631SubscriptionSessionActive(entry));
   if (!subscriptions.length) return;
   const stale = new Set();
   for (const subscription of subscriptions) {
@@ -196,6 +211,24 @@ function applyIncomingRouting(deal, created = false) {`,
 
   source = replaceOnce(
     source,
+    `    return sameBranch&&deal.stage===STAGES.NEW;`,
+    `    return sameBranch&&deal.stage===STAGES.NEW&&attendanceStatus(user)==="active"&&canUserUseWhatsappLine(user,line);`,
+    "visibilidad de leads pendientes para agentes disponibles",
+  );
+
+  source = replaceOnce(
+    source,
+    `        return deal.stage === STAGES.NEW && dealBranchId === (user.branchId || primaryBranchId());`,
+    `        const pendingLine = dealWhatsappLine(deal);
+        return deal.stage === STAGES.NEW
+          && dealBranchId === (user.branchId || primaryBranchId())
+          && attendanceStatus(user) === "active"
+          && canUserUseWhatsappLine(user, pendingLine);`,
+    "filtro de leads pendientes en estado del agente",
+  );
+
+  source = replaceOnce(
+    source,
     `    const line = dealWhatsappLine(deal);
     // Un contacto nuevo entra al pool de la sucursal sin responsable.
     // Todos los agentes de esa sucursal lo ven hasta que el primero inicia la gestión.
@@ -260,8 +293,12 @@ function applyIncomingRouting(deal, created = false) {`,
   source = replaceOnce(
     source,
     `  sessions.delete(cookieValue(request, "whatsbot_session"));`,
-    `  if (user?.id) data.pushSubscriptions = (data.pushSubscriptions || []).filter((entry) => entry.userId !== user.id);
-  sessions.delete(cookieValue(request, "whatsbot_session"));`,
+    `  const v2631LogoutToken = cookieValue(request, "whatsbot_session");
+  const v2631LogoutHash = v2631SessionHash(v2631LogoutToken);
+  if (user?.id && v2631LogoutHash) {
+    data.pushSubscriptions = (data.pushSubscriptions || []).filter((entry) => !(entry.userId === user.id && entry.sessionHash === v2631LogoutHash));
+  }
+  sessions.delete(v2631LogoutToken);`,
     "limpieza de push al cerrar sesión",
   );
 
@@ -296,6 +333,7 @@ app.post("/api/push/subscribe", async (request, response, next) => {
       },
       userId: user.id,
       branchId: user.branchId || null,
+      sessionHash: v2631SessionHash(cookieValue(request, "whatsbot_session")),
       userAgent: cleanText(request.headers["user-agent"], 500),
       active: true,
       updatedAt: timestamp(),
