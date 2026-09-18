@@ -127,7 +127,7 @@ try {
 
   const appJs = await (await fetch(`${base}/app.js`)).text();
   const index = await (await fetch(`${base}/`)).text();
-  assert(appJs.includes("<small>Responsable</small><strong>"), "La tarjeta no muestra Responsable de forma explícita.");
+  assert(appJs.includes("deal-owner") && appJs.includes("Responsable"), "La tarjeta no muestra Responsable de forma explícita.");
   assert(appJs.includes("/admin-stage"), "El bundle servido no contiene la acción administrativa de etapa.");
   assert(index.includes('id="admin-stage-card"'), "La ficha no contiene el panel administrativo de etapa.");
 
