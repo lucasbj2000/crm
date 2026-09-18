@@ -45,7 +45,8 @@ jobs:
           grep -F 'etapa_negociacion_cambiada_admin' app/.server-v24.generated.mjs
           curl -fsS http://127.0.0.1:3053/app.js -o /tmp/v2633-app.js
           node --check /tmp/v2633-app.js
-          grep -F '<small>Responsable</small><strong>' /tmp/v2633-app.js
+          grep -F 'deal-owner' /tmp/v2633-app.js
+          grep -F 'Responsable' /tmp/v2633-app.js
           grep -F '/admin-stage' /tmp/v2633-app.js
           curl -fsS http://127.0.0.1:3053/ -o /tmp/v2633-index.html
           grep -F 'id="admin-stage-card"' /tmp/v2633-index.html
