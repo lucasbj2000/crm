@@ -229,11 +229,9 @@ function applyIncomingRouting(deal, created = false) {`,
 
   source = replaceOnce(
     source,
-    `    applyIncomingRouting(deal, created);
-    applyMarketingOptOut(deal, text);`,
-    `    applyIncomingRouting(deal, created);
-    if (!historical) v2631NotifyIncomingActivity(deal, created);
-    applyMarketingOptOut(deal, text);`,
+    `      applyIncomingRouting(deal, created);`,
+    `      applyIncomingRouting(deal, created);
+      v2631NotifyIncomingActivity(deal, created);`,
     "notificación QR",
   );
 
