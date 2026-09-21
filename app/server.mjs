@@ -41,6 +41,7 @@ import { applyV2631CoreUiPatches, applyV2631ServerPatches } from "./lib/v26-31-n
 import { applyV2634ServerPatches } from "./lib/v26-34-workflow-stability-patches.mjs";
 import { applyV2635AdPromotionContextPatches } from "./lib/v26-35-ad-promotion-context-patches.mjs";
 import { applyV2636ZeroLossIncomingPatches } from "./lib/v26-36-zero-loss-incoming-patches.mjs";
+import { applyV2637GuardianAppPatches } from "./lib/v26-37-guardian-24x7-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -117,5 +118,6 @@ patched = applyV2631ServerPatches(patched);
 patched = applyV2634ServerPatches(patched);
 patched = applyV2635AdPromotionContextPatches(patched);
 patched = applyV2636ZeroLossIncomingPatches(patched);
+patched = applyV2637GuardianAppPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
