@@ -1363,10 +1363,16 @@ function renderDrawer() {
   renderAdminStageControl(deal);
   const transferBanner = $("#transfer-pending-banner");
   if (transferBanner) {
-    const pendingForThisUser = Boolean(deal.transferPendingForUserId && deal.transferPendingForUserId === user.id);
-    transferBanner.hidden = !pendingForThisUser;
-    if (pendingForThisUser) {
-      $("#transfer-pending-copy").textContent = `${deal.transferPendingFromUserName || "Otro agente"} te transfirió esta negociación${deal.transferPendingFromBranchName ? ` desde ${deal.transferPendingFromBranchName}` : ""}. Este aviso desaparecerá cuando respondas al cliente.`;
+    const hasPendingTransfer = Boolean(deal.transferPendingForUserId);
+    const pendingForThisUser = hasPendingTransfer && deal.transferPendingForUserId === user.id;
+    transferBanner.hidden = !hasPendingTransfer;
+    if (hasPendingTransfer) {
+      const from = deal.transferPendingFromUserName || "Otro agente";
+      const to = deal.transferPendingForUserName || deal.ownerName || "el nuevo responsable";
+      const branch = deal.transferPendingFromBranchName ? ` desde ${deal.transferPendingFromBranchName}` : "";
+      $("#transfer-pending-copy").textContent = pendingForThisUser
+        ? `${from} te transfirió esta negociación${branch}. Este aviso desaparecerá cuando respondas al cliente.`
+        : `Transferida por ${from} a ${to}${branch}. El aviso desaparecerá cuando ${to} responda al cliente.`;
     }
   }
   renderDealAuditHistory();
