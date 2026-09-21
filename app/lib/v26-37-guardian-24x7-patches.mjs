@@ -6,6 +6,14 @@ function replaceOnce(source, find, replacement, label) {
   return source.slice(0, first) + replacement + source.slice(first + find.length);
 }
 
+function replaceFirstAfter(source, startMarker, find, replacement, label) {
+  const start = source.indexOf(startMarker);
+  if (start < 0) throw new Error(`V26.37 guardian app: no se encontró inicio de ${label}.`);
+  const index = source.indexOf(find, start);
+  if (index < 0) throw new Error(`V26.37 guardian app: no se encontró ${label}.`);
+  return source.slice(0, index) + replacement + source.slice(index + find.length);
+}
+
 const guardianHelpers = String.raw`
 const v2637QrSupervisorState = {
   lastRunAt: null,
@@ -98,8 +106,9 @@ export function applyV2637GuardianAppPatches(source) {
     "health del tenant con guardian",
   );
 
-  patched = replaceOnce(
+  patched = replaceFirstAfter(
     patched,
+    "async function shutdown() {",
     "  clearTimeout(reconnectTimer);",
     "  clearInterval(v2637QrSupervisorTimer);\n  clearTimeout(v2637QrSupervisorInitial);\n  clearTimeout(reconnectTimer);",
     "apagado limpio del supervisor",
