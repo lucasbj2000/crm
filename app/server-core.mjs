@@ -7921,6 +7921,20 @@ app.post("/api/clients", async (request, response, next) => {
   } catch (error) { next(error); }
 });
 
+app.get("/api/deals/:id/audit-history", requireAdmin, (request, response) => {
+  const deal = findDeal(data, request.params.id);
+  if (!deal) return response.status(404).json({ error: "Negociación no encontrada." });
+  const clientId = deal.clientId || null;
+  const events = (data.auditEvents || []).filter((event) => {
+    const details = event?.details || {};
+    return details.dealId === deal.id
+      || details.targetDealId === deal.id
+      || (clientId && details.clientId === clientId && ["cliente_actualizado","responsable_asignado","conversacion_transferida"].includes(event.action));
+  }).slice(0, 250);
+  response.setHeader("Cache-Control", "no-store");
+  response.json({ dealId: deal.id, events });
+});
+
 app.post("/api/deals/:id/admin-stage", requireAdmin, async (request, response, next) => {
   try {
     const actor = request.currentUser;
@@ -8577,6 +8591,12 @@ app.post("/api/deals/:id/transfer", async (request, response, next) => {
       if (!targetUser) throw new Error("Compañero no encontrado.");
       if (targetUser.branchId !== sourceBranch.id) throw new Error("Ese usuario pertenece a otra sucursal. Seleccioná transferencia a sucursal.");
       deal.ownerUserId = targetUser.id; deal.ownerName = targetUser.name; deal.updatedAt = timestamp();
+      deal.transferPendingForUserId = targetUser.id;
+      deal.transferPendingForUserName = targetUser.name;
+      deal.transferPendingFromUserId = actor.id;
+      deal.transferPendingFromUserName = actor.name;
+      deal.transferPendingFromBranchName = sourceBranch.name;
+      deal.transferPendingAt = timestamp();
       const client = findClient(data, deal.clientId);
       if (client) {
         if (!client.branchOwners || typeof client.branchOwners !== "object") client.branchOwners = {};
@@ -8614,7 +8634,15 @@ app.post("/api/deals/:id/transfer", async (request, response, next) => {
     targetDeal.updatedAt = timestamp();
     const targetClient = findClient(data, targetDeal.clientId) || client;
     const targetOwner = chooseIncomingTransferOwner(targetClient, targetBranch.id);
-    if (targetOwner) applyOwnerToClientAndDeal(targetClient, targetDeal, targetOwner, targetBranch.id);
+    if (targetOwner) {
+      applyOwnerToClientAndDeal(targetClient, targetDeal, targetOwner, targetBranch.id);
+      targetDeal.transferPendingForUserId = targetOwner.id;
+      targetDeal.transferPendingForUserName = targetOwner.name;
+      targetDeal.transferPendingFromUserId = actor.id;
+      targetDeal.transferPendingFromUserName = actor.name;
+      targetDeal.transferPendingFromBranchName = sourceBranch.name;
+      targetDeal.transferPendingAt = timestamp();
+    }
     targetDeal.messages = Array.isArray(targetDeal.messages) ? targetDeal.messages : [];
     targetDeal.messages.push({ id: makeId("message"), direction: "incoming", origin: "transfer", text: transferSystemMessage({ interest, reason, note, sourceName: sourceBranch.name }, sourceBranch, targetOwner), at: timestamp() });
 
@@ -8717,7 +8745,9 @@ app.post("/api/deals/:id/message", async (request, response, next) => {
     if (!text) throw new Error("Escribí un mensaje.");
     const messageId = await sendProviderText(deal, text);
     rememberSeen(messageId);
+    const hadPendingTransfer = deal.transferPendingForUserId === user.id;
     recordHumanOutgoing(data, { jid: deal.jid, name: deal.name, text, messageId, userId: user.id, userName: user.name, branchId: deal.branchId, lineId: dealLineId(deal) });
+    if (hadPendingTransfer) recordAuditEvent(user, "transferencia_recibida_respondida", { dealId: deal.id, clientId: deal.clientId, clientName: deal.name }, deal.branchId);
     refreshDealCommercialStatus(deal,true);
     addActivity(data, temporaryGrant && deal.ownerUserId !== user.id ? `${user.name} respondió a ${deal.name} con autorización temporal; ${deal.ownerName || "el responsable original"} mantiene la titularidad.` : `${user.name} respondió a ${deal.name}; quedó como responsable principal.`, "success");
     queueSuperAutomationEvent({ type:"outgoing_message", deal, client:automationClientForDeal(deal), line:dealWhatsappLine(deal), branch:getBranch(deal.branchId), phone:deal.phone, text, message:{text,id:messageId} });
@@ -8744,6 +8774,7 @@ app.post(
       const text = info.caption || messageLabel(info);
       const messageId = await sendProviderMedia(deal, request.body, info);
       rememberSeen(messageId);
+      const hadPendingTransfer = deal.transferPendingForUserId === user.id;
       recordHumanOutgoing(data, {
         jid: deal.jid,
         name: deal.name,
@@ -8755,6 +8786,7 @@ app.post(
         branchId: deal.branchId,
         lineId: dealLineId(deal),
       });
+      if (hadPendingTransfer) recordAuditEvent(user, "transferencia_recibida_respondida", { dealId: deal.id, clientId: deal.clientId, clientName: deal.name }, deal.branchId);
       addActivity(data, `${info.fileName} enviado a ${deal.name}; la conversación quedó en modo Copiloto.`, "success");
       await store.save();
       response.json(stateResponse(request));

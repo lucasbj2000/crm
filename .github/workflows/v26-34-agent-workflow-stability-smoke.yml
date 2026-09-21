@@ -1,0 +1,59 @@
+name: V26.34 agent workflow stability smoke
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  agent-workflow-stability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+      - name: Syntax checks
+        run: |
+          node --check app/server.mjs
+          node --check app/server-core.mjs
+          node --check app/lib/domain.mjs
+          node --check app/public/app.js
+          node --check app/lib/v26-14-performance-patches.mjs
+      - name: Validate V26.34 behavior
+        run: node app/test/v26-34-agent-workflow-stability.mjs
+      - name: Validate generated runtime contracts
+        env:
+          WHATSAPP_MOCK: "1"
+          PORT: "3054"
+          WHATSBOT_HOST: "127.0.0.1"
+        run: |
+          export WHATSBOT_DATA_DIR="$RUNNER_TEMP/v2634-generated"
+          node app/server.mjs > /tmp/v2634-server.log 2>&1 &
+          echo $! > /tmp/v2634-server.pid
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3054/api/health >/dev/null; then break; fi
+            sleep 0.3
+          done
+          test -f app/.server-v24.generated.mjs
+          node --check app/.server-v24.generated.mjs
+          grep -F 'app.get("/api/deals/:id/audit-history"' app/.server-v24.generated.mjs
+          grep -F 'origin: "transfer-intro"' app/.server-v24.generated.mjs
+          grep -F 'Max-Age=604800' app/.server-v24.generated.mjs
+          curl -fsS http://127.0.0.1:3054/app.js -o /tmp/v2634-app.js
+          node --check /tmp/v2634-app.js
+          grep -F 'dealSearchTerm' /tmp/v2634-app.js
+          grep -F 'fetchDealAuditHistory' /tmp/v2634-app.js
+          curl -fsS http://127.0.0.1:3054/styles.css -o /tmp/v2634-styles.css
+          grep -F 'user-select: text !important' /tmp/v2634-styles.css
+      - name: Stop mock CRM
+        if: always()
+        run: |
+          if [ -f /tmp/v2634-server.pid ]; then kill $(cat /tmp/v2634-server.pid) 2>/dev/null || true; fi
+          if [ -f /tmp/v2634-server.log ]; then tail -140 /tmp/v2634-server.log || true; fi

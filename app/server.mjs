@@ -38,6 +38,7 @@ import { applyV2628ServerPatches } from "./lib/v26-28-message-replies-reliable-s
 import { applyV2629CoreUiPatches, applyV2629ServerPatches } from "./lib/v26-29-agent-ownership-visibility-patches.mjs";
 import { applyV2630CoreUiPatches, applyV2630ServerPatches } from "./lib/v26-30-mobile-location-patches.mjs";
 import { applyV2631CoreUiPatches, applyV2631ServerPatches } from "./lib/v26-31-notifications-fair-leads-patches.mjs";
+import { applyV2634ServerPatches } from "./lib/v26-34-workflow-stability-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -111,5 +112,6 @@ patched = applyV2628ServerPatches(patched);
 patched = applyV2629ServerPatches(patched);
 patched = applyV2630ServerPatches(patched);
 patched = applyV2631ServerPatches(patched);
+patched = applyV2634ServerPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);

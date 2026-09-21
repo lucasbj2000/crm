@@ -52,6 +52,8 @@ const money = new Intl.NumberFormat("es-PY", {
 let appState = null;
 let authenticated = false;
 let selectedDealId = null;
+let dealSearchTerm = "";
+let dealAuditHistory = { dealId: null, events: [], loading: false };
 let currentView = "crm";
 let settingsHydrated = false;
 let polling = false;
@@ -1359,6 +1361,26 @@ function renderDrawer() {
   $("#assign-owner-button").hidden = !canManageOwner;
   $("#assign-owner-button").textContent = deal.ownerUserId ? "Reasignar" : "Asignar responsable";
   renderAdminStageControl(deal);
+  if (user.role === "admin" && dealAuditHistory.dealId !== deal.id && dealAuditHistory.loading !== true) {
+    queueMicrotask(() => {
+      if (selectedDealId === deal.id && dealAuditHistory.dealId !== deal.id) void fetchDealAuditHistory(deal.id);
+    });
+  }
+  const transferBanner = $("#transfer-pending-banner");
+  if (transferBanner) {
+    const hasPendingTransfer = Boolean(deal.transferPendingForUserId);
+    const pendingForThisUser = hasPendingTransfer && deal.transferPendingForUserId === user.id;
+    transferBanner.hidden = !hasPendingTransfer;
+    if (hasPendingTransfer) {
+      const from = deal.transferPendingFromUserName || "Otro agente";
+      const to = deal.transferPendingForUserName || deal.ownerName || "el nuevo responsable";
+      const branch = deal.transferPendingFromBranchName ? ` desde ${deal.transferPendingFromBranchName}` : "";
+      $("#transfer-pending-copy").textContent = pendingForThisUser
+        ? `${from} te transfirió esta negociación${branch}. Este aviso desaparecerá cuando respondas al cliente.`
+        : `Transferida por ${from} a ${to}${branch}. El aviso desaparecerá cuando ${to} responda al cliente.`;
+    }
+  }
+  renderDealAuditHistory();
   const wait = $("#drawer-wait");
   if (deal.stage === "waiting") {
     wait.innerHTML = `<span class="wait-chip${["red", "critical"].includes(deal.heat?.level) ? " urgent" : ""}">${escapeHtml(elapsedLabel(deal.heat?.minutes))}</span>`;
@@ -1798,6 +1820,70 @@ function openDrawer(id) {
   renderDrawer();
 }
 
+async function fetchDealAuditHistory(dealId = selectedDealId) {
+  if (!dealId || appState?.currentUser?.role !== "admin") return;
+  dealAuditHistory = { dealId, events: [], loading: true };
+  renderDealAuditHistory();
+  try {
+    const result = await api(`/api/deals/${encodeURIComponent(dealId)}/audit-history`);
+    if (selectedDealId !== dealId) return;
+    dealAuditHistory = { dealId, events: result.events || [], loading: false };
+  } catch (error) {
+    dealAuditHistory = { dealId, events: [], loading: false, error: error.message };
+  }
+  renderDealAuditHistory();
+}
+
+function dealAuditLabel(action = "") {
+  const labels = {
+    mensaje_enviado: "Mensaje enviado",
+    archivo_enviado: "Archivo enviado",
+    responsable_asignado: "Responsable modificado",
+    bot_modificado: "Bot modificado",
+    negociacion_ganada: "Negociación ganada",
+    negociacion_perdida: "Negociación perdida",
+    producto_reservado: "Producto reservado",
+    reserva_devuelta: "Reserva liberada",
+    conversacion_transferida: "Conversación transferida",
+    transferencia_recibida: "Transferencia recibida",
+    transferencia_recibida_respondida: "Transferencia atendida",
+    etapa_negociacion_cambiada_admin: "Etapa modificada por Admin",
+    monto_cierre_confirmado: "Monto de cierre confirmado",
+    cliente_actualizado: "Ficha del cliente modificada",
+    bot_actualizo_contacto: "Bot actualizó datos",
+    bot_actualizo_persona_contacto: "Bot actualizó contacto",
+    bot_actualizo_campo_personalizado: "Bot actualizó campo",
+  };
+  return labels[action] || String(action || "Movimiento").replaceAll("_", " ");
+}
+
+function renderDealAuditHistory() {
+  const section = $("#admin-deal-history-section");
+  const list = $("#deal-history-list");
+  if (!section || !list) return;
+  const visible = appState?.currentUser?.role === "admin" && Boolean(selectedDealId);
+  section.hidden = !visible;
+  if (!visible) return;
+  if (dealAuditHistory.dealId !== selectedDealId || dealAuditHistory.loading) {
+    list.innerHTML = `<div class="column-empty">Cargando historial…</div>`;
+    return;
+  }
+  if (dealAuditHistory.error) {
+    list.innerHTML = `<div class="column-empty">${escapeHtml(dealAuditHistory.error)}</div>`;
+    return;
+  }
+  const events = dealAuditHistory.events || [];
+  list.innerHTML = events.length ? events.map((event) => {
+    const details = event.details || {};
+    const summary = [
+      details.fromStage && details.toStage ? `${details.fromStage} → ${details.toStage}` : "",
+      details.ownerName || details.userName || "",
+      details.sourceBranch && details.targetBranch ? `${details.sourceBranch} → ${details.targetBranch}` : "",
+    ].filter(Boolean).join(" · ");
+    return `<div class="deal-history-row"><i></i><div><strong>${escapeHtml(dealAuditLabel(event.action))}</strong><small>${escapeHtml(event.userName || (event.actorType === "bot" ? "Bot" : event.actorType === "system" ? "Sistema" : "Sistema"))}${summary ? ` · ${escapeHtml(summary)}` : ""}</small></div><time>${escapeHtml(formatDate(event.at))}</time></div>`;
+  }).join("") : `<div class="column-empty">Todavía no hay movimientos registrados para esta negociación.</div>`;
+}
+
 function setDrawerPane(name="conversation") {
   $$('[data-drawer-tab]').forEach((button)=>button.classList.toggle('active',button.dataset.drawerTab===name));
   $$('[data-drawer-pane]').forEach((pane)=>pane.classList.toggle('active',pane.dataset.drawerPane===name));
@@ -2206,7 +2292,14 @@ $$('[data-master-view]').forEach(button=>button.addEventListener('click',()=>swi
 
 $$(".nav-item[data-view]").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.view)));
 $("#refresh-button").addEventListener("click", () => void poll());
+$("#deal-search").addEventListener("input", (event) => {
+  dealSearchTerm = String(event.target.value || "");
+});
 $("#deal-search").addEventListener("input", renderBoard);
+window.addEventListener("pageshow", () => {
+  const input = $("#deal-search");
+  if (input && !dealSearchTerm) input.value = "";
+});
 $("#deal-filter").addEventListener("change", renderBoard);
 $("#stock-search").addEventListener("input", renderStock);
 $("#instructions").addEventListener("input", updateInstructionCounter);
@@ -2574,6 +2667,7 @@ $("#assign-owner-button").addEventListener("click", async () => {
 });
 
 $("#admin-stage-select")?.addEventListener("change", renderAdminStageFields);
+$("#refresh-deal-history")?.addEventListener("click", () => void fetchDealAuditHistory(selectedDealId));
 
 $("#admin-stage-apply")?.addEventListener("click", async () => {
   if (!selectedDealId || appState.currentUser?.role !== "admin") return;

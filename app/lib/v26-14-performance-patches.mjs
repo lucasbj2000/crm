@@ -184,7 +184,7 @@ function v2618DealCardHtml(deal,stage) {
   const time=stage==="waiting"?'<span class="wait-time">'+escapeHtml(elapsedLabel(deal.heat?.minutes))+'</span>':'<span>'+escapeHtml(relativeTime(deal.updatedAt))+'</span>';
   const contact=deal.contactPersonName?(deal.contactPersonName+(deal.contactRole?' · '+deal.contactRole:'')+' · '+deal.phone):deal.phone;
   const bot=deal.botActive?'BOT':(deal.botHumanHandoff?'COPILOTO':'PAUSADO');
-  const owner=deal.ownerUserId?'● '+escapeHtml(deal.ownerName||"Asignado"):"○ Sin responsable";
+  const owner=deal.ownerUserId?'<i>●</i><span><small>Responsable</small><strong>'+escapeHtml(deal.ownerName||"Asignado")+'</strong></span>':'<i>○</i><span><small>Responsable</small><strong>Sin responsable</strong></span>';
   const branch='⌂ '+escapeHtml(dealBranch(deal)?.name||"Sucursal")+(deal.lineId?' · ◉ '+escapeHtml((appState.whatsappLines||[]).find(line=>line.id===deal.lineId)?.name||"Línea"):"");
   return '<button class="deal-card'+heat+'" type="button" data-deal-id="'+escapeHtml(deal.id)+'"><span class="deal-top"><span class="avatar">'+escapeHtml(initials(deal.name))+'</span><span><strong>'+escapeHtml(deal.name)+'</strong><small>'+escapeHtml(contact)+'</small></span><span class="bot-badge'+(deal.botActive?'':' off')+'">'+bot+'</span></span><span class="deal-message">'+escapeHtml(deal.lastMessage||"Sin mensajes todavía")+'</span><span class="deal-owner '+(deal.ownerUserId?'assigned':'unassigned')+'">'+owner+'</span><span class="deal-branch-badge">'+branch+'</span><span class="deal-footer">'+time+(reserved?'<span class="item-badge">'+reserved+' reserv.</span>':'')+'</span></button>';
 }
@@ -206,7 +206,7 @@ function v2618PatchDealList(list,entries,stage) {
   list.scrollTop=previousTop;
 }
 function renderBoard() {
-  const search=$("#deal-search").value.trim().toLowerCase();
+  const search=String(typeof dealSearchTerm!=="undefined"?dealSearchTerm:"").trim().toLowerCase();
   const filter=$("#deal-filter").value;
   let deals=appState.deals||[];
   if(search)deals=deals.filter(deal=>[deal.name,deal.phone,deal.contactPersonName,deal.contactRole,deal.lastMessage].some(value=>String(value||"").toLowerCase().includes(search)));

@@ -1109,6 +1109,17 @@ export function recordHumanOutgoing(data, {
   deal.lastAgentAt = at;
   deal.waitingSince = null;
   deal.followupSentAt = null;
+  if (deal.transferPendingForUserId && userId && deal.transferPendingForUserId === userId) {
+    deal.transferAcknowledgedAt = at;
+    deal.transferAcknowledgedByUserId = userId;
+    deal.transferAcknowledgedByName = cleanText(userName, 120) || deal.ownerName || "Asesor";
+    deal.transferPendingForUserId = null;
+    deal.transferPendingForUserName = "";
+    deal.transferPendingFromUserId = null;
+    deal.transferPendingFromUserName = "";
+    deal.transferPendingFromBranchName = "";
+    deal.transferPendingAt = null;
+  }
   return deal;
 }
 
