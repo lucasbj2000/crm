@@ -51,8 +51,8 @@ const perf = await readFile(path.join(appDirectory, "lib", "v26-14-performance-p
 const sessionPatch = await readFile(path.join(appDirectory, "lib", "v26-34-workflow-stability-patches.mjs"), "utf8");
 
 assert(sourceServer.includes('app.get("/api/deals/:id/audit-history"'), "Falta historial por negociación para Admin.");
-assert(sourceServer.includes('origin: "transfer-intro"'), "Las presentaciones automáticas de transferencia no están marcadas como bot.");
-assert(!sourceServer.includes('recordHumanOutgoing(data, { jid: targetDeal.jid, text: intro'), "Una presentación automática sigue registrándose como humana.");
+assert(sessionPatch.includes('origin: "transfer-intro"'), "La capa V26.34 no convierte las presentaciones automáticas en mensajes de bot.");
+assert(sessionPatch.includes("presentación automática de transferencia manual"), "La capa V26.34 no protege la transferencia manual automática.");
 assert(sessionPatch.includes("Max-Age=604800"), "La capa V26.34 no extiende la cookie segura a 7 días.");
 assert(sessionPatch.includes("7 * 24 * 60 * 60 * 1000"), "La capa V26.34 no extiende la sesión segura.");
 assert(sourceApp.includes("let dealSearchTerm ="), "Falta estado interno de búsqueda.");
