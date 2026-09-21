@@ -197,7 +197,7 @@ function v2635ApplyAdContext(deal, referral, text = "", line = null, provider = 
   const nextKey = [attribution.sourceId, attribution.promotionId, attribution.detectedAt].join("|");
   if (!previous || previousKey !== nextKey) {
     const label = attribution.promotionName || attribution.headline || attribution.sourceId || "Pauta Meta";
-    addActivity(data, `Lead de pauta detectado: ${label}.`, "success");
+    addActivity(data, "Lead de pauta detectado: " + label + ".", "success");
     recordAuditEvent(null, "pauta_detectada", {
       dealId: deal.id,
       clientPhone: deal.phone,
@@ -217,12 +217,12 @@ function v2635PromotionContextForPrompt(deal) {
   if (!attribution || typeof attribution !== "object") return "";
   const parts = [
     "ORIGEN PUBLICITARIO DETECTADO: el cliente ingresó desde una pauta/promoción.",
-    attribution.promotionName ? `Promoción configurada: ${attribution.promotionName}.` : "",
-    attribution.headline ? `Título de la pauta: ${attribution.headline}.` : "",
-    attribution.body ? `Texto de la pauta: ${attribution.body}` : "",
-    attribution.offerDetails ? `Detalles comerciales confirmados de la promoción: ${attribution.offerDetails}` : "",
-    attribution.initialMessage ? `Mensaje inicial del cliente desde la pauta: ${attribution.initialMessage}` : "",
-    attribution.botInstructions ? `Instrucción específica de esta promoción: ${attribution.botInstructions}` : "",
+    attribution.promotionName ? "Promoción configurada: " + attribution.promotionName + "." : "",
+    attribution.headline ? "Título de la pauta: " + attribution.headline + "." : "",
+    attribution.body ? "Texto de la pauta: " + attribution.body : "",
+    attribution.offerDetails ? "Detalles comerciales confirmados de la promoción: " + attribution.offerDetails : "",
+    attribution.initialMessage ? "Mensaje inicial del cliente desde la pauta: " + attribution.initialMessage : "",
+    attribution.botInstructions ? "Instrucción específica de esta promoción: " + attribution.botInstructions : "",
     "Mientras el bot automático esté activo, hablá directamente sobre esta promoción y ayudá al cliente a avanzar: aclarar la oferta, responder dudas, identificar qué necesita y hacer preguntas útiles para que el agente reciba una conversación contextualizada.",
     "No inventes precios, vigencia, stock, descuentos, condiciones ni beneficios que no estén explícitos en el contexto o disponibles mediante herramientas del CRM.",
     "Si el mensaje de pauta es genérico y no hay detalles suficientes, reconocé su interés y preguntá qué aspecto de la promoción desea conocer, sin suponer condiciones.",
