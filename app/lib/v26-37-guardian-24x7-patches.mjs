@@ -6,6 +6,14 @@ function replaceOnce(source, find, replacement, label) {
   return source.slice(0, first) + replacement + source.slice(first + find.length);
 }
 
+function replaceBetween(source, startMarker, endMarker, replacement, label) {
+  const start = source.indexOf(startMarker);
+  if (start < 0) throw new Error(`V26.37 guardian app: no se encontró inicio de ${label}.`);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  if (end < 0) throw new Error(`V26.37 guardian app: no se encontró fin de ${label}.`);
+  return source.slice(0, start) + replacement + source.slice(end);
+}
+
 function replaceFirstAfter(source, startMarker, find, replacement, label) {
   const start = source.indexOf(startMarker);
   if (start < 0) throw new Error(`V26.37 guardian app: no se encontró inicio de ${label}.`);
@@ -99,10 +107,11 @@ export function applyV2637GuardianAppPatches(source) {
     "supervisor QR permanente",
   );
 
-  patched = replaceOnce(
+  patched = replaceBetween(
     patched,
-    'app.get("/api/health", (_request, response) => {\n  response.json({ ok: true, mockMode });\n});',
-    'app.get("/api/health", (_request, response) => {\n  response.json({ ok: true, mockMode, tenant: tenantSlug, uptimeSeconds: Math.floor(process.uptime()), guardian: { lastRunAt: v2637QrSupervisorState.lastRunAt, recoveries: v2637QrSupervisorState.recoveries, lastRecoveryAt: v2637QrSupervisorState.lastRecoveryAt, lastRecoveryTarget: v2637QrSupervisorState.lastRecoveryTarget, lastError: v2637QrSupervisorState.lastError } });\n});',
+    'app.get("/api/health"',
+    'app.get("/api/auth/status"',
+    'app.get("/api/health", (_request, response) => {\n  response.setHeader("Cache-Control", "no-store");\n  response.json({ ok: true, mockMode, tenant: tenantSlug, uptimeSeconds: Math.floor(process.uptime()), guardian: { lastRunAt: v2637QrSupervisorState.lastRunAt, recoveries: v2637QrSupervisorState.recoveries, lastRecoveryAt: v2637QrSupervisorState.lastRecoveryAt, lastRecoveryTarget: v2637QrSupervisorState.lastRecoveryTarget, lastError: v2637QrSupervisorState.lastError } });\n});\n\n',
     "health del tenant con guardian",
   );
 
