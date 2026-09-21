@@ -38,6 +38,7 @@ import { applyV2628ServerPatches } from "./lib/v26-28-message-replies-reliable-s
 import { applyV2629CoreUiPatches, applyV2629ServerPatches } from "./lib/v26-29-agent-ownership-visibility-patches.mjs";
 import { applyV2630CoreUiPatches, applyV2630ServerPatches } from "./lib/v26-30-mobile-location-patches.mjs";
 import { applyV2631CoreUiPatches, applyV2631ServerPatches } from "./lib/v26-31-notifications-fair-leads-patches.mjs";
+import { applyV2634CoreUiPatches } from "./lib/v26-34-agent-stability-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -68,6 +69,7 @@ patchedPublicApp = applyV2628CoreFixPatches(patchedPublicApp);
 patchedPublicApp = applyV2629CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2630CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2631CoreUiPatches(patchedPublicApp);
+patchedPublicApp = applyV2634CoreUiPatches(patchedPublicApp);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
 
 const publicInboxSource = await readFile(publicInboxPath, "utf8");
