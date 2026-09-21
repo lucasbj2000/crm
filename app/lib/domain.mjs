@@ -379,6 +379,13 @@ export function createInitialData(now = Date.now()) {
     identityLinks: [],
     intelligenceRuns: [],
     communicationRequests: [],
+    whatsappLines: [],
+    messageOutbox: [],
+    messageReliabilityFailures: [],
+    pendingIncomingIdentity: [],
+    pendingIncomingEvents: [],
+    pendingCloudWebhooks: [],
+    adPromotions: [],
     sync: {
       // Null means this installation has never been connected. On the first
       // link we request a bounded recent history instead of assuming that
@@ -745,6 +752,13 @@ export function normalizeData(input, now = Date.now()) {
     identityLinks: Array.isArray(data.identityLinks) ? data.identityLinks : [],
     intelligenceRuns: Array.isArray(data.intelligenceRuns) ? data.intelligenceRuns : [],
     communicationRequests: Array.isArray(data.communicationRequests) ? data.communicationRequests : [],
+    whatsappLines: Array.isArray(data.whatsappLines) ? data.whatsappLines : [],
+    messageOutbox: Array.isArray(data.messageOutbox) ? data.messageOutbox : [],
+    messageReliabilityFailures: Array.isArray(data.messageReliabilityFailures) ? data.messageReliabilityFailures : [],
+    pendingIncomingIdentity: Array.isArray(data.pendingIncomingIdentity) ? data.pendingIncomingIdentity : [],
+    pendingIncomingEvents: Array.isArray(data.pendingIncomingEvents) ? data.pendingIncomingEvents : [],
+    pendingCloudWebhooks: Array.isArray(data.pendingCloudWebhooks) ? data.pendingCloudWebhooks : [],
+    adPromotions: Array.isArray(data.adPromotions) ? data.adPromotions : [],
     sync: {
       ...defaults.sync,
       ...(hasSync ? {} : { lastActiveAt: legacyLastActiveAt }),
