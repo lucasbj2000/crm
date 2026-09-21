@@ -32,5 +32,41 @@ export function applyV2634ServerPatches(source) {
     "duración de cookie segura",
   );
 
+  // Las presentaciones automáticas nunca deben contabilizarse como respuesta humana.
+  patched = replaceOnce(
+    patched,
+    `    recordHumanOutgoing(data, {
+      jid: deal.jid,
+      name: deal.name,
+      text: intro,
+      messageId: introMessageId,
+      userId: owner?.id || null,
+      userName: owner?.name || localBranch.name,
+      branchId: localBranch.id,
+      now: occurredAt,
+    });
+    deal.stage = STAGES.CONTACTED;
+    deal.botActive = false;`,
+    `    recordBotOutgoing(data, {
+      deal,
+      text: intro,
+      messageId: introMessageId,
+      origin: "transfer-intro",
+      now: occurredAt,
+    });
+    deal.botActive = false;`,
+    "presentación automática de transferencia entrante",
+  );
+
+  patched = replaceOnce(
+    patched,
+    `        recordHumanOutgoing(data, { jid: targetDeal.jid, text: intro, messageId, userId: targetOwner?.id || actor.id, userName: targetOwner?.name || actor.name, branchId: targetBranch.id, lineId:targetDeal.lineId||targetLine?.id||null });
+        targetDeal.stage = STAGES.CONTACTED;
+        targetDeal.lastMessage = intro;`,
+    `        recordBotOutgoing(data, { deal: targetDeal, text: intro, messageId, origin: "transfer-intro" });
+        targetDeal.lastMessage = intro;`,
+    "presentación automática de transferencia manual",
+  );
+
   return patched + "\n" + SERVER_MARKER + "\n";
 }
