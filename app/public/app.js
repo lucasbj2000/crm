@@ -1361,6 +1361,11 @@ function renderDrawer() {
   $("#assign-owner-button").hidden = !canManageOwner;
   $("#assign-owner-button").textContent = deal.ownerUserId ? "Reasignar" : "Asignar responsable";
   renderAdminStageControl(deal);
+  if (user.role === "admin" && dealAuditHistory.dealId !== deal.id && dealAuditHistory.loading !== true) {
+    queueMicrotask(() => {
+      if (selectedDealId === deal.id && dealAuditHistory.dealId !== deal.id) void fetchDealAuditHistory(deal.id);
+    });
+  }
   const transferBanner = $("#transfer-pending-banner");
   if (transferBanner) {
     const hasPendingTransfer = Boolean(deal.transferPendingForUserId);
@@ -1813,7 +1818,6 @@ function openDrawer(id) {
   selectedDealId = id;
   setDrawerPane("conversation");
   renderDrawer();
-  if (appState?.currentUser?.role === "admin") void fetchDealAuditHistory(id);
 }
 
 async function fetchDealAuditHistory(dealId = selectedDealId) {
