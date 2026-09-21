@@ -32,6 +32,25 @@ export function applyV2634ServerPatches(source) {
     "duración de cookie segura",
   );
 
+  // V24 reconstruye la transferencia directa a persona; la marca pendiente debe
+  // insertarse después de esa capa para sobrevivir en el servidor final.
+  patched = replaceOnce(
+    patched,
+    `      deal.lineId = targetLine.id;
+      deal.updatedAt = timestamp();
+      deal.lastTransferAt = timestamp();`,
+    `      deal.lineId = targetLine.id;
+      deal.updatedAt = timestamp();
+      deal.lastTransferAt = timestamp();
+      deal.transferPendingForUserId = targetUser.id;
+      deal.transferPendingForUserName = targetUser.name;
+      deal.transferPendingFromUserId = actor.id;
+      deal.transferPendingFromUserName = actor.name;
+      deal.transferPendingFromBranchName = sourceBranch.name;
+      deal.transferPendingAt = timestamp();`,
+    "marca pendiente de transferencia directa",
+  );
+
   // Las presentaciones automáticas nunca deben contabilizarse como respuesta humana.
   patched = replaceOnce(
     patched,
