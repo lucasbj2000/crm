@@ -191,7 +191,7 @@ try {
   }
 
   const deal = state.deals?.find((entry) => entry.phone === "595981123456");
-  assert(deal, "No se creó la negociación proveniente de la pauta.");
+  assert(deal, "No se creó la negociación proveniente de la pauta. Líneas=" + JSON.stringify((await api("/api/whatsapp-lines")).lines?.map((line)=>({id:line.id,name:line.name,provider:line.provider,cloud:line.cloud}))) + " Deals=" + JSON.stringify((state.deals || []).map((row)=>({id:row.id,phone:row.phone,lineId:row.lineId,lastMessage:row.lastMessage}))) + " Server=" + output.slice(-5000));
   assert(deal.adAttribution?.sourceId === "ad_2635", "No se guardó el ID del anuncio.");
   assert(deal.adAttribution?.ctwaClid === "ctwa_click_2635", "No se guardó ctwa_clid.");
   assert(deal.adAttribution?.promotionName === "Promo Camioneta Septiembre", "No se vinculó la pauta configurada.");
