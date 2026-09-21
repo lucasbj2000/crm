@@ -8,17 +8,17 @@ const appDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const patch = await readFile(path.join(appDir, "lib", "v26-36-zero-loss-incoming-patches.mjs"), "utf8");
 const server = await readFile(path.join(appDir, "server.mjs"), "utf8");
 
-assert.match(patch, /source === "notify" \\|\\| source === "append"/, "append no debe descartarse por antigüedad.");
-assert.match(patch, /const seenMessages = new Set\\(\\)/, "processedMessageIds no debe envenenar la deduplicación al arrancar.");
+assert.ok(patch.includes('source === "notify" || source === "append"'), "append no debe descartarse por antigüedad.");
+assert.ok(patch.includes("const seenMessages = new Set();"), "processedMessageIds no debe envenenar la deduplicación al arrancar.");
 assert.match(patch, /v2636MessageMaterialized/, "La deduplicación debe comprobar persistencia real.");
 assert.match(patch, /pendingIncomingEvents/, "Falta cola durable de ingresos QR.");
 assert.match(patch, /pendingCloudWebhooks/, "Falta cola durable Cloud.");
-assert.match(patch, /await v2636AcceptCloudWebhook\\(request\\.body\\)/, "Cloud debe persistirse antes de responder 200.");
+assert.ok(patch.includes("await v2636AcceptCloudWebhook(request.body)"), "Cloud debe persistirse antes de responder 200.");
 assert.match(patch, /v2636FallbackIncomingText/, "Falta fallback para formatos entrantes no textuales.");
 assert.ok(patch.includes("[Ubicación compartida]"), "Las ubicaciones deben impactar.");
 assert.ok(patch.includes("[Contacto compartido"), "Los contactos compartidos deben impactar.");
 assert.match(patch, /v2636SchedulePendingIncoming/, "Los fallos deben reintentarse.");
-assert.doesNotMatch(patch, /pendingIncomingEvents\\.splice/, "No se deben borrar mensajes pendientes por límite.");
+assert.ok(!patch.includes("pendingIncomingEvents.splice"), "No se deben borrar mensajes pendientes por límite.");
 assert.match(server, /applyV2636ZeroLossIncomingPatches/, "V26.36 no está conectado al pipeline.");
 assert.ok(server.indexOf("applyV2636ZeroLossIncomingPatches") > server.indexOf("applyV2635AdPromotionContextPatches"), "V26.36 debe ejecutarse después de V26.35.");
 
