@@ -568,7 +568,7 @@ function renderMetrics() {
 }
 
 function renderBoard() {
-  const search = String(dealSearchTerm || "").trim().toLowerCase();
+  const search = $("#deal-search").value.trim().toLowerCase();
   const filter = $("#deal-filter").value;
   let deals = appState.deals || [];
   if (search) {
@@ -2294,8 +2294,8 @@ $$(".nav-item[data-view]").forEach((button) => button.addEventListener("click", 
 $("#refresh-button").addEventListener("click", () => void poll());
 $("#deal-search").addEventListener("input", (event) => {
   dealSearchTerm = String(event.target.value || "");
-  renderBoard();
 });
+$("#deal-search").addEventListener("input", renderBoard);
 window.addEventListener("pageshow", () => {
   const input = $("#deal-search");
   if (input && !dealSearchTerm) input.value = "";
