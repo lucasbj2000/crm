@@ -85,6 +85,7 @@ const initialAdminPasswordHash = "7bf3f828f2da9830f7817c4e5e719c1a:61464159a9ece
 if (!Array.isArray(data.users)) data.users = [];
 if (!Array.isArray(data.clientLoads)) data.clientLoads = [];
 if (!Array.isArray(data.auditEvents)) data.auditEvents = [];
+if (!Array.isArray(data.authSessions)) data.authSessions = [];
 if (!Array.isArray(data.assistantDocuments)) data.assistantDocuments = [];
 if (!Array.isArray(data.botInstructions)) data.botInstructions = [];
 if (!Array.isArray(data.customFieldDefinitions)) data.customFieldDefinitions = [];
@@ -586,6 +587,37 @@ let syncCutoffAt = Date.parse(data.sync?.lastActiveAt) || Date.now() - firstConn
 let historySyncing = false;
 const seenMessages = new Set((data.processedMessageIds || []).slice(-1200));
 const sessions = new Map();
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+function sessionTokenHash(token = "") {
+  return token ? createHash("sha256").update(String(token)).digest("hex") : "";
+}
+function persistentSessionForToken(token = "") {
+  const hash = sessionTokenHash(token);
+  if (!hash) return null;
+  return (data.authSessions || []).find((entry) => entry.tokenHash === hash) || null;
+}
+function rememberPersistentSession(token, userId, now = Date.now()) {
+  const tokenHash = sessionTokenHash(token);
+  if (!tokenHash || !userId) return null;
+  let entry = (data.authSessions || []).find((item) => item.tokenHash === tokenHash);
+  if (!entry) {
+    entry = { id: makeId("authsession"), tokenHash, userId, createdAt: timestamp(now) };
+    data.authSessions.unshift(entry);
+  }
+  entry.userId = userId;
+  entry.expiresAt = now + SESSION_TTL_MS;
+  entry.lastSeenAt = now;
+  entry.updatedAt = timestamp(now);
+  data.authSessions = data.authSessions.filter((item) => Number(item.expiresAt || 0) > now).slice(0, 5000);
+  return entry;
+}
+function forgetPersistentSession(token = "") {
+  const hash = sessionTokenHash(token);
+  if (!hash) return false;
+  const before = (data.authSessions || []).length;
+  data.authSessions = (data.authSessions || []).filter((entry) => entry.tokenHash !== hash);
+  return data.authSessions.length !== before;
+}
 const sharedDriveRuntime = {
   status: data.settings.sharedDrive?.enabled ? "pending" : "disabled",
   lastSyncAt: null,
@@ -3426,17 +3458,13 @@ async function processIncomingBranchTransfer(packet, sourceJid, messageId, occur
   try {
     const introMessageId = await sendProviderText(deal, intro);
     rememberSeen(introMessageId);
-    recordHumanOutgoing(data, {
-      jid: deal.jid,
-      name: deal.name,
+    recordBotOutgoing(data, {
+      deal,
       text: intro,
       messageId: introMessageId,
-      userId: owner?.id || null,
-      userName: owner?.name || localBranch.name,
-      branchId: localBranch.id,
+      origin: "transfer",
       now: occurredAt,
     });
-    deal.stage = STAGES.CONTACTED;
     deal.botActive = false;
     const incomingTransfer = {
       id: packet.id || makeId("transfer"),
@@ -3747,8 +3775,7 @@ async function v212RouteSelectedBranch(sourceDeal, targetBranch) {
     try {
       const intro = `Hola${sourceDeal.contactPersonName ? ` ${sourceDeal.contactPersonName}` : ""}. Soy del equipo de ${targetBranch.name}. Recibimos tu consulta y continuamos desde acá.`;
       const messageId = await sendProviderText(targetDeal, intro);
-      recordHumanOutgoing(data, { jid: targetDeal.jid, name: targetDeal.name, text: intro, messageId, userId: targetOwner?.id || null, userName: targetOwner?.name || targetBranch.name, branchId: targetBranch.id, lineId: targetLine.id });
-      targetDeal.stage = STAGES.CONTACTED;
+      recordBotOutgoing(data, { deal: targetDeal, text: intro, messageId, origin: "transfer" });
       targetDeal.updatedAt = timestamp();
     } catch (error) {
       targetDeal.coverageRequired = true;
@@ -4448,18 +4475,46 @@ function cookieValue(request, name) {
 
 function currentSession(request) {
   const token = cookieValue(request, "whatsbot_session");
-  const session = sessions.get(token);
-  if (!token || !session || session.expiresAt < Date.now()) {
-    if (token) sessions.delete(token);
+  if (!token) return null;
+  const now = Date.now();
+  let session = sessions.get(token) || null;
+  let persistent = persistentSessionForToken(token);
+
+  if (!session && persistent && Number(persistent.expiresAt || 0) > now) {
+    session = {
+      userId: persistent.userId,
+      expiresAt: Number(persistent.expiresAt),
+      lastSeenAt: Number(persistent.lastSeenAt || now),
+    };
+    sessions.set(token, session);
+  }
+
+  if (!session || Number(session.expiresAt || 0) < now) {
+    sessions.delete(token);
+    const changed = forgetPersistentSession(token);
+    if (changed) void store.save();
     return null;
   }
+
   const user = data.users.find((entry) => entry.id === session.userId && entry.active !== false);
   if (!user) {
     sessions.delete(token);
+    const changed = forgetPersistentSession(token);
+    if (changed) void store.save();
     return null;
   }
-  session.expiresAt = Date.now() + 12 * 60 * 60 * 1000;
-  session.lastSeenAt = Date.now();
+
+  session.expiresAt = now + SESSION_TTL_MS;
+  session.lastSeenAt = now;
+  if (!persistent) {
+    persistent = rememberPersistentSession(token, user.id, now);
+    void store.save();
+  } else if (now - Number(persistent.lastSeenAt || 0) >= 15 * 60 * 1000) {
+    persistent.expiresAt = now + SESSION_TTL_MS;
+    persistent.lastSeenAt = now;
+    persistent.updatedAt = timestamp(now);
+    void store.save();
+  }
   return { token, session, user };
 }
 
@@ -6436,10 +6491,12 @@ app.post("/api/auth/login", (request, response) => {
     return response.status(401).json({ error: "Usuario o contraseña incorrectos." });
   }
   const token = randomBytes(32).toString("hex");
-  sessions.set(token, { userId: user.id, expiresAt: Date.now() + 12 * 60 * 60 * 1000, lastSeenAt: Date.now() });
+  const now = Date.now();
+  sessions.set(token, { userId: user.id, expiresAt: now + SESSION_TTL_MS, lastSeenAt: now });
+  rememberPersistentSession(token, user.id, now);
   response.setHeader(
     "Set-Cookie",
-    `whatsbot_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200`,
+    `whatsbot_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000`,
   );
   recordAuditEvent(user, "inicio_sesion", { username: user.username }, user.branchId || primaryBranchId());
   void store.save();
@@ -6454,6 +6511,7 @@ app.post("/api/auth/logout", (request, response) => {
     data.attendanceEvents.splice(20000);
     void store.save();
   }
+  forgetPersistentSession(cookieValue(request, "whatsbot_session"));
   sessions.delete(cookieValue(request, "whatsbot_session"));
   response.setHeader(
     "Set-Cookie",
@@ -8561,6 +8619,35 @@ app.post("/api/whatsapp-lines/:id/connect", requireManagerOrAdmin, async (reques
 app.post("/api/whatsapp-lines/:id/disconnect", requireManagerOrAdmin, async (request,response,next)=>{try{const user=request.currentUser||currentUser(request),line=whatsappLineById(request.params.id);if(!line)throw new Error("Línea no encontrada.");if(user.role!=="admin"&&!canUserUseWhatsappLine(user,line))throw new Error("No tenés permiso para desconectar esta línea.");await disconnectWhatsappLineConnection(line.id);await store.save();response.json({ok:true,revision:store.revision,line:{id:line.id,connection:whatsappLineConnectionState(line.id)}});}catch(error){next(error);}});
 app.delete("/api/whatsapp-lines/:id", requireAdmin, async (request,response,next)=>{try{const line=whatsappLineById(request.params.id);if(!line)throw new Error("Línea no encontrada.");if(line.legacyBranchSession)throw new Error("La línea principal migrada no se elimina; podés desactivarla desde su configuración.");if((data.deals||[]).some((deal)=>deal.lineId===line.id)){line.active=false;line.updatedAt=timestamp();}else{await disconnectWhatsappLineConnection(line.id).catch(()=>{});data.whatsappLines=data.whatsappLines.filter((entry)=>entry.id!==line.id);}recordAuditEvent(request.currentUser,"linea_whatsapp_eliminada",{lineId:line.id,name:line.name},line.branchId);await store.save();response.json(stateResponse(request));}catch(error){next(error);}});
 
+app.get("/api/deals/:id/history", requireAdmin, (request, response, next) => {
+  try {
+    const deal = findDeal(data, request.params.id);
+    if (!deal) throw new Error("Negociación no encontrada.");
+    const relevant = (data.auditEvents || []).filter((event) => {
+      const details = event?.details || {};
+      return details.dealId === deal.id
+        || details.targetDealId === deal.id
+        || details.sourceDealId === deal.id
+        || (deal.clientId && details.clientId === deal.clientId);
+    }).slice(0, 250);
+    const history = [
+      {
+        id: `created_${deal.id}`,
+        at: deal.createdAt || deal.updatedAt || timestamp(),
+        action: "negociacion_creada",
+        actorType: "system",
+        userId: null,
+        userName: "Sistema",
+        role: "system",
+        details: { dealId: deal.id, clientId: deal.clientId || null, stage: deal.stage, source: deal.source || null },
+      },
+      ...relevant,
+    ].sort((a, b) => Date.parse(b.at || 0) - Date.parse(a.at || 0));
+    response.setHeader("Cache-Control", "no-store");
+    response.json({ dealId: deal.id, history });
+  } catch (error) { next(error); }
+});
+
 app.post("/api/deals/:id/transfer", async (request, response, next) => {
   try {
     const actor = currentUser(request);
@@ -8576,7 +8663,19 @@ app.post("/api/deals/:id/transfer", async (request, response, next) => {
       const targetUser = data.users.find((entry) => entry.id === targetUserId && entry.active !== false);
       if (!targetUser) throw new Error("Compañero no encontrado.");
       if (targetUser.branchId !== sourceBranch.id) throw new Error("Ese usuario pertenece a otra sucursal. Seleccioná transferencia a sucursal.");
-      deal.ownerUserId = targetUser.id; deal.ownerName = targetUser.name; deal.updatedAt = timestamp();
+      const transferAt = timestamp();
+      deal.ownerUserId = targetUser.id; deal.ownerName = targetUser.name; deal.updatedAt = transferAt;
+      deal.transferPending = {
+        active: true,
+        type: "user",
+        fromUserId: actor.id,
+        fromName: actor.name,
+        toUserId: targetUser.id,
+        toName: targetUser.name,
+        sourceBranchId: sourceBranch.id,
+        targetBranchId: sourceBranch.id,
+        at: transferAt,
+      };
       const client = findClient(data, deal.clientId);
       if (client) {
         if (!client.branchOwners || typeof client.branchOwners !== "object") client.branchOwners = {};
@@ -8615,6 +8714,20 @@ app.post("/api/deals/:id/transfer", async (request, response, next) => {
     const targetClient = findClient(data, targetDeal.clientId) || client;
     const targetOwner = chooseIncomingTransferOwner(targetClient, targetBranch.id);
     if (targetOwner) applyOwnerToClientAndDeal(targetClient, targetDeal, targetOwner, targetBranch.id);
+    targetDeal.transferPending = {
+      active: true,
+      type: "branch",
+      fromUserId: actor.id,
+      fromName: actor.name,
+      toUserId: targetOwner?.id || null,
+      toName: targetOwner?.name || "",
+      sourceBranchId: sourceBranch.id,
+      sourceBranchName: sourceBranch.name,
+      targetBranchId: targetBranch.id,
+      targetBranchName: targetBranch.name,
+      sourceDealId: deal.id,
+      at: timestamp(),
+    };
     targetDeal.messages = Array.isArray(targetDeal.messages) ? targetDeal.messages : [];
     targetDeal.messages.push({ id: makeId("message"), direction: "incoming", origin: "transfer", text: transferSystemMessage({ interest, reason, note, sourceName: sourceBranch.name }, sourceBranch, targetOwner), at: timestamp() });
 
@@ -8640,8 +8753,7 @@ app.post("/api/deals/:id/transfer", async (request, response, next) => {
       try {
         const intro = renderBranchIntro(targetBranch, sourceBranch, targetClient || client || { name: targetDeal.name }, { interest, reason, note, sourceName: sourceBranch.name });
         const messageId = await sendProviderText(targetDeal, intro);
-        recordHumanOutgoing(data, { jid: targetDeal.jid, text: intro, messageId, userId: targetOwner?.id || actor.id, userName: targetOwner?.name || actor.name, branchId: targetBranch.id, lineId:targetDeal.lineId||targetLine?.id||null });
-        targetDeal.stage = STAGES.CONTACTED;
+        recordBotOutgoing(data, { deal: targetDeal, text: intro, messageId, origin: "transfer" });
         targetDeal.lastMessage = intro;
         targetDeal.updatedAt = timestamp();
       } catch (error) {
