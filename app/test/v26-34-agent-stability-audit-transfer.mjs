@@ -28,7 +28,11 @@ const assert = (condition, message) => { if (!condition) throw new Error(message
 // Contract: BOT must not move a NEW negotiation to CONTACTED; a human reply must.
 {
   const domainData = createInitialData();
-  const branchId = domainData.branches[0].id;
+  const branchId = "branch_principal";
+  domainData.branches = [{
+    id: branchId, name: "Sucursal Principal", code: "PRINCIPAL", city: "", address: "", phone: "",
+    timezone: "America/Asuncion", active: true, createdAt: timestamp(), updatedAt: timestamp(),
+  }];
   const deal = createDeal(domainData, {
     jid: "595981340001@s.whatsapp.net",
     name: "Cliente Bot",
@@ -50,7 +54,11 @@ const assert = (condition, message) => { if (!condition) throw new Error(message
 }
 
 const seed = createInitialData();
-const branchId = seed.branches[0].id;
+const branchId = "branch_principal";
+seed.branches = [{
+  id: branchId, name: "Sucursal Principal", code: "PRINCIPAL", city: "", address: "", phone: "",
+  timezone: "America/Asuncion", active: true, createdAt: timestamp(), updatedAt: timestamp(),
+}];
 const adminPassword = "Admin-2634!";
 const agentAPassword = "AgentA-2634!";
 const agentBPassword = "AgentB-2634!";
