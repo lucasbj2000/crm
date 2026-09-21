@@ -1097,6 +1097,17 @@ export function recordHumanOutgoing(data, {
     if (deal.branchId) client.branchOwners[deal.branchId] = { userId: deal.ownerUserId, userName: deal.ownerName, updatedAt: timestamp(now) };
   }
   deal.stage = STAGES.CONTACTED;
+  // V26.34: una transferencia queda visible hasta la primera respuesta humana real.
+  // Los saludos automáticos de transferencia se registran como bot/sistema y no pasan por aquí.
+  if (deal.transferPending?.active) {
+    deal.transferPending = {
+      ...deal.transferPending,
+      active: false,
+      respondedAt: at,
+      respondedByUserId: userId || deal.ownerUserId || null,
+      respondedByName: cleanText(userName, 120) || deal.ownerName || "Asesor",
+    };
+  }
   // Handoff humano persistente: desde la primera intervención humana el bot automático
   // deja de participar hasta que un usuario lo reactive explícitamente.
   deal.botActive = false;
