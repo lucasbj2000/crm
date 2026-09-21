@@ -158,6 +158,9 @@ try{
   console.log("OK · V26.34 flujo humano, copia de texto, historial admin, transferencias, sesión y filtro estable validados.");
 } finally {
   child.kill("SIGTERM");
-  await new Promise(resolve=>{child.once("exit",resolve);setTimeout(resolve,3000).unref();});
+  await Promise.race([
+    new Promise((resolve) => child.once("exit", resolve)),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ]);
   await rm(dataDirectory,{recursive:true,force:true});
 }
