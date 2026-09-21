@@ -1719,3 +1719,120 @@ input:focus, textarea:focus, select:focus {
 .form-error-banner{margin:4px 0 2px;padding:11px 13px;border:1px solid #e3b0aa;border-radius:11px;background:#fff1ef;color:#8f3e38;font-size:11px;font-weight:750;line-height:1.45;box-shadow:0 8px 20px rgba(143,62,56,.08);}
 .form-error-banner[hidden]{display:none!important;}
 #user-save-button:disabled{opacity:.65;cursor:wait;}
+
+
+/* V26.34 · selección de texto, transferencia pendiente e historial por negociación */
+#drawer-messages,
+#drawer-messages .message,
+#drawer-messages .message p,
+#drawer-messages .message small,
+#drawer-messages .message strong,
+#drawer-messages .message span:not(.v2628-message-reply),
+.deal-side-pane p,
+.deal-side-pane small,
+.deal-side-pane strong {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+#drawer-messages .message,
+#drawer-messages .message p,
+#drawer-messages .message small { cursor: text; }
+#drawer-messages button,
+#drawer-messages [role="button"] {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  cursor: pointer;
+}
+
+.transfer-pending-banner {
+  display: grid;
+  grid-template-columns: 34px minmax(0,1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #e4c779;
+  border-radius: 12px;
+  background: #fff8df;
+}
+.transfer-pending-banner[hidden] { display: none !important; }
+.transfer-pending-banner > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: #f2dfaa;
+  color: #805e16;
+  font-size: 16px;
+  font-weight: 900;
+}
+.transfer-pending-banner strong,
+.transfer-pending-banner small { display: block; }
+.transfer-pending-banner strong { color: #684d15; font-size: 10px; }
+.transfer-pending-banner small { margin-top: 3px; color: #876f37; font-size: 8px; line-height: 1.45; }
+
+.deal-history-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #dde5df;
+  border-radius: 12px;
+  background: #fbfcfb;
+}
+.deal-history-card[hidden] { display: none !important; }
+.deal-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.deal-history-head small,
+.deal-history-head strong { display: block; }
+.deal-history-head small {
+  color: #7b8a82;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+.deal-history-head strong {
+  margin-top: 3px;
+  color: #284b3a;
+  font-size: 11px;
+}
+.deal-history-head .button { min-height: 32px; padding: 0 9px; font-size: 8px; }
+.deal-history-list {
+  display: grid;
+  max-height: 320px;
+  gap: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.deal-history-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 12px minmax(0,1fr);
+  gap: 8px;
+  padding: 9px 2px;
+  border-bottom: 1px solid #edf0ed;
+}
+.deal-history-item:last-child { border-bottom: 0; }
+.deal-history-item > i {
+  width: 8px;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #6d9d7f;
+  box-shadow: 0 0 0 3px #e7efe9;
+}
+.deal-history-item strong,
+.deal-history-item small,
+.deal-history-item p { display: block; }
+.deal-history-item strong { color: #33483d; font-size: 9px; }
+.deal-history-item small { margin-top: 3px; color: #87928c; font-size: 7px; }
+.deal-history-item p {
+  margin: 4px 0 0;
+  color: #627169;
+  font-size: 8px;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+}

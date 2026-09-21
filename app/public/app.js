@@ -95,6 +95,8 @@ let liveActivityTimer = null;
 let previousVisualSnapshot = { deals: 0, waiting: 0, won: 0, lowStock: 0, news: 0 };
 let organizationData = null;
 let masterContext = null;
+const dealHistoryCache = new Map();
+const dealHistoryLoading = new Set();
 
 
 function escapeHtml(value) {
@@ -811,6 +813,10 @@ function auditActionLabel(action) {
     configuracion_modificada: "Configuración modificada",
     drive_configurado: "Drive configurado",
     drive_sincronizado: "Drive sincronizado",
+    negociacion_creada: "Negociación creada",
+    etapa_negociacion_cambiada_admin: "Etapa modificada por administración",
+    monto_cierre_confirmado: "Monto de cierre confirmado",
+    lead_distribuido_automaticamente: "Lead asignado automáticamente",
   };
   return labels[action] || String(action || "Movimiento").replaceAll("_", " ");
 }
@@ -1321,6 +1327,76 @@ function renderAdminStageFields() {
   button.disabled = select.value === select.dataset.currentStage;
 }
 
+function dealHistoryDetail(event) {
+  const details = event?.details || {};
+  const body = details.body || {};
+  const parts = [];
+  const from = details.fromStage || details.from || body.fromStage || body.from;
+  const to = details.toStage || details.to || body.stage || body.toStage || body.to;
+  if (from || to) parts.push([from ? (stageLabels[from] || from) : "", to ? (stageLabels[to] || to) : ""].filter(Boolean).join(" → "));
+  const amount = details.closingAmount ?? details.amount ?? body.closingAmount ?? body.negotiationAmount;
+  if (Number.isFinite(Number(amount))) parts.push(`Monto: ${money.format(Number(amount))}`);
+  const reason = details.lossReasonName || details.reason || body.reason || body.reasonId;
+  if (reason) parts.push(`Motivo: ${reason}`);
+  const targetName = details.ownerName || details.userName || details.targetUserName;
+  if (targetName) parts.push(`Responsable: ${targetName}`);
+  const targetBranch = details.targetBranch || details.targetBranchName;
+  if (targetBranch) parts.push(`Destino: ${targetBranch}`);
+  if (body.active !== undefined && event.action === "bot_modificado") parts.push(body.active ? "Bot activado" : "Bot pausado");
+  return parts.join(" · ");
+}
+
+function renderDealHistory(dealId) {
+  const section = $("#deal-history-section");
+  const list = $("#deal-history-list");
+  if (!section || !list) return;
+  const admin = appState?.currentUser?.role === "admin";
+  section.hidden = !admin;
+  if (!admin) return;
+  const cached = dealHistoryCache.get(dealId);
+  const entries = cached?.history || [];
+  if (dealHistoryLoading.has(dealId) && !entries.length) {
+    list.innerHTML = '<div class="column-empty">Cargando movimientos…</div>';
+    return;
+  }
+  list.innerHTML = entries.length ? entries.map((event) => {
+    const actor = event.userName || (event.actorType === "bot" ? "Bot" : event.actorType === "system" ? "Sistema" : "Usuario");
+    const detail = dealHistoryDetail(event);
+    return `<article class="deal-history-item"><i></i><div><strong>${escapeHtml(auditActionLabel(event.action))}</strong><small>${escapeHtml(actor)} · ${escapeHtml(formatDate(event.at))}</small>${detail ? `<p>${escapeHtml(detail)}</p>` : ""}</div></article>`;
+  }).join("") : '<div class="column-empty">Todavía no hay movimientos registrados para esta negociación.</div>';
+}
+
+async function fetchDealHistory(dealId, { force = false } = {}) {
+  if (!dealId || appState?.currentUser?.role !== "admin") return;
+  const cached = dealHistoryCache.get(dealId);
+  if (!force && cached?.revision === lastStateRevision) return renderDealHistory(dealId);
+  if (dealHistoryLoading.has(dealId)) return;
+  dealHistoryLoading.add(dealId);
+  renderDealHistory(dealId);
+  try {
+    const result = await api(`/api/deals/${encodeURIComponent(dealId)}/history`);
+    dealHistoryCache.set(dealId, { revision: lastStateRevision, history: result.history || [] });
+  } catch (error) {
+    dealHistoryCache.set(dealId, { revision: lastStateRevision, history: [], error: error.message });
+  } finally {
+    dealHistoryLoading.delete(dealId);
+    if (selectedDealId === dealId) renderDealHistory(dealId);
+  }
+}
+
+function renderTransferPending(deal) {
+  const section = $("#transfer-pending-section");
+  const copy = $("#transfer-pending-copy");
+  if (!section || !copy) return;
+  const pending = deal?.transferPending?.active ? deal.transferPending : null;
+  section.hidden = !pending;
+  if (!pending) { copy.textContent = ""; return; }
+  const source = pending.fromName || "Otro agente";
+  const target = pending.toName || deal.ownerName || "el agente receptor";
+  const branch = pending.sourceBranchName ? ` desde ${pending.sourceBranchName}` : "";
+  copy.textContent = `Transferida por ${source}${branch} para ${target}. Esta marca desaparecerá cuando el agente receptor responda al cliente.`;
+}
+
 function renderDrawer() {
   const drawer = $("#deal-drawer");
   if (!selectedDealId) return;
@@ -1352,6 +1428,9 @@ function renderDrawer() {
   const currentLine=(appState.whatsappLines||[]).find(line=>line.id===deal.lineId);
   $("#drawer-branch").textContent = `${currentBranch?.name || "Sucursal"}${currentLine ? ` · ${currentLine.name}` : ""}`;
   $("#drawer-owner").textContent = deal.ownerName || "Sin asignar";
+  renderTransferPending(deal);
+  renderDealHistory(deal.id);
+  if (user.role === "admin") void fetchDealHistory(deal.id);
   const activeUsers = (appState.users || []).filter((entry) => entry.active !== false && entry.branchId === deal.branchId && (["admin", "manager", "supervisor"].includes(user.role) || entry.id === user.id));
   $("#drawer-owner-select").innerHTML = activeUsers.map((entry) => `<option value="${escapeHtml(entry.id)}"${entry.id === (deal.ownerUserId || user.id) ? " selected" : ""}>${escapeHtml(entry.name)}${entry.online ? " · en línea" : ""}</option>`).join("");
   const canManageOwner = ["admin", "manager", "supervisor"].includes(user.role);
@@ -2574,6 +2653,10 @@ $("#assign-owner-button").addEventListener("click", async () => {
 });
 
 $("#admin-stage-select")?.addEventListener("change", renderAdminStageFields);
+
+$("#refresh-deal-history")?.addEventListener("click", () => {
+  if (selectedDealId) void fetchDealHistory(selectedDealId, { force: true });
+});
 
 $("#admin-stage-apply")?.addEventListener("click", async () => {
   if (!selectedDealId || appState.currentUser?.role !== "admin") return;

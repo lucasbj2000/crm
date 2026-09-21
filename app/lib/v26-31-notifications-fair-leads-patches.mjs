@@ -101,7 +101,11 @@ function v2631SubscriptionSessionActive(subscription) {
     if (session?.userId !== subscription.userId || Number(session?.expiresAt || 0) <= now) continue;
     if (v2631SessionHash(token) === subscription.sessionHash) return true;
   }
-  return false;
+  return (data.authSessions || []).some((entry) =>
+    entry.userId === subscription.userId
+    && entry.tokenHash === subscription.sessionHash
+    && Number(entry.expiresAt || 0) > now
+  );
 }
 
 async function v2631SendPushToUser(userId) {
