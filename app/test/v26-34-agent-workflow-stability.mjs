@@ -128,7 +128,8 @@ try{
   let deal=state.deals.find(d=>d.name==="Cliente Transferencia");
   assert(deal,"No se creó la negociación de prueba.");
 
-  state=await api(`/api/deals/${encodeURIComponent(deal.id)}/transfer`,{method:"POST",body:{userId:"agent_2634"}});
+  await api(`/api/deals/${encodeURIComponent(deal.id)}/transfer`,{method:"POST",body:{userId:"agent_2634"}});
+  state=await api("/api/state");
   deal=state.deals.find(d=>d.id===deal.id);
   assert(deal.transferPendingForUserId==="agent_2634","La transferencia no quedó marcada como pendiente para el agente destino.");
   assert(deal.transferPendingFromUserName==="Admin V26.34","No se guardó quién transfirió la negociación.");
@@ -138,7 +139,8 @@ try{
   deal=state.deals.find(d=>d.id===deal.id);
   assert(deal?.transferPendingForUserId==="agent_2634","El agente destino no ve el aviso pendiente.");
 
-  state=await api(`/api/deals/${encodeURIComponent(deal.id)}/message`,{method:"POST",body:{text:"Buen día, te doy retorno."}});
+  await api(`/api/deals/${encodeURIComponent(deal.id)}/message`,{method:"POST",body:{text:"Buen día, te doy retorno."}});
+  state=await api("/api/state");
   deal=state.deals.find(d=>d.id===deal.id);
   assert(deal.stage===STAGES.CONTACTED,"La respuesta humana del agente no llevó a Contactado.");
   assert(!deal.transferPendingForUserId,"El aviso de transferencia no desapareció después de responder.");
