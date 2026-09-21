@@ -3426,13 +3426,17 @@ async function processIncomingBranchTransfer(packet, sourceJid, messageId, occur
   try {
     const introMessageId = await sendProviderText(deal, intro);
     rememberSeen(introMessageId);
-    recordBotOutgoing(data, {
-      deal,
+    recordHumanOutgoing(data, {
+      jid: deal.jid,
+      name: deal.name,
       text: intro,
       messageId: introMessageId,
-      origin: "transfer-intro",
+      userId: owner?.id || null,
+      userName: owner?.name || localBranch.name,
+      branchId: localBranch.id,
       now: occurredAt,
     });
+    deal.stage = STAGES.CONTACTED;
     deal.botActive = false;
     const incomingTransfer = {
       id: packet.id || makeId("transfer"),
@@ -3743,7 +3747,8 @@ async function v212RouteSelectedBranch(sourceDeal, targetBranch) {
     try {
       const intro = `Hola${sourceDeal.contactPersonName ? ` ${sourceDeal.contactPersonName}` : ""}. Soy del equipo de ${targetBranch.name}. Recibimos tu consulta y continuamos desde acá.`;
       const messageId = await sendProviderText(targetDeal, intro);
-      recordBotOutgoing(data, { deal: targetDeal, text: intro, messageId, origin: "transfer-intro" });
+      recordHumanOutgoing(data, { jid: targetDeal.jid, name: targetDeal.name, text: intro, messageId, userId: targetOwner?.id || null, userName: targetOwner?.name || targetBranch.name, branchId: targetBranch.id, lineId: targetLine.id });
+      targetDeal.stage = STAGES.CONTACTED;
       targetDeal.updatedAt = timestamp();
     } catch (error) {
       targetDeal.coverageRequired = true;
@@ -8663,7 +8668,8 @@ app.post("/api/deals/:id/transfer", async (request, response, next) => {
       try {
         const intro = renderBranchIntro(targetBranch, sourceBranch, targetClient || client || { name: targetDeal.name }, { interest, reason, note, sourceName: sourceBranch.name });
         const messageId = await sendProviderText(targetDeal, intro);
-        recordBotOutgoing(data, { deal: targetDeal, text: intro, messageId, origin: "transfer-intro" });
+        recordHumanOutgoing(data, { jid: targetDeal.jid, text: intro, messageId, userId: targetOwner?.id || actor.id, userName: targetOwner?.name || actor.name, branchId: targetBranch.id, lineId:targetDeal.lineId||targetLine?.id||null });
+        targetDeal.stage = STAGES.CONTACTED;
         targetDeal.lastMessage = intro;
         targetDeal.updatedAt = timestamp();
       } catch (error) {
