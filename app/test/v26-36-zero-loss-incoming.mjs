@@ -15,8 +15,8 @@ assert.match(patch, /pendingIncomingEvents/, "Falta cola durable de ingresos QR.
 assert.match(patch, /pendingCloudWebhooks/, "Falta cola durable Cloud.");
 assert.match(patch, /await v2636AcceptCloudWebhook\\(request\\.body\\)/, "Cloud debe persistirse antes de responder 200.");
 assert.match(patch, /v2636FallbackIncomingText/, "Falta fallback para formatos entrantes no textuales.");
-assert.match(patch, /\\[Ubicación compartida\\]/, "Las ubicaciones deben impactar.");
-assert.match(patch, /\\[Contacto compartido/, "Los contactos compartidos deben impactar.");
+assert.ok(patch.includes("[Ubicación compartida]"), "Las ubicaciones deben impactar.");
+assert.ok(patch.includes("[Contacto compartido"), "Los contactos compartidos deben impactar.");
 assert.match(patch, /v2636SchedulePendingIncoming/, "Los fallos deben reintentarse.");
 assert.doesNotMatch(patch, /pendingIncomingEvents\\.splice/, "No se deben borrar mensajes pendientes por límite.");
 assert.match(server, /applyV2636ZeroLossIncomingPatches/, "V26.36 no está conectado al pipeline.");
