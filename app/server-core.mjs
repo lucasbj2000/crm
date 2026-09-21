@@ -4453,7 +4453,7 @@ function currentSession(request) {
     sessions.delete(token);
     return null;
   }
-  session.expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
+  session.expiresAt = Date.now() + 12 * 60 * 60 * 1000;
   session.lastSeenAt = Date.now();
   return { token, session, user };
 }
@@ -6431,10 +6431,10 @@ app.post("/api/auth/login", (request, response) => {
     return response.status(401).json({ error: "Usuario o contraseña incorrectos." });
   }
   const token = randomBytes(32).toString("hex");
-  sessions.set(token, { userId: user.id, expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, lastSeenAt: Date.now() });
+  sessions.set(token, { userId: user.id, expiresAt: Date.now() + 12 * 60 * 60 * 1000, lastSeenAt: Date.now() });
   response.setHeader(
     "Set-Cookie",
-    `whatsbot_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800`,
+    `whatsbot_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200`,
   );
   recordAuditEvent(user, "inicio_sesion", { username: user.username }, user.branchId || primaryBranchId());
   void store.save();
