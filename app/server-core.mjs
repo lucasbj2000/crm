@@ -86,6 +86,7 @@ if (!Array.isArray(data.users)) data.users = [];
 if (!Array.isArray(data.clientLoads)) data.clientLoads = [];
 if (!Array.isArray(data.auditEvents)) data.auditEvents = [];
 if (!Array.isArray(data.authSessions)) data.authSessions = [];
+data.authSessions = data.authSessions.filter((entry) => Number(entry?.expiresAt || 0) > Date.now()).slice(0, 5000);
 if (!Array.isArray(data.assistantDocuments)) data.assistantDocuments = [];
 if (!Array.isArray(data.botInstructions)) data.botInstructions = [];
 if (!Array.isArray(data.customFieldDefinitions)) data.customFieldDefinitions = [];
@@ -8628,7 +8629,10 @@ app.get("/api/deals/:id/history", requireAdmin, (request, response, next) => {
       return details.dealId === deal.id
         || details.targetDealId === deal.id
         || details.sourceDealId === deal.id
-        || (deal.clientId && details.clientId === deal.clientId);
+        || (deal.clientId
+          && details.clientId === deal.clientId
+          && !details.dealId
+          && ["cliente_creado", "cliente_actualizado", "v21_clients_merged"].includes(event.action));
     }).slice(0, 250);
     const history = [
       {
