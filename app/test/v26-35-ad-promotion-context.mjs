@@ -185,12 +185,12 @@ try {
   const deadline = Date.now() + 10000;
   while (Date.now() < deadline) {
     state = await api("/api/state");
-    const found = state.deals?.find((deal) => String(deal.phone || "").replace(/\\D/g, "") === "595981123456");
+    const found = state.deals?.find((deal) => String(deal.phone || "").replace(/\D/g, "") === "595981123456");
     if (found?.adAttribution?.sourceId === "ad_2635") break;
     await new Promise((resolve) => setTimeout(resolve, 120));
   }
 
-  const deal = state.deals?.find((entry) => String(entry.phone || "").replace(/\\D/g, "") === "595981123456");
+  const deal = state.deals?.find((entry) => String(entry.phone || "").replace(/\D/g, "") === "595981123456");
   assert(deal, "No se creó la negociación proveniente de la pauta. Líneas=" + JSON.stringify((await api("/api/whatsapp-lines")).lines?.map((line)=>({id:line.id,name:line.name,provider:line.provider,cloud:line.cloud}))) + " Deals=" + JSON.stringify((state.deals || []).map((row)=>({id:row.id,phone:row.phone,lineId:row.lineId,lastMessage:row.lastMessage}))) + " Server=" + output.slice(-5000));
   assert(deal.adAttribution?.sourceId === "ad_2635", "No se guardó el ID del anuncio.");
   assert(deal.adAttribution?.ctwaClid === "ctwa_click_2635", "No se guardó ctwa_clid.");
