@@ -46,13 +46,23 @@ v2634DealSearchInput?.addEventListener("search", v2634UpdateDealSearch);`,
 
   patched = replaceOnce(
     patched,
-    `    showApp();
+    `async function boot() {
+  try {
+    try { applyBranding(await api("/api/branding/public")); } catch {}
+    const status = await api("/api/auth/status");
+    if (!status.authenticated) return showLogin();
+    showApp();
     setState(await api("/api/state"), { hydrateSettings: true });`,
-    `    showApp();
+    `async function boot() {
+  try {
+    try { applyBranding(await api("/api/branding/public")); } catch {}
+    const status = await api("/api/auth/status");
+    if (!status.authenticated) return showLogin();
+    showApp();
     dealSearchQuery = "";
     if ($("#deal-search")) $("#deal-search").value = "";
     setState(await api("/api/state"), { hydrateSettings: true });`,
-    "reinicio del buscador al iniciar",
+    "reinicio del buscador dentro de boot",
   );
 
   patched = replaceOnce(
