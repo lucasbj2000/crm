@@ -44,30 +44,7 @@ seed.users = [{
   createdAt: now,
   updatedAt: now,
 }];
-seed.whatsappLines = [{
-  id: "line_cloud_2635",
-  name: "Ventas Pautas",
-  branchId,
-  provider: "cloud",
-  phone: "595981999999",
-  active: true,
-  isDefault: true,
-  legacyBranchSession: false,
-  accessMode: "all",
-  allowedUserIds: [],
-  supervisorsCanUse: true,
-  managersCanUse: true,
-  botEnabled: true,
-  cloud: {
-    phoneNumberId: "phone_2635",
-    businessAccountId: "waba_2635",
-    apiVersion: "v26.0",
-    accessToken: "",
-    verifyToken: "verify_2635",
-  },
-  createdAt: now,
-  updatedAt: now,
-}];
+
 await writeFile(path.join(dataDirectory, "whatsbot-crm.json"), JSON.stringify(seed));
 
 const child = spawn(process.execPath, [path.join(appDirectory, "server.mjs")], {
@@ -123,12 +100,39 @@ try {
   await waitForServer();
   await login();
 
+  const initialState = await api("/api/state");
+  const runtimeBranchId = initialState.branches?.[0]?.id;
+  assert(runtimeBranchId, "El CRM no creó una sucursal principal para la prueba.");
+
+  await api("/api/whatsapp-lines", {
+    method: "POST",
+    body: {
+      name: "Ventas Pautas",
+      routingBranchId: runtimeBranchId,
+      provider: "cloud",
+      phone: "595981999999",
+      active: true,
+      isDefault: true,
+      accessMode: "all",
+      botEnabled: true,
+      cloud: {
+        phoneNumberId: "phone_2635",
+        businessAccountId: "waba_2635",
+        apiVersion: "v26.0",
+        verifyToken: "verify_2635"
+      }
+    }
+  });
+  const lineState = await api("/api/whatsapp-lines");
+  const cloudLine = lineState.lines?.find((line) => line.name === "Ventas Pautas");
+  assert(cloudLine?.id, "No se creó la línea Cloud de prueba.");
+
   const configured = await api("/api/ad-promotions", {
     method: "POST",
     body: {
       name: "Promo Camioneta Septiembre",
       active: true,
-      lineIds: ["line_cloud_2635"],
+      lineIds: [cloudLine.id],
       sourceIds: ["ad_2635"],
       triggerContains: ["quiero información de la promoción"],
       headline: "Camioneta 0 km - Oferta especial",
