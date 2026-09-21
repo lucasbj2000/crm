@@ -52,6 +52,8 @@ const money = new Intl.NumberFormat("es-PY", {
 let appState = null;
 let authenticated = false;
 let selectedDealId = null;
+let dealSearchTerm = "";
+let dealAuditHistory = { dealId: null, events: [], loading: false };
 let currentView = "crm";
 let settingsHydrated = false;
 let polling = false;
@@ -566,7 +568,7 @@ function renderMetrics() {
 }
 
 function renderBoard() {
-  const search = $("#deal-search").value.trim().toLowerCase();
+  const search = String(dealSearchTerm || "").trim().toLowerCase();
   const filter = $("#deal-filter").value;
   let deals = appState.deals || [];
   if (search) {
@@ -1359,6 +1361,15 @@ function renderDrawer() {
   $("#assign-owner-button").hidden = !canManageOwner;
   $("#assign-owner-button").textContent = deal.ownerUserId ? "Reasignar" : "Asignar responsable";
   renderAdminStageControl(deal);
+  const transferBanner = $("#transfer-pending-banner");
+  if (transferBanner) {
+    const pendingForThisUser = Boolean(deal.transferPendingForUserId && deal.transferPendingForUserId === user.id);
+    transferBanner.hidden = !pendingForThisUser;
+    if (pendingForThisUser) {
+      $("#transfer-pending-copy").textContent = `${deal.transferPendingFromUserName || "Otro agente"} te transfirió esta negociación${deal.transferPendingFromBranchName ? ` desde ${deal.transferPendingFromBranchName}` : ""}. Este aviso desaparecerá cuando respondas al cliente.`;
+    }
+  }
+  renderDealAuditHistory();
   const wait = $("#drawer-wait");
   if (deal.stage === "waiting") {
     wait.innerHTML = `<span class="wait-chip${["red", "critical"].includes(deal.heat?.level) ? " urgent" : ""}">${escapeHtml(elapsedLabel(deal.heat?.minutes))}</span>`;
@@ -1796,6 +1807,71 @@ function openDrawer(id) {
   selectedDealId = id;
   setDrawerPane("conversation");
   renderDrawer();
+  if (appState?.currentUser?.role === "admin") void fetchDealAuditHistory(id);
+}
+
+async function fetchDealAuditHistory(dealId = selectedDealId) {
+  if (!dealId || appState?.currentUser?.role !== "admin") return;
+  dealAuditHistory = { dealId, events: [], loading: true };
+  renderDealAuditHistory();
+  try {
+    const result = await api(`/api/deals/${encodeURIComponent(dealId)}/audit-history`);
+    if (selectedDealId !== dealId) return;
+    dealAuditHistory = { dealId, events: result.events || [], loading: false };
+  } catch (error) {
+    dealAuditHistory = { dealId, events: [], loading: false, error: error.message };
+  }
+  renderDealAuditHistory();
+}
+
+function dealAuditLabel(action = "") {
+  const labels = {
+    mensaje_enviado: "Mensaje enviado",
+    archivo_enviado: "Archivo enviado",
+    responsable_asignado: "Responsable modificado",
+    bot_modificado: "Bot modificado",
+    negociacion_ganada: "Negociación ganada",
+    negociacion_perdida: "Negociación perdida",
+    producto_reservado: "Producto reservado",
+    reserva_devuelta: "Reserva liberada",
+    conversacion_transferida: "Conversación transferida",
+    transferencia_recibida: "Transferencia recibida",
+    transferencia_recibida_respondida: "Transferencia atendida",
+    etapa_negociacion_cambiada_admin: "Etapa modificada por Admin",
+    monto_cierre_confirmado: "Monto de cierre confirmado",
+    cliente_actualizado: "Ficha del cliente modificada",
+    bot_actualizo_contacto: "Bot actualizó datos",
+    bot_actualizo_persona_contacto: "Bot actualizó contacto",
+    bot_actualizo_campo_personalizado: "Bot actualizó campo",
+  };
+  return labels[action] || String(action || "Movimiento").replaceAll("_", " ");
+}
+
+function renderDealAuditHistory() {
+  const section = $("#admin-deal-history-section");
+  const list = $("#deal-history-list");
+  if (!section || !list) return;
+  const visible = appState?.currentUser?.role === "admin" && Boolean(selectedDealId);
+  section.hidden = !visible;
+  if (!visible) return;
+  if (dealAuditHistory.dealId !== selectedDealId || dealAuditHistory.loading) {
+    list.innerHTML = `<div class="column-empty">Cargando historial…</div>`;
+    return;
+  }
+  if (dealAuditHistory.error) {
+    list.innerHTML = `<div class="column-empty">${escapeHtml(dealAuditHistory.error)}</div>`;
+    return;
+  }
+  const events = dealAuditHistory.events || [];
+  list.innerHTML = events.length ? events.map((event) => {
+    const details = event.details || {};
+    const summary = [
+      details.fromStage && details.toStage ? `${details.fromStage} → ${details.toStage}` : "",
+      details.ownerName || details.userName || "",
+      details.sourceBranch && details.targetBranch ? `${details.sourceBranch} → ${details.targetBranch}` : "",
+    ].filter(Boolean).join(" · ");
+    return `<div class="deal-history-row"><i></i><div><strong>${escapeHtml(dealAuditLabel(event.action))}</strong><small>${escapeHtml(event.userName || (event.actorType === "bot" ? "Bot" : event.actorType === "system" ? "Sistema" : "Sistema"))}${summary ? ` · ${escapeHtml(summary)}` : ""}</small></div><time>${escapeHtml(formatDate(event.at))}</time></div>`;
+  }).join("") : `<div class="column-empty">Todavía no hay movimientos registrados para esta negociación.</div>`;
 }
 
 function setDrawerPane(name="conversation") {
@@ -2206,7 +2282,14 @@ $$('[data-master-view]').forEach(button=>button.addEventListener('click',()=>swi
 
 $$(".nav-item[data-view]").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.view)));
 $("#refresh-button").addEventListener("click", () => void poll());
-$("#deal-search").addEventListener("input", renderBoard);
+$("#deal-search").addEventListener("input", (event) => {
+  dealSearchTerm = String(event.target.value || "");
+  renderBoard();
+});
+window.addEventListener("pageshow", () => {
+  const input = $("#deal-search");
+  if (input && !dealSearchTerm) input.value = "";
+});
 $("#deal-filter").addEventListener("change", renderBoard);
 $("#stock-search").addEventListener("input", renderStock);
 $("#instructions").addEventListener("input", updateInstructionCounter);
@@ -2574,6 +2657,7 @@ $("#assign-owner-button").addEventListener("click", async () => {
 });
 
 $("#admin-stage-select")?.addEventListener("change", renderAdminStageFields);
+$("#refresh-deal-history")?.addEventListener("click", () => void fetchDealAuditHistory(selectedDealId));
 
 $("#admin-stage-apply")?.addEventListener("click", async () => {
   if (!selectedDealId || appState.currentUser?.role !== "admin") return;
