@@ -95,7 +95,6 @@ let liveActivityTimer = null;
 let previousVisualSnapshot = { deals: 0, waiting: 0, won: 0, lowStock: 0, news: 0 };
 let organizationData = null;
 let masterContext = null;
-let dealSearchQuery = "";
 const dealHistoryCache = new Map();
 const dealHistoryLoading = new Set();
 
@@ -569,9 +568,7 @@ function renderMetrics() {
 }
 
 function renderBoard() {
-  const searchInput = $("#deal-search");
-  if (searchInput && searchInput.value !== dealSearchQuery) searchInput.value = dealSearchQuery;
-  const search = dealSearchQuery.trim().toLowerCase();
+  const search = $("#deal-search").value.trim().toLowerCase();
   const filter = $("#deal-filter").value;
   let deals = appState.deals || [];
   if (search) {
@@ -2074,8 +2071,6 @@ $("#login-form").addEventListener("submit", async (event) => {
     await api("/api/auth/login", { method: "POST", body: JSON.stringify({ username: $("#login-username").value.trim(), password: $("#login-password").value }) });
     $("#login-password").value = "";
     showApp();
-    dealSearchQuery = "";
-    if ($("#deal-search")) $("#deal-search").value = "";
     setState(await api("/api/state"), { hydrateSettings: true });
     void fetchHeaderOperations(true);
   } catch (error) {
@@ -2290,13 +2285,7 @@ $$('[data-master-view]').forEach(button=>button.addEventListener('click',()=>swi
 
 $$(".nav-item[data-view]").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.view)));
 $("#refresh-button").addEventListener("click", () => void poll());
-const dealSearchInput = $("#deal-search");
-const updateDealSearch = () => {
-  dealSearchQuery = String(dealSearchInput?.value || "");
-  renderBoard();
-};
-dealSearchInput?.addEventListener("input", updateDealSearch);
-dealSearchInput?.addEventListener("search", updateDealSearch);
+$("#deal-search").addEventListener("input", renderBoard);
 $("#deal-filter").addEventListener("change", renderBoard);
 $("#stock-search").addEventListener("input", renderStock);
 $("#instructions").addEventListener("input", updateInstructionCounter);
@@ -3260,12 +3249,6 @@ async function boot() {
 }
 
 void boot().finally(() => schedulePoll(1200));
-window.addEventListener("pageshow", (event) => {
-  if (!event.persisted) return;
-  dealSearchQuery = "";
-  if ($("#deal-search")) $("#deal-search").value = "";
-  if (appState) renderBoard();
-});
 document.addEventListener("visibilitychange", () => { if (!document.hidden) schedulePoll(150); });
 
 // V16 · interacción de marcación, automatización, campos y campañas.
