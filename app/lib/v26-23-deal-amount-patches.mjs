@@ -235,13 +235,13 @@ export function applyV2623CoreUiPatches(source) {
   source = replaceOnce(source, "  const canWork = canManage;", "  const canWork = canManage;\n  v2623RenderAmount(deal, canWork);", "permisos del drawer");
   source = replaceListenerBlock(
     source,
-    '$("#mark-won-button").addEventListener("click", async () => {',
+    '$("#mark-won-button").addEventListener("click"',
     '$("#mark-won-button").addEventListener("click", () => {\n  if (!selectedDealId) return;\n  v2623OpenCloseAmountDialog("won");\n});',
     "cierre ganado"
   );
   source = replaceListenerBlock(
     source,
-    '$("#lost-form").addEventListener("submit", async (event) => {',
+    '$("#lost-form").addEventListener("submit"',
     '$("#lost-form").addEventListener("submit", (event) => {\n  event.preventDefault();\n  if (!selectedDealId) return;\n  const reasonId = $("#lost-reason").value;\n  if (!reasonId) { showToast("Seleccioná el motivo de pérdida.", "warning"); return; }\n  $("#lost-dialog").close();\n  v2623OpenCloseAmountDialog("lost", reasonId);\n});',
     "cierre perdido"
   );
