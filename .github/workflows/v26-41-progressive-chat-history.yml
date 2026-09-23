@@ -1,0 +1,54 @@
+name: V26.41 progressive chat history
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - "feat/v26-41-progressive-chat-history"
+
+permissions:
+  contents: read
+
+jobs:
+  chat-history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install
+        working-directory: app
+        run: npm ci
+      - name: Contracts
+        run: |
+          node --check app/lib/v26-41-progressive-chat-history-patches.mjs
+          node --check app/server.mjs
+          node app/test/v26-41-progressive-chat-history.mjs
+      - name: Real runtime
+        env:
+          WHATSAPP_MOCK: "1"
+          PORT: "3061"
+          WHATSBOT_HOST: "127.0.0.1"
+          WHATSBOT_DATA_DIR: ${{ runner.temp }}/v2641-data
+        run: |
+          node app/server.mjs >/tmp/v2641.log 2>&1 &
+          echo $! >/tmp/v2641.pid
+          for i in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:3061/api/health >/dev/null; then break; fi
+            sleep .25
+          done
+          curl -fsS http://127.0.0.1:3061/app.js -o /tmp/v2641-app.js
+          node --check /tmp/v2641-app.js
+          grep -F 'V26.41 PROGRESSIVE_CHAT_HISTORY' /tmp/v2641-app.js
+          grep -F 'Cargar 50 anteriores' /tmp/v2641-app.js
+          grep -F 'slice(-visibleCount)' /tmp/v2641-app.js
+      - name: Cleanup
+        if: always()
+        run: |
+          test ! -f /tmp/v2641.pid || kill $(cat /tmp/v2641.pid) 2>/dev/null || true
+          tail -80 /tmp/v2641.log 2>/dev/null || true
