@@ -1982,3 +1982,418 @@ input:focus, textarea:focus, select:focus {
   }
   #deal-drawer .v2645-composer .composer-send{min-width:66px!important}
 }
+
+
+/* V26.52 MOBILE INBOX CARDS */
+#v2651-mobile-inbox{display:none}
+
+@media(max-width:900px){
+  [data-view-panel="crm"].active{
+    padding:10px 10px calc(86px + env(safe-area-inset-bottom))!important;
+    background:#f4f7f5!important;
+  }
+
+  [data-view-panel="crm"].active>.metric-grid,
+  [data-view-panel="crm"].active>.toolbar,
+  [data-view-panel="crm"].active>#mobile-stage-tabs,
+  [data-view-panel="crm"].active>#crm-board{
+    display:none!important;
+  }
+
+  #v2651-mobile-inbox{
+    display:block!important;
+    box-sizing:border-box!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:0!important;
+    font-family:inherit!important;
+  }
+
+  #v2651-mobile-inbox *,
+  #v2651-mobile-inbox *::before,
+  #v2651-mobile-inbox *::after{
+    box-sizing:border-box!important;
+  }
+
+  #v2651-mobile-inbox .v2651-mobile-head{
+    display:grid!important;
+    gap:12px!important;
+    width:100%!important;
+    margin:0!important;
+    padding:15px!important;
+    border:1px solid #dfe7e2!important;
+    border-radius:18px!important;
+    background:#fff!important;
+    box-shadow:0 8px 24px rgba(25,57,44,.07)!important;
+  }
+
+  #v2651-mobile-inbox .v2651-mobile-title{
+    display:grid!important;
+    gap:3px!important;
+    min-width:0!important;
+  }
+
+  #v2651-mobile-inbox .v2651-mobile-title small{
+    display:block!important;
+    color:#74847c!important;
+    font-size:10px!important;
+    font-weight:900!important;
+    letter-spacing:.08em!important;
+  }
+
+  #v2651-mobile-inbox .v2651-mobile-title strong{
+    display:block!important;
+    color:#183a2f!important;
+    font-size:22px!important;
+    font-weight:850!important;
+    line-height:1.15!important;
+  }
+
+  #v2651-mobile-inbox .v2651-mobile-title span{
+    display:block!important;
+    color:#809088!important;
+    font-size:12px!important;
+    line-height:1.3!important;
+  }
+
+  #v2651-mobile-inbox .v2651-availability{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:8px!important;
+  }
+
+  #v2651-mobile-inbox .v2651-availability button{
+    appearance:none!important;
+    -webkit-appearance:none!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:7px!important;
+    width:100%!important;
+    min-height:44px!important;
+    margin:0!important;
+    padding:8px 10px!important;
+    border:1px solid #dce4e0!important;
+    border-radius:12px!important;
+    background:#f7f9f8!important;
+    color:#53645c!important;
+    font:inherit!important;
+    font-size:13px!important;
+    font-weight:800!important;
+    line-height:1.15!important;
+    box-shadow:none!important;
+  }
+
+  #v2651-mobile-inbox .v2651-availability button i{
+    display:block!important;
+    width:9px!important;
+    height:9px!important;
+    flex:0 0 9px!important;
+    border-radius:50%!important;
+    background:#9da9a3!important;
+  }
+
+  #v2651-mobile-inbox .v2651-availability button[data-v2651-attendance="active"].active{
+    border-color:#b8ddc6!important;
+    background:#eaf7ee!important;
+    color:#245f3b!important;
+  }
+  #v2651-mobile-inbox .v2651-availability button[data-v2651-attendance="active"].active i{background:#41a864!important}
+
+  #v2651-mobile-inbox .v2651-availability button[data-v2651-attendance="paused"].active{
+    border-color:#ead9b9!important;
+    background:#fff8e9!important;
+    color:#7b5d23!important;
+  }
+  #v2651-mobile-inbox .v2651-availability button[data-v2651-attendance="paused"].active i{background:#d69a37!important}
+
+  #v2651-mobile-inbox .v2651-search{
+    display:flex!important;
+    align-items:center!important;
+    gap:8px!important;
+    width:100%!important;
+    margin:10px 0 0!important;
+    padding:0 12px!important;
+    border:1px solid #dfe6e2!important;
+    border-radius:14px!important;
+    background:#fff!important;
+    box-shadow:0 3px 12px rgba(25,57,44,.035)!important;
+  }
+
+  #v2651-mobile-inbox .v2651-search>span{
+    flex:0 0 auto!important;
+    color:#75857e!important;
+    font-size:18px!important;
+  }
+
+  #v2651-mobile-inbox .v2651-search input{
+    appearance:none!important;
+    -webkit-appearance:none!important;
+    width:100%!important;
+    min-width:0!important;
+    height:46px!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    outline:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    color:#233c31!important;
+    font:inherit!important;
+    font-size:16px!important;
+  }
+
+  #v2651-mobile-inbox .v2651-tabs{
+    position:sticky!important;
+    top:0!important;
+    z-index:25!important;
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:6px!important;
+    width:100%!important;
+    margin:10px 0!important;
+    padding:5px!important;
+    border:1px solid #dfe6e2!important;
+    border-radius:14px!important;
+    background:rgba(255,255,255,.97)!important;
+    box-shadow:0 4px 14px rgba(25,57,44,.055)!important;
+    backdrop-filter:blur(10px)!important;
+  }
+
+  #v2651-mobile-inbox .v2651-tabs button{
+    appearance:none!important;
+    -webkit-appearance:none!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:6px!important;
+    width:100%!important;
+    min-width:0!important;
+    min-height:42px!important;
+    margin:0!important;
+    padding:7px 4px!important;
+    border:0!important;
+    border-radius:10px!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    color:#66776f!important;
+    font:inherit!important;
+    font-size:12px!important;
+    font-weight:850!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+  }
+
+  #v2651-mobile-inbox .v2651-tabs button b{
+    display:grid!important;
+    min-width:20px!important;
+    height:20px!important;
+    padding:0 5px!important;
+    place-items:center!important;
+    border-radius:999px!important;
+    background:#edf1ef!important;
+    color:#617169!important;
+    font-size:10px!important;
+    line-height:1!important;
+  }
+
+  #v2651-mobile-inbox .v2651-tabs button.active{
+    background:#183f33!important;
+    color:#fff!important;
+  }
+
+  #v2651-mobile-inbox .v2651-tabs button.active b{
+    background:rgba(255,255,255,.18)!important;
+    color:#fff!important;
+  }
+
+  #v2651-mobile-inbox .v2651-deal-list{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    gap:9px!important;
+    width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:0!important;
+  }
+
+  #v2651-mobile-inbox button.v2651-deal-card{
+    appearance:none!important;
+    -webkit-appearance:none!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    gap:9px!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:13px!important;
+    overflow:hidden!important;
+    border:1px solid #dfe6e2!important;
+    border-left-width:4px!important;
+    border-radius:15px!important;
+    background:#fff!important;
+    box-shadow:0 5px 16px rgba(25,57,44,.055)!important;
+    color:#233c31!important;
+    font:inherit!important;
+    text-align:left!important;
+    white-space:normal!important;
+    cursor:pointer!important;
+  }
+
+  #v2651-mobile-inbox button.v2651-deal-card.pending{border-left-color:#dfa141!important}
+  #v2651-mobile-inbox button.v2651-deal-card.answered{border-left-color:#5da875!important}
+
+  #v2651-mobile-inbox .v2651-card-head{
+    display:flex!important;
+    align-items:center!important;
+    gap:9px!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+
+  #v2651-mobile-inbox .v2651-card-avatar{
+    display:grid!important;
+    width:38px!important;
+    height:38px!important;
+    flex:0 0 38px!important;
+    place-items:center!important;
+    overflow:hidden!important;
+    border-radius:50%!important;
+    background:#e7f0eb!important;
+    color:#315f4b!important;
+    font-size:11px!important;
+    font-weight:900!important;
+    line-height:1!important;
+  }
+
+  #v2651-mobile-inbox .v2651-card-person{
+    display:block!important;
+    flex:1 1 auto!important;
+    min-width:0!important;
+    overflow:hidden!important;
+  }
+
+  #v2651-mobile-inbox .v2651-card-person strong,
+  #v2651-mobile-inbox .v2651-card-person small{
+    display:block!important;
+    width:100%!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+
+  #v2651-mobile-inbox .v2651-card-person strong{
+    color:#1d382d!important;
+    font-size:14px!important;
+    font-weight:850!important;
+    line-height:1.25!important;
+  }
+
+  #v2651-mobile-inbox .v2651-card-person small{
+    margin-top:2px!important;
+    color:#87938d!important;
+    font-size:10px!important;
+    line-height:1.2!important;
+  }
+
+  #v2651-mobile-inbox .v2651-card-state{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    flex:0 0 auto!important;
+    max-width:96px!important;
+    padding:5px 7px!important;
+    border-radius:999px!important;
+    font-size:9px!important;
+    font-weight:900!important;
+    line-height:1!important;
+    letter-spacing:.035em!important;
+    text-transform:uppercase!important;
+    white-space:nowrap!important;
+  }
+
+  #v2651-mobile-inbox .v2651-card-state.pending{
+    background:#fff3dc!important;
+    color:#8b601d!important;
+  }
+
+  #v2651-mobile-inbox .v2651-card-state.answered{
+    background:#eaf6ee!important;
+    color:#2f6b45!important;
+  }
+
+  #v2651-mobile-inbox .v2651-card-message{
+    display:-webkit-box!important;
+    width:100%!important;
+    min-width:0!important;
+    max-height:38px!important;
+    margin:0!important;
+    overflow:hidden!important;
+    color:#4d5f57!important;
+    font-size:13px!important;
+    font-weight:500!important;
+    line-height:1.45!important;
+    overflow-wrap:anywhere!important;
+    word-break:break-word!important;
+    -webkit-box-orient:vertical!important;
+    -webkit-line-clamp:2!important;
+  }
+
+  #v2651-mobile-inbox .v2651-card-meta{
+    display:flex!important;
+    align-items:center!important;
+    gap:5px!important;
+    width:100%!important;
+    min-width:0!important;
+    overflow:hidden!important;
+    color:#85918b!important;
+    font-size:10px!important;
+    line-height:1.2!important;
+  }
+
+  #v2651-mobile-inbox .v2651-card-meta .v2651-card-stage,
+  #v2651-mobile-inbox .v2651-card-meta .v2651-card-owner{
+    display:block!important;
+    min-width:0!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+
+  #v2651-mobile-inbox .v2651-card-meta .v2651-card-stage{flex:0 1 auto!important}
+  #v2651-mobile-inbox .v2651-card-meta .v2651-card-owner{flex:1 1 auto!important}
+  #v2651-mobile-inbox .v2651-card-meta .v2651-card-separator{flex:0 0 auto!important}
+
+  #v2651-mobile-inbox .v2651-card-meta time{
+    display:block!important;
+    flex:0 0 auto!important;
+    margin-left:auto!important;
+    color:#66766e!important;
+    font-size:10px!important;
+    white-space:nowrap!important;
+  }
+
+  #v2651-mobile-inbox .v2651-empty{
+    display:grid!important;
+    place-items:center!important;
+    gap:6px!important;
+    width:100%!important;
+    padding:34px 18px!important;
+    border:1px dashed #d6dfda!important;
+    border-radius:16px!important;
+    background:#fff!important;
+    text-align:center!important;
+  }
+}
+
+@media(max-width:380px){
+  #v2651-mobile-inbox button.v2651-deal-card{padding:11px!important}
+  #v2651-mobile-inbox .v2651-card-avatar{width:34px!important;height:34px!important;flex-basis:34px!important}
+  #v2651-mobile-inbox .v2651-card-state{max-width:86px!important;padding:4px 6px!important;font-size:8px!important}
+}
