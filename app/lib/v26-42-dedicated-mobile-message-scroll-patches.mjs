@@ -52,20 +52,31 @@ const APPEND = String.raw`
 })();
 `;
 
+const V2641_SCROLLER_PATTERN =
+  /function v2641ConversationScroller\(list = document\.querySelector\("#drawer-messages"\)\) \{[\s\S]*?\n\}/g;
+
+const V2641_SCROLLER_REPLACEMENT = `function v2641ConversationScroller(list = document.querySelector("#drawer-messages")) {
+  return list;
+}`;
+
+function normalizeV2641ConversationScrollers(source) {
+  const matches = source.match(V2641_SCROLLER_PATTERN);
+  if (!matches?.length) {
+    throw new Error("V26.42: no se encontró v2641ConversationScroller");
+  }
+  return source.replace(V2641_SCROLLER_PATTERN, V2641_SCROLLER_REPLACEMENT);
+}
+
 export function applyV2642CoreUiPatches(source) {
-  if (source.includes(MARKER)) return source;
   if (!source.includes("// V26.41 PROGRESSIVE_CHAT_HISTORY")) {
     throw new Error("V26.42 requiere V26.41 aplicado antes.");
   }
 
-  source = replaceRegexOnce(
-    source,
-    /function v2641ConversationScroller\(list = document\.querySelector\("#drawer-messages"\)\) \{[\s\S]*?\n\}/,
-    `function v2641ConversationScroller(list = document.querySelector("#drawer-messages")) {
-  return list;
-}`,
-    "v2641ConversationScroller"
-  );
+  source = normalizeV2641ConversationScrollers(source);
+
+  // Aunque V26.42 ya esté presente, volvemos a normalizar el scroller.
+  // Durante el deploy otras capas/pruebas pueden reutilizar un app.js ya parcheado.
+  if (source.includes(MARKER)) return source;
 
   return source + APPEND;
 }
