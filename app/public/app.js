@@ -3401,3 +3401,123 @@ window.addEventListener("click", (event) => {
   const rect = button.getBoundingClientRect(); const ripple = document.createElement("i"); ripple.className="ui-ripple"; ripple.style.left=`${event.clientX-rect.left}px`; ripple.style.top=`${event.clientY-rect.top}px`; button.appendChild(ripple); window.setTimeout(()=>ripple.remove(),650);
 }, { passive:true });
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) { applyExperienceSettings(); setupLiveActivity(); } });
+
+
+// V26.46 COMPLETE_MOBILE_RUNTIME
+(() => {
+  function updateViewportHeight() {
+    const viewport = window.visualViewport;
+    const height = Math.max(
+      320,
+      Math.round(viewport?.height || window.innerHeight || document.documentElement.clientHeight || 720),
+    );
+    document.documentElement.style.setProperty("--v2646-vh", height + "px");
+  }
+
+  function syncClosedRecontactBanner() {
+    const composer = document.querySelector("#deal-drawer .v2645-composer");
+    if (!composer) return;
+
+    const deal = (appState?.deals || []).find((entry) => entry.id === selectedDealId);
+    const closed = Boolean(deal && ["won", "lost"].includes(deal.stage));
+    let banner = composer.querySelector(":scope > .v2646-recontact-banner");
+
+    if (!closed) {
+      if (banner) banner.remove();
+      return;
+    }
+
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.className = "v2646-recontact-banner";
+      banner.innerHTML = [
+        '<span>↻</span>',
+        '<div>',
+        '<strong>Volver a contactar</strong>',
+        '<small>Esta negociación está cerrada. Al enviar un mensaje se creará una nueva negociación en Contactado y quedará asignada al agente que la recontacta.</small>',
+        '<button type="button">Escribir mensaje</button>',
+        '</div>',
+      ].join("");
+      banner.querySelector("button")?.addEventListener("click", () => {
+        const box = document.querySelector("#manual-message");
+        box?.focus();
+        box?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+      });
+      composer.prepend(banner);
+    }
+
+    const box = document.querySelector("#manual-message");
+    const send = document.querySelector("#message-form button[type='submit'], #message-form .composer-send");
+    if (box) {
+      box.disabled = false;
+      box.placeholder = "Escribí para volver a contactar al cliente…";
+    }
+    if (send) {
+      send.disabled = false;
+      send.title = "Enviar y crear nueva negociación en Contactado";
+    }
+  }
+
+  function syncViewVisibility() {
+    document.querySelectorAll("[data-view-panel]").forEach((panel) => {
+      const active = panel.dataset.viewPanel === currentView;
+      panel.hidden = !active;
+      panel.classList.toggle("active", active);
+      panel.setAttribute("aria-hidden", active ? "false" : "true");
+    });
+  }
+
+  function syncMobileRuntime() {
+    updateViewportHeight();
+    syncViewVisibility();
+    syncClosedRecontactBanner();
+
+    const list = document.querySelector("#drawer-messages.v2645-messages, #drawer-messages");
+    if (list) {
+      list.style.overflowY = "auto";
+      list.style.webkitOverflowScrolling = "touch";
+      list.style.touchAction = "pan-y";
+    }
+  }
+
+  function installMobileRuntime() {
+    document.documentElement.classList.add("v2646-ready");
+    syncMobileRuntime();
+
+    let queued = false;
+    const queue = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        syncMobileRuntime();
+      });
+    };
+
+    new MutationObserver(queue).observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class", "hidden", "aria-hidden", "disabled"],
+    });
+
+    window.addEventListener("crm:state", queue);
+    window.addEventListener("resize", queue, { passive: true });
+    window.addEventListener("orientationchange", () => setTimeout(queue, 80), { passive: true });
+    window.visualViewport?.addEventListener("resize", queue, { passive: true });
+    window.visualViewport?.addEventListener("scroll", () => requestAnimationFrame(updateViewportHeight), { passive: true });
+
+    document.addEventListener("click", (event) => {
+      const shell = document.querySelector("#app-shell");
+      if (!shell?.classList.contains("v26-mobile-more-open")) return;
+      if (event.target.closest(".sidebar,#v26-mobile-nav [data-v26-action='more']")) return;
+      shell.classList.remove("v26-mobile-more-open");
+    }, { passive: true });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", installMobileRuntime, { once: true });
+  } else {
+    installMobileRuntime();
+  }
+})();
