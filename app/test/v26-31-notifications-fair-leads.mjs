@@ -27,7 +27,7 @@ for (const marker of ["applyV2631CoreUiPatches", "applyV2631ServerPatches"]) {
 }
 
 for (const marker of [
-  "whatsbot-mobile-v26-31-push-shell",
+  "const CACHE = \"whatsbot-mobile-",
   "self.addEventListener(\"push\"",
   "self.addEventListener(\"notificationclick\"",
   "ICIIA_OPEN_DEAL",
