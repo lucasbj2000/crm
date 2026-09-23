@@ -135,22 +135,22 @@ export function applyV2638CoreUiPatches(source) {
 
   patched = replaceOnce(
     patched,
-    '  const canManage = open && (!deal.ownerUserId || deal.ownerUserId === user.id || user.role === "admin" || managerCoverage);\\n  const canCommunicate = canManage || (open && Boolean(temporaryCommunication));\\n  const canWork = canManage;',
-    '  const canManage = open && (!deal.ownerUserId || deal.ownerUserId === user.id || user.role === "admin" || managerCoverage);\\n  const canRecontactClosed = ["won", "lost"].includes(deal.stage) && (!deal.ownerUserId || deal.ownerUserId === user.id || ["admin", "manager", "supervisor"].includes(user.role));\\n  const canCommunicate = canManage || (open && Boolean(temporaryCommunication));\\n  const canSendText = canCommunicate || canRecontactClosed;\\n  const canWork = canManage;\\n  ' + UI_MARKER,
+    '  const canManage = open && (!deal.ownerUserId || deal.ownerUserId === user.id || user.role === "admin" || managerCoverage);\n  const canCommunicate = canManage || (open && Boolean(temporaryCommunication));\n  const canWork = canManage;',
+    '  const canManage = open && (!deal.ownerUserId || deal.ownerUserId === user.id || user.role === "admin" || managerCoverage);\n  const canRecontactClosed = ["won", "lost"].includes(deal.stage) && (!deal.ownerUserId || deal.ownerUserId === user.id || ["admin", "manager", "supervisor"].includes(user.role));\n  const canCommunicate = canManage || (open && Boolean(temporaryCommunication));\n  const canSendText = canCommunicate || canRecontactClosed;\n  const canWork = canManage;\n  ' + UI_MARKER,
     "permisos de recontacto en drawer",
   );
 
   patched = replaceOnce(
     patched,
-    '  $("#manual-message").disabled = !canCommunicate;\\n  $("#message-form button").disabled = !canCommunicate;\\n  $("#attach-button").disabled = !canCommunicate;\\n  $("#record-audio-button").disabled = !canCommunicate;',
-    '  $("#manual-message").disabled = !canSendText;\\n  $("#manual-message").placeholder = canRecontactClosed ? "Escribí para volver a contactar; se creará una nueva negociación…" : "Escribí un mensaje…";\\n  $("#message-form button").disabled = !canSendText;\\n  $("#message-form button").title = canRecontactClosed ? "Enviar y crear una nueva negociación en Contactado" : "Enviar mensaje";\\n  $("#attach-button").disabled = !canCommunicate;\\n  $("#record-audio-button").disabled = !canCommunicate;',
+    '  $("#manual-message").disabled = !canCommunicate;\n  $("#message-form button").disabled = !canCommunicate;\n  $("#attach-button").disabled = !canCommunicate;\n  $("#record-audio-button").disabled = !canCommunicate;',
+    '  $("#manual-message").disabled = !canSendText;\n  $("#manual-message").placeholder = canRecontactClosed ? "Escribí para volver a contactar; se creará una nueva negociación…" : "Escribí un mensaje…";\n  $("#message-form button").disabled = !canSendText;\n  $("#message-form button").title = canRecontactClosed ? "Enviar y crear una nueva negociación en Contactado" : "Enviar mensaje";\n  $("#attach-button").disabled = !canCommunicate;\n  $("#record-audio-button").disabled = !canCommunicate;',
     "habilitación de texto en cerrados",
   );
 
   patched = replaceOnce(
     patched,
-    '    const next = await api(`/api/deals/${encodeURIComponent(dealId)}/message`, {\\n      method: "POST",\\n      body: JSON.stringify({ text })\\n    });\\n\\n    setState(next);\\n    $("#manual-message").value = "";\\n    resizeMessageComposer();\\n    showToast("Mensaje enviado");',
-    '    const result = await api(`/api/deals/${encodeURIComponent(dealId)}/message`, {\\n      method: "POST",\\n      body: JSON.stringify({ text })\\n    });\\n\\n    setState(result.state || result);\\n    if (result.createdDealId) selectedDealId = result.createdDealId;\\n    $("#manual-message").value = "";\\n    resizeMessageComposer();\\n    if (result.createdDealId) { renderDrawer(); showToast("Mensaje enviado · nueva negociación creada en Contactado"); }\\n    else showToast("Mensaje enviado");',
+    '    const next = await api(`/api/deals/${encodeURIComponent(dealId)}/message`, {\n      method: "POST",\n      body: JSON.stringify({ text })\n    });\n\n    setState(next);\n    $("#manual-message").value = "";\n    resizeMessageComposer();\n    showToast("Mensaje enviado");',
+    '    const result = await api(`/api/deals/${encodeURIComponent(dealId)}/message`, {\n      method: "POST",\n      body: JSON.stringify({ text })\n    });\n\n    setState(result.state || result);\n    if (result.createdDealId) selectedDealId = result.createdDealId;\n    $("#manual-message").value = "";\n    resizeMessageComposer();\n    if (result.createdDealId) { renderDrawer(); showToast("Mensaje enviado · nueva negociación creada en Contactado"); }\n    else showToast("Mensaje enviado");',
     "respuesta del envío con nueva negociación",
   );
 
@@ -162,7 +162,7 @@ export function applyV2638ServerPatches(source) {
   return replaceBetween(
     source,
     'app.post("/api/deals/:id/message"',
-    'app.post(\\n  "/api/deals/:id/media"',
+    'app.post(\n  "/api/deals/:id/media"',
     MESSAGE_ROUTE,
     "ruta de mensajes",
   );
