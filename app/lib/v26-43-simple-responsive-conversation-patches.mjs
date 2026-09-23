@@ -8,6 +8,11 @@ function replaceBetween(source, startMarker, endMarker, replacement, label) {
   return source.slice(0, start) + replacement + source.slice(end);
 }
 
+function replaceRegexOnce(source, pattern, replacement, label) {
+  if (!pattern.test(source)) throw new Error(`V26.43: no se encontró ${label}`);
+  return source.replace(pattern, replacement);
+}
+
 function removeV2640ManualTouchRuntime(source) {
   const startMarker = "// V26.40 DEFINITIVE_MOBILE_TOUCH_SCROLL\n(() => {";
   const start = source.indexOf(startMarker);
