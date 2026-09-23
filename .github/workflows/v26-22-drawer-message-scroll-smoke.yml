@@ -43,10 +43,16 @@ jobs:
           done
           if test "$OK" -eq 1; then
             curl -fsS http://127.0.0.1:6222/app.js -o "$BUNDLE"
-            grep -q "grid-auto-rows:max-content" "$BUNDLE"
             grep -q "scroll-behavior:auto" "$BUNDLE"
             grep -q "drawerMessagesMaxScroll" "$BUNDLE"
-            grep -q "shouldScrollBottom" "$BUNDLE"
+            if grep -q "V26.43 SIMPLE_RESPONSIVE_CONVERSATION" "$BUNDLE"; then
+              grep -q "grid-template-rows:minmax(0,1fr) auto auto auto auto auto" "$BUNDLE"
+              grep -q "v2643UserBrowsing" "$BUNDLE"
+              grep -q "overflow-y:scroll!important" "$BUNDLE"
+            else
+              grep -q "grid-auto-rows:max-content" "$BUNDLE"
+              grep -q "shouldScrollBottom" "$BUNDLE"
+            fi
             if grep -q "wheelScrollBound" "$BUNDLE"; then
               echo "El bundle no debe conservar el manejador manual de wheel."
               exit 1
