@@ -9,21 +9,23 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(here, "..");
 const raw = await readFile(path.join(appDir, "public", "app.js"), "utf8");
 
-const synthetic = raw +
-  "\n// V26.42 DEDICATED_MOBILE_MESSAGE_SCROLL\n" +
-  `// V26.40 DEFINITIVE_MOBILE_TOUCH_SCROLL
-(() => {
-  document.addEventListener("touchmove", () => {});
-})();
-function renderDrawerMessages(deal, { force = false } = {}) {
+const syntheticRender = `function renderDrawerMessages(deal, { force = false } = {}) {
   const list = document.querySelector("#drawer-messages");
   const allMessages = Array.isArray(deal.messages) ? deal.messages : [];
   const visibleCount = 50;
   const messages = allMessages.slice(-visibleCount);
   list.innerHTML = messages.map((message) => message.text).join("");
 }
-function renderDrawer() {}
 `;
+
+const synthetic =
+  "\n// V26.42 DEDICATED_MOBILE_MESSAGE_SCROLL\n" +
+  `// V26.40 DEFINITIVE_MOBILE_TOUCH_SCROLL
+(() => {
+  document.addEventListener("touchmove", () => {});
+})();
+` +
+  raw.replace("function renderDrawer() {", syntheticRender + "function renderDrawer() {");
 
 const patched = applyV2643CoreUiPatches(synthetic);
 
