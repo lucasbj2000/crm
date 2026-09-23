@@ -57,7 +57,7 @@ const RENDER = String.raw`function renderDrawerMessages(deal, { force = false } 
     : (allMessages.length > 50 ? '<div class="v2641-history-start">Inicio del historial cargado</div>' : '');
 
   list.innerHTML = loadMore + (messages.length
-    ? messages.map((message) => `<div class="message ${message.direction === "outgoing" ? "outgoing" : message.direction === "system" ? "system" : ""}">${attachmentMarkup(message.attachment)}${message.text ? `<p>${escapeHtml(message.text)}</p>` : ""}<small>${message.origin === "human" ? escapeHtml(message.agentName || "Asesor") : message.origin === "bot" ? "Bot" : message.origin === "followup" ? "Seguimiento" : message.origin === "transfer" ? "Transferencia interna" : "Cliente"} · ${escapeHtml(formatDate(message.at))}${message.historical ? " · recuperado" : ""}</small></div>`).join("")
+    ? messages.map((message) => "<div class=\"message " + (message.direction === "outgoing" ? "outgoing" : message.direction === "system" ? "system" : "") + "\">" + attachmentMarkup(message.attachment) + (message.text ? "<p>" + escapeHtml(message.text) + "</p>" : "") + "<small>" + (message.origin === "human" ? escapeHtml(message.agentName || "Asesor") : message.origin === "bot" ? "Bot" : message.origin === "followup" ? "Seguimiento" : message.origin === "transfer" ? "Transferencia interna" : "Cliente") + " · " + escapeHtml(formatDate(message.at)) + (message.historical ? " · recuperado" : "") + "</small></div>").join("")
     : '<div class="column-empty">Sin mensajes guardados</div>');
 
   list.dataset.dealId = String(deal.id || "");
