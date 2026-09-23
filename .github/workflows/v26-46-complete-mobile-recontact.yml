@@ -28,8 +28,10 @@ jobs:
         run: |
           node --check app/public/app.js
           node --check app/lib/v26-46-complete-mobile-recontact-patches.mjs
+          node --check app/lib/v26-42-dedicated-mobile-message-scroll-patches.mjs
           node --check app/lib/v26-38-closed-recontact-patches.mjs
           node --check app/server.mjs
+          node app/test/v26-42-dedicated-mobile-message-scroll.mjs
           node app/test/v26-46-complete-mobile-recontact.mjs
           node app/test/v26-38-closed-recontact.mjs
       - name: Real runtime
