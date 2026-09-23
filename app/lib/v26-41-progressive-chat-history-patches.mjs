@@ -164,8 +164,8 @@ export function applyV2641CoreUiPatches(source) {
   source = replaceBetween(
     source,
     "function renderDrawerMessages(deal, { force = false } = {}) {",
-    "\n}\n\nfunction renderDrawer()",
-    RENDER + "\n\n",
+    "\n\nfunction renderDrawer()",
+    RENDER,
     "renderDrawerMessages"
   );
 
