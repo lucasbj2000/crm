@@ -1,23 +1,23 @@
 function replaceOnce(source, find, replacement, label) {
   const first = source.indexOf(find);
   const last = source.lastIndexOf(find);
-  if (first < 0) throw new Error(\`V26.38 recontacto cerrado: no se encontró \${label}.\`);
-  if (first !== last) throw new Error(\`V26.38 recontacto cerrado: \${label} aparece más de una vez.\`);
+  if (first < 0) throw new Error(`V26.38 recontacto cerrado: no se encontró ${label}.`);
+  if (first !== last) throw new Error(`V26.38 recontacto cerrado: ${label} aparece más de una vez.`);
   return source.slice(0, first) + replacement + source.slice(first + find.length);
 }
 
 function replaceBetween(source, startMarker, endMarker, replacement, label) {
   const start = source.indexOf(startMarker);
-  if (start < 0) throw new Error(\`V26.38 recontacto cerrado: no se encontró inicio de \${label}.\`);
+  if (start < 0) throw new Error(`V26.38 recontacto cerrado: no se encontró inicio de ${label}.`);
   const end = source.indexOf(endMarker, start + startMarker.length);
-  if (end < 0) throw new Error(\`V26.38 recontacto cerrado: no se encontró fin de \${label}.\`);
+  if (end < 0) throw new Error(`V26.38 recontacto cerrado: no se encontró fin de ${label}.`);
   return source.slice(0, start) + replacement + source.slice(end);
 }
 
 const UI_MARKER = "/* V26.38 closed recontact */";
 const SERVER_MARKER = "/* V26.38 closed recontact server */";
 
-const MESSAGE_ROUTE = String.raw\`/* V26.38 closed recontact server */
+const MESSAGE_ROUTE = String.raw`/* V26.38 closed recontact server */
 app.post("/api/deals/:id/message", async (request, response, next) => {
   try {
     const sourceDeal = findDeal(data, request.params.id);
@@ -30,12 +30,10 @@ app.post("/api/deals/:id/message", async (request, response, next) => {
       if (![STAGES.WON, STAGES.LOST].includes(sourceDeal.stage)) {
         throw new Error("Esta negociación no admite un nuevo contacto desde su estado actual.");
       }
-      if (!userCanAccessDeal(user, sourceDeal)) {
-        throw new Error("No tenés acceso a esta negociación.");
-      }
+      if (!userCanAccessDeal(user, sourceDeal)) throw new Error("No tenés acceso a esta negociación.");
       const sourceLine = dealWhatsappLine(sourceDeal);
       if (sourceLine && !canUserUseWhatsappLine(user, sourceLine)) {
-        throw new Error(\\\`No estás autorizado a utilizar la línea \\\${sourceLine.name}.\\\`);
+        throw new Error(`No estás autorizado a utilizar la línea ${sourceLine.name}.`);
       }
 
       const now = Date.now();
@@ -85,7 +83,7 @@ app.post("/api/deals/:id/message", async (request, response, next) => {
           clientName: recordedDeal.name,
           lineId: recordedDeal.lineId || null,
         }, recordedDeal.branchId);
-        addActivity(data, \\\`\\\${user.name} volvió a contactar a \\\${recordedDeal.name}; se creó una nueva negociación en Contactado.\\\`, "success");
+        addActivity(data, `${user.name} volvió a contactar a ${recordedDeal.name}; se creó una nueva negociación en Contactado.`, "success");
         queueSuperAutomationEvent({
           type: "outgoing_message",
           deal: recordedDeal,
@@ -120,7 +118,7 @@ app.post("/api/deals/:id/message", async (request, response, next) => {
     recordHumanOutgoing(data, { jid: deal.jid, name: deal.name, text, messageId, userId: user.id, userName: user.name, branchId: deal.branchId, lineId: dealLineId(deal) });
     if (hadPendingTransfer) recordAuditEvent(user, "transferencia_recibida_respondida", { dealId: deal.id, clientId: deal.clientId, clientName: deal.name }, deal.branchId);
     refreshDealCommercialStatus(deal,true);
-    addActivity(data, temporaryGrant && deal.ownerUserId !== user.id ? \\\`\\\${user.name} respondió a \\\${deal.name} con autorización temporal; \\\${deal.ownerName || "el responsable original"} mantiene la titularidad.\\\` : \\\`\\\${user.name} respondió a \\\${deal.name}; quedó como responsable principal.\\\`, "success");
+    addActivity(data, temporaryGrant && deal.ownerUserId !== user.id ? `${user.name} respondió a ${deal.name} con autorización temporal; ${deal.ownerName || "el responsable original"} mantiene la titularidad.` : `${user.name} respondió a ${deal.name}; quedó como responsable principal.`, "success");
     queueSuperAutomationEvent({ type:"outgoing_message", deal, client:automationClientForDeal(deal), line:dealWhatsappLine(deal), branch:getBranch(deal.branchId), phone:deal.phone, text, message:{text,id:messageId} });
     await store.save();
     response.json(stateResponse(request));
@@ -129,7 +127,7 @@ app.post("/api/deals/:id/message", async (request, response, next) => {
   }
 });
 
-\`;
+`;
 
 export function applyV2638CoreUiPatches(source) {
   if (source.includes(UI_MARKER)) return source;
@@ -151,8 +149,8 @@ export function applyV2638CoreUiPatches(source) {
 
   patched = replaceOnce(
     patched,
-    '    const next = await api(\`/api/deals/\${encodeURIComponent(dealId)}/message\`, {\\n      method: "POST",\\n      body: JSON.stringify({ text })\\n    });\\n\\n    setState(next);\\n    $("#manual-message").value = "";\\n    resizeMessageComposer();\\n    showToast("Mensaje enviado");',
-    '    const result = await api(\`/api/deals/\${encodeURIComponent(dealId)}/message\`, {\\n      method: "POST",\\n      body: JSON.stringify({ text })\\n    });\\n\\n    setState(result.state || result);\\n    if (result.createdDealId) selectedDealId = result.createdDealId;\\n    $("#manual-message").value = "";\\n    resizeMessageComposer();\\n    if (result.createdDealId) { renderDrawer(); showToast("Mensaje enviado · nueva negociación creada en Contactado"); }\\n    else showToast("Mensaje enviado");',
+    '    const next = await api(`/api/deals/${encodeURIComponent(dealId)}/message`, {\\n      method: "POST",\\n      body: JSON.stringify({ text })\\n    });\\n\\n    setState(next);\\n    $("#manual-message").value = "";\\n    resizeMessageComposer();\\n    showToast("Mensaje enviado");',
+    '    const result = await api(`/api/deals/${encodeURIComponent(dealId)}/message`, {\\n      method: "POST",\\n      body: JSON.stringify({ text })\\n    });\\n\\n    setState(result.state || result);\\n    if (result.createdDealId) selectedDealId = result.createdDealId;\\n    $("#manual-message").value = "";\\n    resizeMessageComposer();\\n    if (result.createdDealId) { renderDrawer(); showToast("Mensaje enviado · nueva negociación creada en Contactado"); }\\n    else showToast("Mensaje enviado");',
     "respuesta del envío con nueva negociación",
   );
 
