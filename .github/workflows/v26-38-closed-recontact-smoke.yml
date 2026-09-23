@@ -1,0 +1,36 @@
+name: V26.38 closed recontact smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - "feat/v26-38-closed-recontact"
+
+permissions:
+  contents: read
+
+jobs:
+  closed-recontact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+      - name: Syntax
+        run: |
+          node --check app/lib/v26-38-closed-recontact-patches.mjs
+          node --check app/test/v26-38-closed-recontact.mjs
+          node --check app/server.mjs
+      - name: Closed recontact contracts
+        run: node app/test/v26-38-closed-recontact.mjs
+      - name: Regression message reliability
+        run: |
+          node app/test/v26-36-zero-loss-incoming.mjs
+          node app/test/v26-34-agent-workflow-stability.mjs

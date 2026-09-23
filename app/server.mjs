@@ -42,6 +42,7 @@ import { applyV2634ServerPatches } from "./lib/v26-34-workflow-stability-patches
 import { applyV2635AdPromotionContextPatches } from "./lib/v26-35-ad-promotion-context-patches.mjs";
 import { applyV2636ZeroLossIncomingPatches } from "./lib/v26-36-zero-loss-incoming-patches.mjs";
 import { applyV2637GuardianAppPatches } from "./lib/v26-37-guardian-24x7-patches.mjs";
+import { applyV2638CoreUiPatches, applyV2638ServerPatches } from "./lib/v26-38-closed-recontact-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -72,6 +73,7 @@ patchedPublicApp = applyV2628CoreFixPatches(patchedPublicApp);
 patchedPublicApp = applyV2629CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2630CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2631CoreUiPatches(patchedPublicApp);
+patchedPublicApp = applyV2638CoreUiPatches(patchedPublicApp);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
 
 const publicInboxSource = await readFile(publicInboxPath, "utf8");
@@ -119,5 +121,6 @@ patched = applyV2634ServerPatches(patched);
 patched = applyV2635AdPromotionContextPatches(patched);
 patched = applyV2636ZeroLossIncomingPatches(patched);
 patched = applyV2637GuardianAppPatches(patched);
+patched = applyV2638ServerPatches(patched);
 await writeFile(generatedPath, patched, "utf8");
 await import(`${pathToFileURL(generatedPath).href}?v24=${Date.now()}`);
