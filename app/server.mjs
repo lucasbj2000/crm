@@ -43,6 +43,7 @@ import { applyV2635AdPromotionContextPatches } from "./lib/v26-35-ad-promotion-c
 import { applyV2636ZeroLossIncomingPatches } from "./lib/v26-36-zero-loss-incoming-patches.mjs";
 import { applyV2637GuardianAppPatches } from "./lib/v26-37-guardian-24x7-patches.mjs";
 import { applyV2638CoreUiPatches, applyV2638ServerPatches } from "./lib/v26-38-closed-recontact-patches.mjs";
+import { applyV2639CoreUiPatches } from "./lib/v26-39-mobile-chat-layout-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -74,6 +75,7 @@ patchedPublicApp = applyV2629CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2630CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2631CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2638CoreUiPatches(patchedPublicApp);
+patchedPublicApp = applyV2639CoreUiPatches(patchedPublicApp);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
 
 const publicInboxSource = await readFile(publicInboxPath, "utf8");

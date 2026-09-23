@@ -1,0 +1,56 @@
+name: V26.39 mobile chat layout smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - "fix/v26-39-mobile-chat-layout"
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-chat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+      - name: Mobile contracts
+        run: |
+          node --check app/lib/v26-39-mobile-chat-layout-patches.mjs
+          node --check app/server.mjs
+          node app/test/v26-39-mobile-chat-layout.mjs
+      - name: Start CRM and validate served bundle
+        env:
+          WHATSAPP_MOCK: "1"
+          PORT: "3059"
+          WHATSBOT_HOST: "127.0.0.1"
+          WHATSBOT_DATA_DIR: ${{ runner.temp }}/v2639-data
+        run: |
+          node app/server.mjs > /tmp/v2639-server.log 2>&1 &
+          echo $! > /tmp/v2639-server.pid
+          for i in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:3059/api/health >/dev/null; then break; fi
+            sleep 0.25
+          done
+          curl -fsS http://127.0.0.1:3059/app.js -o /tmp/v2639-app.js
+          node --check /tmp/v2639-app.js
+          grep -F 'V26.39 MOBILE_CHAT_LAYOUT_FIX' /tmp/v2639-app.js
+          grep -F 'touch-action:pan-y' /tmp/v2639-app.js
+          grep -F 'v2639-drawer-open' /tmp/v2639-app.js
+          grep -F -- '--v2639-viewport-height' /tmp/v2639-app.js
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ -f /tmp/v2639-server.pid ]; then kill $(cat /tmp/v2639-server.pid) 2>/dev/null || true; fi
+          tail -100 /tmp/v2639-server.log 2>/dev/null || true
