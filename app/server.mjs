@@ -44,6 +44,7 @@ import { applyV2636ZeroLossIncomingPatches } from "./lib/v26-36-zero-loss-incomi
 import { applyV2637GuardianAppPatches } from "./lib/v26-37-guardian-24x7-patches.mjs";
 import { applyV2638CoreUiPatches, applyV2638ServerPatches } from "./lib/v26-38-closed-recontact-patches.mjs";
 import { applyV2639CoreUiPatches } from "./lib/v26-39-mobile-chat-layout-patches.mjs";
+import { applyV2640CoreUiPatches } from "./lib/v26-40-definitive-mobile-touch-scroll-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -76,6 +77,7 @@ patchedPublicApp = applyV2630CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2631CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2638CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2639CoreUiPatches(patchedPublicApp);
+patchedPublicApp = applyV2640CoreUiPatches(patchedPublicApp);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
 
 const publicInboxSource = await readFile(publicInboxPath, "utf8");

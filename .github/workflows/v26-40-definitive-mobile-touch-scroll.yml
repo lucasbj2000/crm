@@ -1,0 +1,26 @@
+name: V26.40 definitive mobile touch scroll
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - "fix/v26-40-definitive-mobile-touch-scroll"
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: V26.40 contracts
+        run: |
+          node --check app/lib/v26-40-definitive-mobile-touch-scroll-patches.mjs
+          node --check app/server.mjs
+          node app/test/v26-40-definitive-mobile-touch-scroll.mjs
