@@ -38,6 +38,20 @@ assert.ok(
 );
 assert.equal(applyV2642CoreUiPatches(patched), patched, "V26.42 debe ser idempotente.");
 
+const contaminated = patched + `
+function v2641ConversationScroller(list = document.querySelector("#drawer-messages")) {
+  if (v2641IsMobileConversation()) {
+    return document.querySelector(".deal-chat-column[data-drawer-pane='conversation']");
+  }
+  return list;
+}
+`;
+const repaired = applyV2642CoreUiPatches(contaminated);
+assert.ok(
+  !repaired.includes('return document.querySelector(".deal-chat-column[data-drawer-pane=\'conversation\']")'),
+  "V26.42 debe reparar un bundle ya marcado si reaparece el scroller del contenedor padre."
+);
+
 const temp = path.join(appDir, ".v2642-check.js");
 await writeFile(temp, patched, "utf8");
 try {
