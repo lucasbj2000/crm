@@ -1,0 +1,67 @@
+name: V26.52 mobile inbox cards
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - "fix/v26-52-mobile-inbox-cards"
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-inbox-cards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install
+        working-directory: app
+        run: npm ci
+
+      - name: Contracts
+        run: |
+          node --check app/lib/v26-51-agent-mobile-inbox-patches.mjs
+          node --check app/public/sw.js
+          node app/test/v26-51-agent-mobile-inbox.mjs
+          node app/test/v26-52-mobile-inbox-cards.mjs
+          bash -n scripts/deploy-vps.sh
+          grep -F 'v26-52-mobile-inbox-cards.mjs' scripts/deploy-vps.sh
+
+      - name: Real runtime
+        env:
+          WHATSAPP_MOCK: "1"
+          PORT: "3068"
+          WHATSBOT_HOST: "127.0.0.1"
+          WHATSBOT_DATA_DIR: ${{ runner.temp }}/v2652-data
+        run: |
+          node app/server.mjs >/tmp/v2652.log 2>&1 &
+          echo $! >/tmp/v2652.pid
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3068/api/health >/dev/null; then break; fi
+            sleep .25
+          done
+          curl -fsS http://127.0.0.1:3068/app.js -o /tmp/v2652-app.js
+          node --check /tmp/v2652-app.js
+          grep -F 'function v2651CompactPreview' /tmp/v2652-app.js
+          grep -F 'const preview = v2651CompactPreview(message);' /tmp/v2652-app.js
+          curl -fsS http://127.0.0.1:3068/styles.css -o /tmp/v2652.css
+          grep -F 'V26.52 MOBILE INBOX CARDS' /tmp/v2652.css
+          grep -F '#v2651-mobile-inbox button.v2651-deal-card' /tmp/v2652.css
+          curl -fsS http://127.0.0.1:3068/ -o /tmp/v2652-index.html
+          grep -F '/styles.css?v=26.52-mobile-inbox-cards' /tmp/v2652-index.html
+          curl -fsS http://127.0.0.1:3068/sw.js -o /tmp/v2652-sw.js
+          grep -F 'whatsbot-mobile-v26-52-mobile-inbox-cards' /tmp/v2652-sw.js
+
+      - name: Cleanup
+        if: always()
+        run: |
+          test ! -f /tmp/v2652.pid || kill $(cat /tmp/v2652.pid) 2>/dev/null || true
+          tail -160 /tmp/v2652.log 2>/dev/null || true
