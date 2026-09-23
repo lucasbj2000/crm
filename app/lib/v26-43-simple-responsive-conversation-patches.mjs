@@ -113,6 +113,25 @@ const RENDER = String.raw`function renderDrawerMessages(deal, { force = false } 
   });
 }`;
 
+const SAFE_SCROLL = String.raw`function scrollDrawerMessagesToLatest(list) {
+  if (!list) return;
+  try { if (typeof v2626BindDrawerNativeScroll === "function") v2626BindDrawerNativeScroll(list); } catch {}
+  const token = Number(list.dataset.v2643AutoScrollToken || 0) + 1;
+  list.dataset.v2643AutoScrollToken = String(token);
+  list.dataset.v2643UserBrowsing = "0";
+  list.dataset.v2626ManualBrowsing = "0";
+
+  const scroll = () => {
+    if (!list.isConnected) return;
+    if (Number(list.dataset.v2643AutoScrollToken || 0) !== token) return;
+    if (list.dataset.v2643UserBrowsing === "1") return;
+    list.scrollTop = Math.max(0, list.scrollHeight - list.clientHeight);
+  };
+
+  requestAnimationFrame(() => requestAnimationFrame(scroll));
+  setTimeout(scroll, 70);
+}`;
+
 const APPEND = String.raw`
 
 // V26.43 SIMPLE_RESPONSIVE_CONVERSATION
@@ -210,6 +229,26 @@ const APPEND = String.raw`
       list.style.webkitOverflowScrolling = "touch";
       list.style.touchAction = "pan-y";
       list.removeAttribute("data-v2641-loading-older");
+
+      if (list.dataset.v2643BrowseBound !== "1") {
+        list.dataset.v2643BrowseBound = "1";
+        const cancel = () => {
+          list.dataset.v2643UserBrowsing = "1";
+          list.dataset.v2626ManualBrowsing = "1";
+          list.dataset.v2643AutoScrollToken = String(Number(list.dataset.v2643AutoScrollToken || 0) + 1);
+          try { if (typeof v2626CancelPendingDrawerAutoScroll === "function") v2626CancelPendingDrawerAutoScroll(list); } catch {}
+        };
+        list.addEventListener("touchstart", cancel, { passive: true });
+        list.addEventListener("pointerdown", cancel, { passive: true });
+        list.addEventListener("wheel", cancel, { passive: true });
+        list.addEventListener("scroll", () => {
+          const max = Math.max(0, list.scrollHeight - list.clientHeight);
+          const distance = Math.max(0, max - list.scrollTop);
+          const browsing = distance > 24;
+          list.dataset.v2643UserBrowsing = browsing ? "1" : "0";
+          list.dataset.v2626ManualBrowsing = browsing ? "1" : "0";
+        }, { passive: true });
+      }
     }
   }
 
@@ -248,6 +287,18 @@ export function applyV2643CoreUiPatches(source) {
     "function renderDrawer()",
     RENDER + "\n\n",
     "renderDrawerMessages"
+  );
+
+  source = replaceRegexOnce(
+    source,
+    /function scrollDrawerMessagesToLatest\(list\) \{[\s\S]*?\n\}\n\nfunction renderDrawerMessages/,
+    SAFE_SCROLL + "\n\nfunction renderDrawerMessages",
+    "scrollDrawerMessagesToLatest"
+  );
+
+  source = source.replace(
+    '  const messages = (deal.messages || []).slice(-80);\n  const nodes = [...list.querySelectorAll(":scope > .message")];',
+    '  const messages = Array.isArray(deal.messages) ? deal.messages : [];\n  const nodes = [...list.querySelectorAll(":scope > .message")];'
   );
 
   return source + APPEND;
