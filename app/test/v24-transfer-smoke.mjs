@@ -28,7 +28,24 @@ child.stdout.on("data", (chunk) => serverOutput += chunk);
 child.stderr.on("data", (chunk) => serverOutput += chunk);
 
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
-const waitForServer = async () => { const deadline = Date.now() + 25_000; while (Date.now() < deadline) { try { const r = await fetch(`${base}/api/health`); if (r.ok) return; } catch {} await new Promise((resolve) => setTimeout(resolve, 150)); } throw new Error(`El servidor no inició.\n${serverOutput}`); };
+const waitForServer = async () => {
+  const deadline = Date.now() + 75_000;
+  let lastError = "";
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) {
+      throw new Error(`El servidor de prueba terminó antes de estar disponible (exitCode=${child.exitCode}).\n${serverOutput}`);
+    }
+    try {
+      const response = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(2_500) });
+      if (response.ok) return;
+      lastError = `HTTP ${response.status}`;
+    } catch (error) {
+      lastError = error?.message || String(error);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`El servidor no quedó disponible dentro de 75 s. Último error: ${lastError || "sin detalle"}.\n${serverOutput}`);
+};
 let cookie = "";
 async function login(username, password) {
   const response = await fetch(`${base}/api/auth/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username, password }) });
