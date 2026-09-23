@@ -194,6 +194,21 @@ jobs:
       - name: Validate V26.4 tenant QR reliability
         run: node gateway/test/v26-4-tenant-reliability.mjs
 
+      - name: Validate VPS isolated late-UI sequence
+        run: |
+          BASE_SHA="$(git rev-parse HEAD)"
+          run_isolated() {
+            git reset --hard "$BASE_SHA" >/dev/null
+            node "$1"
+          }
+          run_isolated app/test/v26-38-closed-recontact.mjs
+          run_isolated app/test/v26-42-dedicated-mobile-message-scroll.mjs
+          run_isolated app/test/v26-43-simple-responsive-conversation.mjs
+          run_isolated app/test/v26-45-deal-chat-unified-inbox-ui.mjs
+          run_isolated app/test/v26-46-complete-mobile-recontact.mjs
+          git reset --hard "$BASE_SHA" >/dev/null
+          grep -F 'run_isolated_test "$STAGE/app/test/v26-43-simple-responsive-conversation.mjs"' scripts/deploy-vps.sh
+
       - name: Feature smoke
         run: node app/test/feature-smoke.mjs
 
