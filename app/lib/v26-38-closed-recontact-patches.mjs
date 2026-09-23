@@ -33,7 +33,7 @@ app.post("/api/deals/:id/message", async (request, response, next) => {
       if (!userCanAccessDeal(user, sourceDeal)) throw new Error("No tenés acceso a esta negociación.");
       const sourceLine = dealWhatsappLine(sourceDeal);
       if (sourceLine && !canUserUseWhatsappLine(user, sourceLine)) {
-        throw new Error(`No estás autorizado a utilizar la línea ${sourceLine.name}.`);
+        throw new Error("No estás autorizado a utilizar la línea " + sourceLine.name + ".");
       }
 
       const now = Date.now();
@@ -83,7 +83,7 @@ app.post("/api/deals/:id/message", async (request, response, next) => {
           clientName: recordedDeal.name,
           lineId: recordedDeal.lineId || null,
         }, recordedDeal.branchId);
-        addActivity(data, `${user.name} volvió a contactar a ${recordedDeal.name}; se creó una nueva negociación en Contactado.`, "success");
+        addActivity(data, user.name + " volvió a contactar a " + recordedDeal.name + "; se creó una nueva negociación en Contactado.", "success");
         queueSuperAutomationEvent({
           type: "outgoing_message",
           deal: recordedDeal,
@@ -118,7 +118,7 @@ app.post("/api/deals/:id/message", async (request, response, next) => {
     recordHumanOutgoing(data, { jid: deal.jid, name: deal.name, text, messageId, userId: user.id, userName: user.name, branchId: deal.branchId, lineId: dealLineId(deal) });
     if (hadPendingTransfer) recordAuditEvent(user, "transferencia_recibida_respondida", { dealId: deal.id, clientId: deal.clientId, clientName: deal.name }, deal.branchId);
     refreshDealCommercialStatus(deal,true);
-    addActivity(data, temporaryGrant && deal.ownerUserId !== user.id ? `${user.name} respondió a ${deal.name} con autorización temporal; ${deal.ownerName || "el responsable original"} mantiene la titularidad.` : `${user.name} respondió a ${deal.name}; quedó como responsable principal.`, "success");
+    addActivity(data, temporaryGrant && deal.ownerUserId !== user.id ? user.name + " respondió a " + deal.name + " con autorización temporal; " + (deal.ownerName || "el responsable original") + " mantiene la titularidad." : user.name + " respondió a " + deal.name + "; quedó como responsable principal.", "success");
     queueSuperAutomationEvent({ type:"outgoing_message", deal, client:automationClientForDeal(deal), line:dealWhatsappLine(deal), branch:getBranch(deal.branchId), phone:deal.phone, text, message:{text,id:messageId} });
     await store.save();
     response.json(stateResponse(request));
