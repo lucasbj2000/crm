@@ -9,7 +9,12 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(here, "..");
 const raw = await readFile(path.join(appDir, "public", "app.js"), "utf8");
 
-const syntheticRender = `function renderDrawerMessages(deal, { force = false } = {}) {
+const syntheticRender = `function scrollDrawerMessagesToLatest(list) {
+  if (!list) return;
+  list.scrollTop = list.scrollHeight;
+}
+
+function renderDrawerMessages(deal, { force = false } = {}) {
   const list = document.querySelector("#drawer-messages");
   const allMessages = Array.isArray(deal.messages) ? deal.messages : [];
   const visibleCount = 50;
@@ -34,7 +39,13 @@ for (const marker of [
   "v2643-simple-conversation-style",
   "const messages = Array.isArray(deal.messages) ? deal.messages : [];",
   "messages.map((message)",
-  "overflow-y:auto!important",
+  "overflow-y:scroll!important",
+  "grid-template-rows:minmax(0,1fr) auto auto auto auto auto",
+  "grid-row:1!important",
+  "grid-row:2!important",
+  "justify-content:flex-start!important",
+  "v2643UserBrowsing",
+  "v2617-drawer-scroll-style",
   "-webkit-overflow-scrolling:touch!important",
   "touch-action:pan-y!important",
   "grid-template-columns:repeat(3,minmax(0,1fr))",
@@ -43,6 +54,8 @@ for (const marker of [
 
 assert.ok(!patched.includes("allMessages.slice(-visibleCount)"), "No debe quedar paginación de 50 mensajes.");
 assert.ok(!patched.includes('document.addEventListener("touchmove", () => {})'), "El handler touch manual V26.40 debe retirarse.");
+assert.ok(!patched.includes("list.scrollTop = list.scrollHeight;\n}\n\nfunction renderDrawerMessages"), "El scroll forzado antiguo debe reemplazarse.");
+assert.ok(patched.includes('#send-quick-reply{display:none!important}'), "El envio rapido duplicado debe ocultarse para simplificar mobile.");
 assert.equal(applyV2643CoreUiPatches(patched), patched, "V26.43 debe ser idempotente.");
 
 const temp = path.join(appDir, ".v2643-check.js");
