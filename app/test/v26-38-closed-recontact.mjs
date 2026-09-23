@@ -36,6 +36,7 @@ ui = applyV2631CoreUiPatches(ui);
 ui = applyV2638CoreUiPatches(ui);
 
 assert.match(ui, /const canRecontactClosed = \["won", "lost"\]\.includes\(deal\.stage\)/, "Ganado y perdido deben admitir recontacto.");
+assert.doesNotMatch(ui, /canRecontactClosed[^\n]+ownerUserId/, "El frontend no debe ocultar el recontacto por propietario; el backend valida el acceso real.");
 assert.match(ui, /const canSendText = canCommunicate \|\| canRecontactClosed/, "El texto debe habilitarse también en un cierre recontactable.");
 assert.match(ui, /#attach-button"\)\.disabled = !canCommunicate/, "Adjuntos deben seguir bloqueados en negociaciones cerradas.");
 assert.match(ui, /#record-audio-button"\)\.disabled = !canCommunicate/, "Audio debe seguir bloqueado en negociaciones cerradas.");

@@ -286,10 +286,14 @@ export function applyV2643CoreUiPatches(source) {
 
   source = removeV2640ManualTouchRuntime(source);
 
+  const renderBoundary = source.includes("// V26.23 DEAL_AMOUNT_CONFIRM_CLOSE")
+    ? "// V26.23 DEAL_AMOUNT_CONFIRM_CLOSE"
+    : "function renderDrawer()";
+
   source = replaceBetween(
     source,
     "function renderDrawerMessages(deal, { force = false } = {}) {",
-    "function renderDrawer()",
+    renderBoundary,
     RENDER + "\n\n",
     "renderDrawerMessages"
   );

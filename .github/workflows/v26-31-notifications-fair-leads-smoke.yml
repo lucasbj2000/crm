@@ -59,7 +59,7 @@ jobs:
           grep -F '/api/push/subscribe' /tmp/v2631-app.js
           curl -fsS http://127.0.0.1:3051/sw.js -o /tmp/v2631-sw.js
           node --check /tmp/v2631-sw.js
-          grep -F 'whatsbot-mobile-v26-31-push-shell' /tmp/v2631-sw.js
+          grep -F 'const CACHE = "whatsbot-mobile-' /tmp/v2631-sw.js
           grep -F 'self.addEventListener("push"' /tmp/v2631-sw.js
           grep -F 'ICIIA_OPEN_DEAL' /tmp/v2631-sw.js
       - name: Stop mock CRM

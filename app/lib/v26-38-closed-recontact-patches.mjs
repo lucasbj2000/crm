@@ -120,7 +120,7 @@ export function applyV2638CoreUiPatches(source) {
   patched = replaceOnce(
     patched,
     '  const canManage = open && (!deal.ownerUserId || deal.ownerUserId === user.id || user.role === "admin" || managerCoverage);\n  const canCommunicate = canManage || (open && Boolean(temporaryCommunication));\n  const canWork = canManage;',
-    '  const canManage = open && (!deal.ownerUserId || deal.ownerUserId === user.id || user.role === "admin" || managerCoverage);\n  const canRecontactClosed = ["won", "lost"].includes(deal.stage) && (!deal.ownerUserId || deal.ownerUserId === user.id || ["admin", "manager", "supervisor"].includes(user.role));\n  const canCommunicate = canManage || (open && Boolean(temporaryCommunication));\n  const canSendText = canCommunicate || canRecontactClosed;\n  const canWork = canManage;\n  ' + UI_MARKER,
+    '  const canManage = open && (!deal.ownerUserId || deal.ownerUserId === user.id || user.role === "admin" || managerCoverage);\n  const canRecontactClosed = ["won", "lost"].includes(deal.stage);\n  const canCommunicate = canManage || (open && Boolean(temporaryCommunication));\n  const canSendText = canCommunicate || canRecontactClosed;\n  const canWork = canManage;\n  ' + UI_MARKER,
     "permisos de recontacto en drawer",
   );
 

@@ -28,6 +28,9 @@ function renderDrawerMessages(deal, { force = false } = {}) {
   list.innerHTML = messages.map((message) => String(message.text || "")).join("");
 }
 
+// V26.23 DEAL_AMOUNT_CONFIRM_CLOSE
+function v2623PreservedHelper() { return "save-deal-amount Confirmar monto de cierre"; }
+
 function renderDrawer() {}
 `;
 
@@ -45,6 +48,9 @@ for(const marker of [
   "v2641ConversationScroller",
 ]) assert.ok(patched.includes(marker),`Falta V26.41: ${marker}`);
 
+assert.ok(patched.includes("// V26.23 DEAL_AMOUNT_CONFIRM_CLOSE"),"V26.41 debe preservar V26.23.");
+assert.ok(patched.includes("v2623PreservedHelper"),"V26.41 debe preservar helpers intermedios.");
+assert.ok(patched.includes("save-deal-amount Confirmar monto de cierre"),"V26.41 no debe borrar la UI de monto/cierre.");
 assert.equal(applyV2641CoreUiPatches(patched),patched,"V26.41 debe ser idempotente.");
 
 const temp=path.join(appDir,".v2641-check.js");

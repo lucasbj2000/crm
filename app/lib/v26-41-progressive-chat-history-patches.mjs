@@ -161,10 +161,14 @@ export function applyV2641CoreUiPatches(source) {
     throw new Error("V26.41 requiere V26.40 aplicado antes.");
   }
 
+  const renderBoundary = source.includes("// V26.23 DEAL_AMOUNT_CONFIRM_CLOSE")
+    ? "// V26.23 DEAL_AMOUNT_CONFIRM_CLOSE"
+    : "function renderDrawer()";
+
   source = replaceBetween(
     source,
     "function renderDrawerMessages(deal, { force = false } = {}) {",
-    "function renderDrawer()",
+    renderBoundary,
     RENDER + "\n\n",
     "renderDrawerMessages"
   );

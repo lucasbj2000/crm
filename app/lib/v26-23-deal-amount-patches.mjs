@@ -11,6 +11,14 @@ function replaceRegexOnce(source, pattern, replacement, label) {
   return source.replace(pattern, replacement);
 }
 
+function replaceListenerBlock(source, startMarker, replacement, label) {
+  const start = source.indexOf(startMarker);
+  if (start < 0) throw new Error(`V26.23: no se encontró ${label}`);
+  const end = source.indexOf("\n});", start + startMarker.length);
+  if (end < 0) throw new Error(`V26.23: cierre incompleto en ${label}`);
+  return source.slice(0, start) + replacement + source.slice(end + 4);
+}
+
 const UI_HELPERS = [
   UI_MARKER,
   "let v2623PendingClose = null;",
@@ -225,15 +233,15 @@ export function applyV2623CoreUiPatches(source) {
   if (source.includes(UI_MARKER)) return source;
   source = replaceOnce(source, "function renderDrawer() {", `${UI_HELPERS}function renderDrawer() {`, "renderDrawer para insertar monto");
   source = replaceOnce(source, "  const canWork = canManage;", "  const canWork = canManage;\n  v2623RenderAmount(deal, canWork);", "permisos del drawer");
-  source = replaceRegexOnce(
+  source = replaceListenerBlock(
     source,
-    /\$\("#mark-won-button"\)\.addEventListener\("click", async \(\) => \{[\s\S]*?\n\}\);/,
+    '$("#mark-won-button").addEventListener("click"',
     '$("#mark-won-button").addEventListener("click", () => {\n  if (!selectedDealId) return;\n  v2623OpenCloseAmountDialog("won");\n});',
     "cierre ganado"
   );
-  source = replaceRegexOnce(
+  source = replaceListenerBlock(
     source,
-    /\$\("#lost-form"\)\.addEventListener\("submit", async \(event\) => \{[\s\S]*?\n\}\);/,
+    '$("#lost-form").addEventListener("submit"',
     '$("#lost-form").addEventListener("submit", (event) => {\n  event.preventDefault();\n  if (!selectedDealId) return;\n  const reasonId = $("#lost-reason").value;\n  if (!reasonId) { showToast("Seleccioná el motivo de pérdida.", "warning"); return; }\n  $("#lost-dialog").close();\n  v2623OpenCloseAmountDialog("lost", reasonId);\n});',
     "cierre perdido"
   );
