@@ -265,7 +265,7 @@ const APPEND = String.raw`
     if (document.getElementById("v2651-agent-mobile-style")) return;
     const style = document.createElement("style");
     style.id = "v2651-agent-mobile-style";
-    style.textContent = `
+    style.textContent = \`
       #v2651-mobile-inbox{display:none}
       .v2651-chat-actions{display:none}
       @media(max-width:900px){
@@ -399,7 +399,7 @@ const APPEND = String.raw`
           padding:12px 10px calc(18px + env(safe-area-inset-bottom))!important
         }
       }
-    `;
+    \`;
     document.head.appendChild(style);
   }
 
