@@ -5,6 +5,11 @@ function replaceOnce(source, search, replacement, label) {
   return source.replace(search, replacement);
 }
 
+function replaceRegexOnce(source, pattern, replacement, label) {
+  if (!pattern.test(source)) throw new Error(`V26.40: no se encontró ${label}`);
+  return source.replace(pattern, replacement);
+}
+
 const APPEND = String.raw`
 
 // V26.40 DEFINITIVE_MOBILE_TOUCH_SCROLL
@@ -148,10 +153,10 @@ export function applyV2640CoreUiPatches(source) {
     throw new Error("V26.40 requiere V26.39 aplicado antes.");
   }
 
-  source = replaceOnce(
+  source = replaceRegexOnce(
     source,
-    "  const shouldScrollBottom = force || !sameDeal || appendedMessage;",
-    "  const shouldScrollBottom = force || !sameDeal || (appendedMessage && list.dataset.v2626ManualBrowsing !== \"1\");",
+    /const\s+shouldScrollBottom\s*=\s*force\s*\|\|\s*!sameDeal\s*\|\|\s*appendedMessage\s*;/,
+    'const shouldScrollBottom = force || !sameDeal || (appendedMessage && list.dataset.v2626ManualBrowsing !== "1");',
     "protección contra auto-scroll durante navegación manual"
   );
 
