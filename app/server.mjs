@@ -48,6 +48,7 @@ import { applyV2640CoreUiPatches } from "./lib/v26-40-definitive-mobile-touch-sc
 import { applyV2641CoreUiPatches } from "./lib/v26-41-progressive-chat-history-patches.mjs";
 import { applyV2642CoreUiPatches } from "./lib/v26-42-dedicated-mobile-message-scroll-patches.mjs";
 import { applyV2643CoreUiPatches } from "./lib/v26-43-simple-responsive-conversation-patches.mjs";
+import { applyV2645CoreUiPatches } from "./lib/v26-45-deal-chat-unified-inbox-ui-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -84,6 +85,7 @@ patchedPublicApp = applyV2640CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2641CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2642CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2643CoreUiPatches(patchedPublicApp);
+patchedPublicApp = applyV2645CoreUiPatches(patchedPublicApp);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
 
 const publicInboxSource = await readFile(publicInboxPath, "utf8");
