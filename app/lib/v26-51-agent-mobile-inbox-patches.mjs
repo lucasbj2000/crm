@@ -269,6 +269,10 @@ const APPEND = String.raw`
       #v2651-mobile-inbox{display:none}
       .v2651-chat-actions{display:none}
       @media(max-width:900px){
+        .workspace-header{min-height:auto!important;padding:8px 10px!important}
+        .workspace-header .breadcrumb{display:none!important}
+        .workspace-header h2{margin:0!important;font-size:17px!important;line-height:1.2!important}
+        .workspace-header .operational-header{display:none!important}
         [data-view-panel="crm"].active{padding:8px 8px calc(18px + env(safe-area-inset-bottom))!important}
         [data-view-panel="crm"].active>.metric-grid,
         [data-view-panel="crm"].active>.toolbar,
@@ -449,6 +453,7 @@ const APPEND = String.raw`
         if (typeof openDrawer === "function") openDrawer(id);
         document.body.classList.add("v2651-mobile-chat-open");
         setTimeout(v2651Sync, 0);
+        setTimeout(v2651Sync, 80);
         return;
       }
 
@@ -496,15 +501,6 @@ const APPEND = String.raw`
     window.visualViewport?.addEventListener("resize", v2651Queue, { passive: true });
     window.visualViewport?.addEventListener("scroll", v2651ViewportHeight, { passive: true });
 
-    new MutationObserver((mutations) => {
-      if (!v2651IsMobile()) return;
-      for (const mutation of mutations) {
-        if (mutation.type === "childList" || mutation.attributeName === "class" || mutation.attributeName === "aria-hidden") {
-          v2651Queue();
-          break;
-        }
-      }
-    }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "aria-hidden"] });
   }
 
   if (document.readyState === "loading") {
