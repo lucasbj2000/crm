@@ -28,7 +28,7 @@ assert.match(server, /!\[STAGES\.WON, STAGES\.LOST\]\.includes\(sourceDeal\.stag
 assert.match(server, /source: "closed_recontact"/, "La nueva negociación debe identificar su origen.");
 assert.match(server, /newDeal\.recontactFromDealId = sourceDeal\.id/, "Debe conservar referencia al cierre anterior.");
 assert.match(server, /recordedDeal\.stage = STAGES\.CONTACTED/, "La nueva negociación debe quedar en Contactado.");
-assert.match(server, /recordedDeal\.ownerUserId/, "El flujo debe conservar titularidad del nuevo caso.");
+assert.match(server, /newDeal\.ownerUserId = user\.id/, "El agente que recontacta debe quedar como responsable del nuevo caso.");
 assert.match(server, /recontacto_desde_negociacion_cerrada/, "El recontacto debe quedar auditado.");
 assert.match(server, /createdDealId: recordedDeal\.id/, "La API debe devolver el nuevo deal para abrirlo inmediatamente.");
 assert.match(server, /findIndex\(\(entry\) => entry\.id === newDeal\.id && !\(entry\.messages \|\| \[\]\)\.length\)/, "Un envío fallido no debe dejar una negociación vacía.");
