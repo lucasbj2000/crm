@@ -27,6 +27,7 @@ jobs:
       - name: Contracts
         run: |
           node --check app/public/app.js
+          node --check app/lib/v26-46-complete-mobile-recontact-patches.mjs
           node --check app/lib/v26-38-closed-recontact-patches.mjs
           node --check app/server.mjs
           node app/test/v26-46-complete-mobile-recontact.mjs
