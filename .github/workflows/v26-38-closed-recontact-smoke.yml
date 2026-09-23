@@ -20,6 +20,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
       - name: Syntax
         run: |
           node --check app/lib/v26-38-closed-recontact-patches.mjs
