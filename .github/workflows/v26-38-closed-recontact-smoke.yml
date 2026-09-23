@@ -30,4 +30,4 @@ jobs:
       - name: Regression message reliability
         run: |
           node app/test/v26-36-zero-loss-incoming.mjs
-          node app/test/v26-34-workflow-stability.mjs
+          node app/test/v26-34-agent-workflow-stability.mjs
