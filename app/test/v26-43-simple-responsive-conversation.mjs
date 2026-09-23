@@ -30,7 +30,7 @@ const synthetic =
   document.addEventListener("touchmove", () => {});
 })();
 ` +
-  raw.replace("function renderDrawer() {", syntheticRender + "function renderDrawer() {");
+  raw.replace("function renderDrawer() {", syntheticRender + "// V26.23 DEAL_AMOUNT_CONFIRM_CLOSE\nfunction v2623PreservedHelper() { return \"save-deal-amount Confirmar monto de cierre\"; }\n\nfunction renderDrawer() {");
 
 const patched = applyV2643CoreUiPatches(synthetic);
 
@@ -53,6 +53,9 @@ for (const marker of [
 ]) assert.ok(patched.includes(marker), `Falta V26.43: ${marker}`);
 
 assert.ok(!patched.includes("allMessages.slice(-visibleCount)"), "No debe quedar paginación de 50 mensajes.");
+assert.ok(patched.includes("// V26.23 DEAL_AMOUNT_CONFIRM_CLOSE"), "V26.43 debe preservar el marcador V26.23.");
+assert.ok(patched.includes("v2623PreservedHelper"), "V26.43 debe preservar helpers intermedios del drawer.");
+assert.ok(patched.includes("save-deal-amount Confirmar monto de cierre"), "V26.43 no debe borrar controles de monto/cierre.");
 assert.ok(!patched.includes('document.addEventListener("touchmove", () => {})'), "El handler touch manual V26.40 debe retirarse.");
 assert.ok(!patched.includes("list.scrollTop = list.scrollHeight;\n}\n\nfunction renderDrawerMessages"), "El scroll forzado antiguo debe reemplazarse.");
 assert.ok(patched.includes('#send-quick-reply{display:none!important}'), "El envio rapido duplicado debe ocultarse para simplificar mobile.");
