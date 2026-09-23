@@ -45,8 +45,13 @@ jobs:
           curl -fsS http://127.0.0.1:3061/app.js -o /tmp/v2641-app.js
           node --check /tmp/v2641-app.js
           grep -F 'V26.41 PROGRESSIVE_CHAT_HISTORY' /tmp/v2641-app.js
-          grep -F 'Cargar 50 anteriores' /tmp/v2641-app.js
-          grep -F 'slice(-visibleCount)' /tmp/v2641-app.js
+          if grep -Fq 'V26.43 SIMPLE_RESPONSIVE_CONVERSATION' /tmp/v2641-app.js; then
+            grep -F 'const messages = Array.isArray(deal.messages) ? deal.messages : [];' /tmp/v2641-app.js
+            ! grep -Fq 'allMessages.slice(-visibleCount)' /tmp/v2641-app.js
+          else
+            grep -F 'Cargar 50 anteriores' /tmp/v2641-app.js
+            grep -F 'slice(-visibleCount)' /tmp/v2641-app.js
+          fi
       - name: Cleanup
         if: always()
         run: |
