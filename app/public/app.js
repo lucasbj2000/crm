@@ -409,8 +409,15 @@ function showLogin(message = "") {
 function showApp() {
   authenticated = true;
   $("#login-screen").hidden = true;
+  $$("[data-view-panel]").forEach((panel) => {
+    const active = panel.dataset.viewPanel === currentView;
+    panel.hidden = !active;
+    panel.classList.toggle("active", active);
+    panel.setAttribute("aria-hidden", active ? "false" : "true");
+  });
   $("#app-shell").hidden = false;
 }
+
 
 async function hydrateMasterContext(){
   const bar=$("#master-company-bar");if(!bar)return;
@@ -479,11 +486,33 @@ async function mutate(url, method = "POST", body) {
 function switchView(view) {
   if (!viewCopy[view]) return;
   currentView = view;
-  $$(".nav-item[data-view]").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
-  $$("[data-view-panel]").forEach((panel) => { const active = panel.dataset.viewPanel === view; panel.classList.toggle("active", active); if (active && motionEnabled("pageTransitions")) { panel.classList.remove("view-motion-enter"); void panel.offsetWidth; panel.classList.add("view-motion-enter"); window.setTimeout(()=>panel.classList.remove("view-motion-enter"),700); } });
+  const mobile = Boolean(window.matchMedia?.("(max-width: 760px)")?.matches);
+
+  $$(".nav-item[data-view]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.view === view);
+  });
+
+  $$("[data-view-panel]").forEach((panel) => {
+    const active = panel.dataset.viewPanel === view;
+    panel.classList.toggle("active", active);
+    panel.hidden = !active;
+    panel.setAttribute("aria-hidden", active ? "false" : "true");
+
+    if (active && !mobile && motionEnabled("pageTransitions")) {
+      panel.classList.remove("view-motion-enter");
+      void panel.offsetWidth;
+      panel.classList.add("view-motion-enter");
+      window.setTimeout(() => panel.classList.remove("view-motion-enter"), 700);
+    } else {
+      panel.classList.remove("view-motion-enter");
+    }
+  });
+
+  $("#app-shell")?.classList.remove("v26-mobile-more-open");
   $("#header-section").textContent = viewCopy[view][0];
   $("#header-title").textContent = viewCopy[view][1];
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: mobile ? "auto" : "smooth" });
+
   if (view === "reports" && (!appState?.reports || appState.reports.periodDays !== reportPeriod)) {
     void fetchReports();
   }
@@ -493,8 +522,17 @@ function switchView(view) {
   if (view === "ai") renderAiCenter();
   if (view === "productivity") renderProductivity();
   if (view === "organization") void fetchOrganization();
-  // Actualiza únicamente la vista recién abierta con el estado ya disponible.
+
   renderAll();
+
+  requestAnimationFrame(() => {
+    $$("[data-view-panel]").forEach((panel) => {
+      const active = panel.dataset.viewPanel === currentView;
+      panel.hidden = !active;
+      panel.classList.toggle("active", active);
+      panel.setAttribute("aria-hidden", active ? "false" : "true");
+    });
+  });
 }
 
 
@@ -3253,7 +3291,7 @@ async function boot() {
     setState(await api("/api/state"), { hydrateSettings: true });
     await hydrateMasterContext();
     const requestedView=new URLSearchParams(window.location.search).get("view");
-    if(requestedView&&viewCopy[requestedView])switchView(requestedView);
+    switchView(requestedView&&viewCopy[requestedView] ? requestedView : currentView);
   } catch (error) {
     showLogin(error.message);
   }
