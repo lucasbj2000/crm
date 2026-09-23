@@ -61,13 +61,26 @@ assert.ok(!patched.includes("list.scrollTop = list.scrollHeight;\n}\n\nfunction 
 assert.ok(patched.includes('#send-quick-reply{display:none!important}'), "El envio rapido duplicado debe ocultarse para simplificar mobile.");
 assert.equal(applyV2643CoreUiPatches(patched), patched, "V26.43 debe ser idempotente.");
 
-const temp = path.join(appDir, ".v2643-check.js");
-await writeFile(temp, patched, "utf8");
-try {
-  const syntax = spawnSync(process.execPath, ["--check", temp], { encoding: "utf8" });
-  assert.equal(syntax.status, 0, `Bundle V26.43 inválido:\n${syntax.stderr || syntax.stdout}`);
-} finally {
-  await rm(temp, { force: true });
+const markedRenderStart = patched.indexOf("function renderDrawerMessages(deal, { force = false } = {}) {");
+const markedRenderEnd = patched.indexOf("// V26.23 DEAL_AMOUNT_CONFIRM_CLOSE", markedRenderStart);
+assert.ok(markedRenderStart >= 0 && markedRenderEnd > markedRenderStart, "El fixture V26.43 debe encontrar el render ya parcheado.");
+const repaginated = patched.slice(0, markedRenderStart) + syntheticRender + patched.slice(markedRenderEnd);
+assert.ok(repaginated.includes("V26.43 SIMPLE_RESPONSIVE_CONVERSATION"), "El caso de regresión debe conservar el marcador V26.43.");
+assert.ok(repaginated.includes("allMessages.slice(-visibleCount)"), "El caso de regresión debe reintroducir la paginación antigua.");
+
+const repaired = applyV2643CoreUiPatches(repaginated);
+assert.ok(!repaired.includes("allMessages.slice(-visibleCount)"), "V26.43 debe reparar paginación antigua aunque el marcador ya exista.");
+assert.equal((repaired.match(/V26\.43 SIMPLE_RESPONSIVE_CONVERSATION/g) || []).length, 1, "V26.43 no debe duplicar su runtime al reparar.");
+
+for (const [name, source] of [["patched", patched], ["repaired", repaired]]) {
+  const temp = path.join(appDir, `.v2643-${name}-check.js`);
+  await writeFile(temp, source, "utf8");
+  try {
+    const syntax = spawnSync(process.execPath, ["--check", temp], { encoding: "utf8" });
+    assert.equal(syntax.status, 0, `Bundle V26.43 ${name} inválido:\n${syntax.stderr || syntax.stdout}`);
+  } finally {
+    await rm(temp, { force: true });
+  }
 }
 
 const launcher = await readFile(path.join(appDir, "server.mjs"), "utf8");

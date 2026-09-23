@@ -279,11 +279,14 @@ const APPEND = String.raw`
 `;
 
 export function applyV2643CoreUiPatches(source) {
-  if (source.includes(MARKER)) return source;
   if (!source.includes("// V26.42 DEDICATED_MOBILE_MESSAGE_SCROLL")) {
     throw new Error("V26.43 requiere V26.42 aplicado antes.");
   }
 
+  // V26.43 puede ejecutarse sobre un bundle que ya fue parcheado por una
+  // validación/runtime anterior del mismo deploy. Aunque el marcador exista,
+  // normalizamos nuevamente el render y el scroll para impedir que reaparezcan
+  // paginaciones antiguas o handlers touch heredados.
   source = removeV2640ManualTouchRuntime(source);
 
   const renderBoundary = source.includes("// V26.23 DEAL_AMOUNT_CONFIRM_CLOSE")
@@ -310,5 +313,5 @@ export function applyV2643CoreUiPatches(source) {
     '  const messages = Array.isArray(deal.messages) ? deal.messages : [];\n  const nodes = [...list.querySelectorAll(":scope > .message")];'
   );
 
-  return source + APPEND;
+  return source.includes(MARKER) ? source : source + APPEND;
 }
