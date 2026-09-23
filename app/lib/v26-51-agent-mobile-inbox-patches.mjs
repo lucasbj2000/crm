@@ -45,6 +45,15 @@ const APPEND = String.raw`
     return v2651NeedsReply(deal) ? "Pendiente" : "Respondido";
   }
 
+  function v2651CompactPreview(value, limit = 96) {
+    const text = String(value || "")
+      .replace(/\s+/g, " ")
+      .replace(/\[(?:Mensaje de WhatsApp|Archivo|Adjunto)\]/gi, "")
+      .trim();
+    if (!text) return "Sin mensajes todavía";
+    return text.length > limit ? text.slice(0, Math.max(1, limit - 1)).trimEnd() + "…" : text;
+  }
+
   function v2651EnsureInbox() {
     const panel = document.querySelector('[data-view-panel="crm"]');
     if (!panel) return null;
@@ -131,6 +140,7 @@ const APPEND = String.raw`
         const status = pendingDeal ? "pending" : "answered";
         const statusText = pendingDeal ? "Pendiente" : "Respondido";
         const message = last?.text || deal.lastMessage || "Sin mensajes todavía";
+        const preview = v2651CompactPreview(message);
         const owner = deal.ownerName || "Sin responsable";
         const when = typeof relativeTime === "function" ? relativeTime(deal.updatedAt) : "";
         const stage = typeof stageLabels !== "undefined" ? (stageLabels[deal.stage] || deal.stage) : deal.stage;
@@ -141,8 +151,8 @@ const APPEND = String.raw`
           '    <span class="v2651-card-person"><strong>' + escapeHtml(deal.name || "Cliente") + '</strong><small>' + escapeHtml(deal.phone || "") + '</small></span>',
           '    <span class="v2651-card-state ' + status + '">' + statusText + '</span>',
           '  </span>',
-          '  <span class="v2651-card-message">' + escapeHtml(message) + '</span>',
-          '  <span class="v2651-card-meta"><span>' + escapeHtml(stage) + '</span><span>•</span><span>' + escapeHtml(owner) + '</span><time>' + escapeHtml(when) + '</time></span>',
+          '  <span class="v2651-card-message">' + escapeHtml(preview) + '</span>',
+          '  <span class="v2651-card-meta"><span class="v2651-card-stage">' + escapeHtml(stage) + '</span><span class="v2651-card-separator">•</span><span class="v2651-card-owner">' + escapeHtml(owner) + '</span><time>' + escapeHtml(when) + '</time></span>',
           '</button>',
         ].join("");
       }).join("");
