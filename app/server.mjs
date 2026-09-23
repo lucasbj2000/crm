@@ -52,6 +52,7 @@ import { applyV2645CoreUiPatches } from "./lib/v26-45-deal-chat-unified-inbox-ui
 import { applyV2646CoreUiPatches } from "./lib/v26-46-complete-mobile-recontact-patches.mjs";
 import { applyV2651AgentMobileInboxPatches } from "./lib/v26-51-agent-mobile-inbox-patches.mjs";
 import { applyV2654MobileDetailIsolationPatches } from "./lib/v26-54-mobile-detail-isolation-patches.mjs";
+import { applyV2655KeyboardStableMobileLayoutPatches } from "./lib/v26-55-keyboard-stable-mobile-layout-patches.mjs";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const corePath = path.join(appDir, "server-core.mjs");
@@ -92,6 +93,7 @@ patchedPublicApp = applyV2645CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2646CoreUiPatches(patchedPublicApp);
 patchedPublicApp = applyV2651AgentMobileInboxPatches(patchedPublicApp);
 patchedPublicApp = applyV2654MobileDetailIsolationPatches(patchedPublicApp);
+patchedPublicApp = applyV2655KeyboardStableMobileLayoutPatches(patchedPublicApp);
 if (patchedPublicApp !== publicAppSource) await writeFile(publicAppPath, patchedPublicApp, "utf8");
 
 const publicInboxSource = await readFile(publicInboxPath, "utf8");

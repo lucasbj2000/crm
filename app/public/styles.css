@@ -2508,3 +2508,101 @@ input:focus, textarea:focus, select:focus {
     pointer-events:none!important;
   }
 }
+
+
+/* V26.55 KEYBOARD STABLE MOBILE LAYOUT */
+@media(max-width:900px){
+  html,
+  body{
+    -webkit-text-size-adjust:100%!important;
+    text-size-adjust:100%!important;
+  }
+
+  body.v2654-mobile-detail-open #deal-drawer .drawer-panel,
+  #deal-drawer.v2654-isolated .drawer-panel{
+    box-sizing:border-box!important;
+    height:var(--v2655-stable-vh,100dvh)!important;
+    max-height:var(--v2655-stable-vh,100dvh)!important;
+    padding-bottom:var(--v2655-keyboard-inset,0px)!important;
+    transition:none!important;
+  }
+
+  body.v2655-keyboard-open #deal-drawer .drawer-header,
+  body.v2655-keyboard-open #deal-drawer .v2651-chat-actions,
+  body.v2655-keyboard-open #deal-drawer .drawer-mobile-tabs{
+    flex:0 0 auto!important;
+    min-height:0!important;
+    transform:none!important;
+    transition:none!important;
+  }
+
+  body.v2655-keyboard-open #deal-drawer .drawer-content.drawer-workspace{
+    min-height:0!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:hidden!important;
+  }
+
+  body.v2655-keyboard-open #deal-drawer .deal-chat-column.active,
+  body.v2655-keyboard-open #deal-drawer .chat-only-section.v2645-deal-chat{
+    min-height:0!important;
+    height:100%!important;
+    max-height:100%!important;
+    overflow:hidden!important;
+  }
+
+  body.v2655-keyboard-open #deal-drawer #drawer-messages{
+    min-height:0!important;
+    height:100%!important;
+    max-height:none!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    touch-action:pan-y!important;
+    overscroll-behavior-y:contain!important;
+  }
+
+  body.v2655-keyboard-open #deal-drawer .v2645-composer{
+    position:relative!important;
+    z-index:8!important;
+    flex:0 0 auto!important;
+    max-height:min(34vh,220px)!important;
+    overflow-y:auto!important;
+    transform:none!important;
+    transition:none!important;
+    background:#fff!important;
+  }
+
+  #deal-drawer input,
+  #deal-drawer textarea,
+  #deal-drawer select,
+  #deal-drawer button{
+    -webkit-text-size-adjust:100%!important;
+    text-size-adjust:100%!important;
+  }
+
+  #deal-drawer input,
+  #deal-drawer textarea,
+  #deal-drawer select{
+    font-size:16px!important;
+  }
+
+  #deal-drawer #manual-message{
+    min-height:44px!important;
+    max-height:96px!important;
+    font-size:16px!important;
+    line-height:1.35!important;
+  }
+
+  #deal-drawer #drawer-quick-reply,
+  #deal-drawer #media-caption{
+    font-size:16px!important;
+  }
+
+  body.v2655-keyboard-open #deal-drawer .drawer-header h3,
+  body.v2655-keyboard-open #deal-drawer .drawer-header span,
+  body.v2655-keyboard-open #deal-drawer .drawer-mobile-tabs button,
+  body.v2655-keyboard-open #deal-drawer .v2651-chat-actions button{
+    transform:none!important;
+    zoom:1!important;
+  }
+}
