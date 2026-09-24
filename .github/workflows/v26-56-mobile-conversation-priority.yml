@@ -1,0 +1,64 @@
+name: V26.56 mobile conversation priority
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - "feat/v26-56-mobile-conversation-priority"
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-conversation-priority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install
+        working-directory: app
+        run: npm ci
+      - name: Contracts
+        run: |
+          node --check app/lib/v26-56-mobile-conversation-priority-patches.mjs
+          node --check app/server.mjs
+          node --check app/public/sw.js
+          node app/test/v26-55-keyboard-stable-mobile-layout.mjs
+          node app/test/v26-56-mobile-conversation-priority.mjs
+          bash -n scripts/deploy-vps.sh
+          grep -F 'v26-56-mobile-conversation-priority-patches.mjs' scripts/deploy-vps.sh
+          grep -F 'v26-56-mobile-conversation-priority.mjs' scripts/deploy-vps.sh
+      - name: Real runtime
+        env:
+          WHATSAPP_MOCK: "1"
+          PORT: "3071"
+          WHATSBOT_HOST: "127.0.0.1"
+          WHATSBOT_DATA_DIR: ${{ runner.temp }}/v2656-data
+        run: |
+          node app/server.mjs >/tmp/v2656.log 2>&1 &
+          echo $! >/tmp/v2656.pid
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3071/api/health >/dev/null; then break; fi
+            sleep .25
+          done
+          curl -fsS http://127.0.0.1:3071/app.js -o /tmp/v2656-app.js
+          node --check /tmp/v2656-app.js
+          grep -F 'V26.56 MOBILE_CONVERSATION_PRIORITY' /tmp/v2656-app.js
+          grep -F 'v2656-mobile-conversation-priority-style' /tmp/v2656-app.js
+          grep -F 'grid-template-rows:minmax(0,1fr) 32px auto!important' /tmp/v2656-app.js
+          grep -F 'max-height:168px!important' /tmp/v2656-app.js
+          curl -fsS http://127.0.0.1:3071/ -o /tmp/v2656-index.html
+          grep -F '/app.js?v=26.56-mobile-conversation-priority' /tmp/v2656-index.html
+          curl -fsS http://127.0.0.1:3071/sw.js -o /tmp/v2656-sw.js
+          grep -F 'whatsbot-mobile-v26-56-mobile-conversation-priority' /tmp/v2656-sw.js
+      - name: Cleanup
+        if: always()
+        run: |
+          test ! -f /tmp/v2656.pid || kill $(cat /tmp/v2656.pid) 2>/dev/null || true
+          tail -160 /tmp/v2656.log 2>/dev/null || true
