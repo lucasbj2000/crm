@@ -16,13 +16,31 @@
 <title>WhatsBot CRM</title>
 <meta content="CRM multiusuario con WhatsApp por QR o API oficial, bot, responsables y control de stock." name="description"/>
 <style id="v2646-critical">[data-view-panel]:not(.active){display:none!important;visibility:hidden!important}[data-view-panel][hidden]{display:none!important}</style>
+<style id="v2662-mobile-conversation-only-critical">
+@media (max-width:900px){
+  html body #deal-drawer .chat-only-section .v2645-ai-row,
+  html body #deal-drawer .chat-only-section .quick-reply-bar,
+  html body #deal-drawer .chat-only-section .message-tools{
+    display:none!important;visibility:hidden!important;width:0!important;height:0!important;
+    min-width:0!important;min-height:0!important;max-width:0!important;max-height:0!important;
+    margin:0!important;padding:0!important;border:0!important;overflow:hidden!important;pointer-events:none!important
+  }
+  html body #deal-drawer .chat-only-section.v2645-deal-chat{grid-template-rows:minmax(0,1fr) auto!important}
+  html body #deal-drawer .chat-only-section.v2645-deal-chat .v2645-composer{grid-row:2!important;max-height:none!important;overflow:hidden!important}
+}
+</style>
+<script>
+(()=>{const q="#deal-drawer .v2645-ai-row,#deal-drawer .quick-reply-bar,#deal-drawer .message-tools";const mq=matchMedia("(max-width: 900px)");const apply=()=>{document.querySelectorAll(q).forEach(el=>{if(mq.matches){el.dataset.v2662MobileHidden="1";el.style.setProperty("display","none","important");el.style.setProperty("visibility","hidden","important");el.style.setProperty("height","0","important");el.style.setProperty("min-height","0","important");el.style.setProperty("max-height","0","important");el.style.setProperty("margin","0","important");el.style.setProperty("padding","0","important");el.style.setProperty("overflow","hidden","important");el.style.setProperty("pointer-events","none","important")}else if(el.dataset.v2662MobileHidden==="1"){delete el.dataset.v2662MobileHidden;["display","visibility","height","min-height","max-height","margin","padding","overflow","pointer-events"].forEach(p=>el.style.removeProperty(p))}})};const start=()=>{apply();new MutationObserver(apply).observe(document.body,{subtree:true,childList:true});mq.addEventListener?.("change",apply);addEventListener("orientationchange",()=>setTimeout(apply,50),{passive:true})};document.readyState==="loading"?document.addEventListener("DOMContentLoaded",start,{once:true}):start()})();
+</script>
 <!-- compat V26.46: /styles.css?v=26.46 -->
 <!-- compat V26.52: /styles.css?v=26.52-mobile-inbox-cards -->
 <!-- compat V26.54: /styles.css?v=26.54-mobile-detail-isolation -->
 <!-- compat V26.55: /styles.css?v=26.55-keyboard-stable-mobile -->
 <!-- compat V26.56: /styles.css?v=26.56-mobile-conversation-priority -->
-<!-- compat V26.57: /styles.css?v=26.57-hide-secondary-mobile-composer -->\n<!-- compat V26.61: mobile remove secondary tools -->
-<link href="/styles.css?v=26.61-mobile-remove-secondary-tools" rel="stylesheet"/>
+<!-- compat V26.57: /styles.css?v=26.57-hide-secondary-mobile-composer -->
+<!-- compat V26.60: /styles.css?v=26.60-mobile-static-hide-secondary-tools -->
+<!-- compat V26.61: mobile remove secondary tools -->
+<link href="/styles.css?v=26.62-mobile-conversation-only" rel="stylesheet"/>
 <link href="/v20.css" rel="stylesheet"/>
 <link href="/v20-1.css" rel="stylesheet"/>
 <link href="/v20-2.css" rel="stylesheet"/>
