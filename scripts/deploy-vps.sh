@@ -67,7 +67,7 @@ fi
 ln -s "$STORAGE_TARGET" "$STAGE/storage"
 chmod +x "$STAGE/start-vps.sh" "$STAGE/scripts/deploy-vps.sh"
 
-echo "=== INSTALANDO Y PROBANDO V26.63 ==="
+echo "=== INSTALANDO Y PROBANDO V26.64 ==="
 (
   cd "$STAGE/app"
   npm ci --omit=dev
@@ -227,6 +227,7 @@ run_isolated_test "$STAGE/app/test/v26-57-mobile-hide-secondary-composer.mjs"
 run_isolated_test "$STAGE/app/test/v26-59-media-listener-safety.mjs"
 run_isolated_test "$STAGE/app/test/v26-60-mobile-static-hide-secondary-tools.mjs"
 run_isolated_test "$STAGE/app/test/v26-63-mobile-clean-composer.mjs"
+run_isolated_test "$STAGE/app/test/v26-64-deal-drawer-ui.mjs"
 run_isolated_test "$STAGE/app/test/v26-62-mobile-conversation-only.mjs"
 run_isolated_test "$STAGE/app/test/feature-smoke.mjs"
 run_isolated_test "$STAGE/app/test/v25-message-smoke.mjs"
