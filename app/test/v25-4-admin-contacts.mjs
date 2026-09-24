@@ -78,12 +78,22 @@ child.stdout.on("data", (x) => output += x);
 child.stderr.on("data", (x) => output += x);
 
 async function wait() {
-  const until = Date.now() + 25000;
+  const until = Date.now() + 75_000;
+  let lastError = "";
   while (Date.now() < until) {
-    try { const response = await fetch(`${base}/api/health`); if (response.ok) return; } catch {}
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    if (child.exitCode !== null) {
+      throw new Error(`Servidor terminó antes de quedar disponible (exitCode=${child.exitCode}).\n${output}`);
+    }
+    try {
+      const response = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(2_500) });
+      if (response.ok) return;
+      lastError = `HTTP ${response.status}`;
+    } catch (error) {
+      lastError = error?.message || String(error);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  throw new Error(`Servidor no inició.\n${output}`);
+  throw new Error(`Servidor no quedó disponible dentro de 75 s. Último error: ${lastError || "sin detalle"}.\n${output}`);
 }
 
 async function login(username) {
