@@ -1,0 +1,32 @@
+name: V26.58 admin contacts smoke startup
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - "fix/v26-58-admin-contacts-smoke-startup"
+
+permissions:
+  contents: read
+
+jobs:
+  admin-contacts-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install
+        working-directory: app
+        run: npm ci
+      - name: Syntax
+        run: node --check app/test/v25-4-admin-contacts.mjs
+      - name: Admin contacts smoke
+        run: node app/test/v25-4-admin-contacts.mjs
+      - name: Deploy contract
+        run: grep -F 'run_isolated_test "$STAGE/app/test/v25-4-admin-contacts.mjs"' scripts/deploy-vps.sh
