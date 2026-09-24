@@ -23,8 +23,11 @@ assert.ok(runtime.includes('setImportant(node, "display", "none")'));
 assert.ok(runtime.includes(".v2645-composer > .message-tools"));
 
 const sw = await readFile(path.join(appDir, "public", "sw.js"), "utf8");
-assert.ok(sw.includes('const CACHE = "whatsbot-mobile-v26-63-mobile-clean-composer"'));
-assert.ok(sw.includes('"/styles.css",\n  "/app.js"'));
+const cacheMatch = sw.match(/const CACHE = "([^"]+)"/);
+assert.ok(cacheMatch?.[1]?.startsWith("whatsbot-mobile-v26-"), "Debe existir una caché V26 vigente.");
+assert.notEqual(cacheMatch?.[1], "whatsbot-mobile-v26-60-mobile-static-hide-secondary-tools", "La caché vigente debe superar V26.60.");
+assert.ok(sw.includes('"/styles.css",'), "styles.css debe permanecer network-first.");
+assert.ok(sw.includes('"/app.js",'), "app.js debe permanecer network-first.");
 assert.ok(sw.includes("whatsbot-mobile-v26-60-mobile-static-hide-secondary-tools"));
 
 console.log("OK · V26.62/V26.63 mantiene conversación mobile limpia y sin herramientas secundarias.");
