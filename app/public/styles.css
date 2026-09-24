@@ -2606,3 +2606,45 @@ input:focus, textarea:focus, select:focus {
     zoom:1!important;
   }
 }
+
+
+/* V26.60 MOBILE STATIC HIDE SECONDARY TOOLS */
+@media (max-width: 900px) {
+  #deal-drawer .chat-only-section.v2645-deal-chat .v2645-ai-row,
+  #deal-drawer .chat-only-section.v2645-deal-chat .quick-reply-bar {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #deal-drawer .chat-only-section.v2645-deal-chat {
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  #deal-drawer .chat-only-section.v2645-deal-chat #drawer-messages.v2645-messages {
+    grid-row: 1 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: contain !important;
+  }
+
+  #deal-drawer .chat-only-section.v2645-deal-chat .v2645-composer {
+    grid-row: 2 !important;
+    margin: 0 !important;
+    max-height: 118px !important;
+  }
+}
