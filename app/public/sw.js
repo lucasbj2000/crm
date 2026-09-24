@@ -31,7 +31,8 @@
 // Compatibilidad V26.52 preservada: whatsbot-mobile-v26-52-mobile-inbox-cards
 // Compatibilidad V26.54 preservada: whatsbot-mobile-v26-54-mobile-detail-isolation
 // Compatibilidad V26.55 preservada: whatsbot-mobile-v26-55-keyboard-stable-mobile
-const CACHE = "whatsbot-mobile-v26-56-mobile-conversation-priority";
+// Compatibilidad V26.56 preservada: whatsbot-mobile-v26-56-mobile-conversation-priority
+const CACHE = "whatsbot-mobile-v26-57-hide-secondary-mobile-composer";
 const SHELL = ["/", "/styles.css", "/v20.css", "/v20-1.css", "/v20-2.css", "/v20-3.css", "/v21.css", "/v21-1.css", "/v21-2.css", "/v21-3.css", "/v21-4.css", "/v21-5.css", "/v21-6.css",
   "/v21-8.css", "/app.js", "/v20.js", "/v20-1.js", "/v20-2.js", "/v20-3.js", "/v21.js", "/v21-1.js", "/v21-2.js", "/v21-3.js", "/v21-4.js", "/v21-6.js",
   "/v21-7.js", "/v22.css", "/v23-1.css", "/v22.js", "/v24.css", "/v24.js", "/v24-1.css", "/v24-1.js", "/v25.css", "/v25-2-1.js", "/v25-3.css", "/v25-3.js", "/v25.js", "/v25-4.css", "/v25-4-2.css", "/v25-4.js", "/v25-4-1.js", "/v25-5.css", "/v25-5.js", "/v25-6.css", "/v25-6.js", "/v25-7.css", "/v25-7.js", "/v25-7-core.js", "/v25-8.css", "/v25-8.js", "/v25-8-1.js", "/v25-9.css", "/v25-9.js", "/v25-10.css", "/v25-10.js", "/v25-11.css", "/v25-11.js", "/v25-12.js", "/v26-1.css", "/v26-1.js", "/v26-2.css", "/v26-2.js", "/v26-3.js", "/v26-4.css", "/v26-4.js", "/v26-6.css", "/v26-6.js", "/v26-7.js", "/v26-8.js", "/v26-9.css", "/v26-9.js", "/v26-10.css", "/v26-10.js", "/v26-14.css", "/v26-14.js", "/v26-17.js", "/v26-18-1.js", "/v26-18-2.js", "/form-public.css", "/form-public.js", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
