@@ -2710,3 +2710,43 @@ input:focus, textarea:focus, select:focus {
     display: none !important;
   }
 }
+
+
+/* V26.62 MOBILE CONVERSATION ONLY - DEFINITIVE
+   Oculta controles secundarios en mobile aunque otros parches inyecten CSS después. */
+@media (max-width: 900px) {
+  html body #deal-drawer .chat-only-section.v2645-deal-chat > .v2645-ai-row,
+  html body #deal-drawer .chat-only-section.v2645-deal-chat .v2645-composer > .quick-reply-bar,
+  html body #deal-drawer .chat-only-section.v2645-deal-chat .v2645-composer > .message-tools,
+  html body #deal-drawer .chat-only-section .v2645-ai-row,
+  html body #deal-drawer .chat-only-section .quick-reply-bar,
+  html body #deal-drawer .chat-only-section .message-tools {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+
+  html body #deal-drawer .chat-only-section.v2645-deal-chat {
+    grid-template-rows: minmax(0, 1fr) auto !important;
+  }
+
+  html body #deal-drawer .chat-only-section.v2645-deal-chat .v2645-composer {
+    grid-row: 2 !important;
+    max-height: none !important;
+    overflow: hidden !important;
+  }
+
+  html body #deal-drawer .chat-only-section.v2645-deal-chat #message-form {
+    margin: 0 !important;
+  }
+}
