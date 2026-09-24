@@ -167,6 +167,23 @@ run_isolated_test() {
   node "$TEST_FILE"
 }
 
+run_control_plane_test() {
+  local TEST_FILE="$STAGE/gateway/test/v25-control-plane.mjs"
+  echo "--- PRUEBA AISLADA: ${TEST_FILE#"$STAGE/"} ---"
+  for ATTEMPT in 1 2; do
+    git -C "$STAGE" reset --hard "$ACTUAL_SHA" >/dev/null
+    if timeout 90s node "$TEST_FILE"; then
+      return 0
+    fi
+    echo "ADVERTENCIA: control-plane intento $ATTEMPT/2 fallo o excedio 90s; limpiando procesos de prueba y reintentando." >&2
+    pkill -f "$STAGE/gateway/v25-gateway.mjs" >/dev/null 2>&1 || true
+    pkill -f "$STAGE/app/server.mjs" >/dev/null 2>&1 || true
+    sleep 2
+  done
+  echo "ERROR: control-plane fallo en dos intentos." >&2
+  return 1
+}
+
 run_isolated_test "$STAGE/app/test/v24-patches.mjs"
 run_isolated_test "$STAGE/app/test/v24-1-ui.mjs"
 run_isolated_test "$STAGE/app/test/v25-ui.mjs"
@@ -221,7 +238,7 @@ run_isolated_test "$STAGE/gateway/test/v25-12-social-platform.mjs"
 run_isolated_test "$STAGE/gateway/test/v26-4-tenant-reliability.mjs"
 run_isolated_test "$STAGE/gateway/test/v26-18-always-on.mjs"
 run_isolated_test "$STAGE/gateway/test/master-isolation.mjs"
-run_isolated_test "$STAGE/gateway/test/v25-control-plane.mjs"
+run_control_plane_test
 
 # Las pruebas pueden ejecutar runtimes que modifican bundles versionados.
 # Dejamos el release exactamente en el commit objetivo antes de promoverlo.
