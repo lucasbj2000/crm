@@ -1,0 +1,27 @@
+name: Workspace V26.65 regression
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  workspace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Workspace behavior and mobile compatibility
+        run: |
+          node --check app/public/v21-9.js
+          node --check app/public/v25-4.js
+          node --check app/public/v26-62-mobile-clean-composer.js
+          node --check app/public/sw.js
+          node app/test/v26-65-workspace.mjs
+          node app/test/v26-64-deal-drawer-ui.mjs
+          node app/test/v26-63-mobile-clean-composer.mjs
+          bash -n scripts/deploy-vps.sh

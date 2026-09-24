@@ -114,7 +114,8 @@
     apply();
 
     const observer = new MutationObserver(schedule);
-    observer.observe(document.documentElement, {
+    const drawer = document.getElementById("deal-drawer");
+    if (drawer) observer.observe(drawer, {
       subtree: true,
       childList: true,
       attributes: true,

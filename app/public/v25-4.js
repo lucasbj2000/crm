@@ -134,15 +134,17 @@
   }
 
   function ensureContactsModule() {
+    if (typeof viewCopy !== "undefined") viewCopy.contacts = ["CONTACTOS", "Fichas de clientes"];
     const navList = $v(".nav-list");
     if (navList && !$v("[data-v254-contacts-nav]")) {
       const button = document.createElement("button");
       button.className = "nav-item v254-contacts-nav";
       button.type = "button";
       button.dataset.v254ContactsNav = "1";
+      button.dataset.view = "contacts";
       button.innerHTML = '<span>◎</span><b>Contactos</b><i id="v254-contact-count">0</i>';
       const crm = $v('[data-view="crm"]', navList);
-      if (crm?.nextSibling) navList.insertBefore(button, crm.nextSibling);
+      if (crm?.parentElement) crm.parentElement.insertBefore(button, crm.nextSibling);
       else navList.prepend(button);
     }
 
@@ -151,6 +153,7 @@
       const section = document.createElement("section");
       section.className = "view v254-contacts-view";
       section.id = "v254-contacts-view";
+      section.dataset.viewPanel = "contacts";
       section.innerHTML = `
         <div class="v254-contact-hero">
           <div><p class="kicker">BASE CENTRAL DE CLIENTES</p><h2>Contactos y Fichas 360°</h2><p>Buscá un cliente y revisá en un solo lugar sus datos, personas de contacto y todas las negociaciones vinculadas.</p></div>
@@ -291,6 +294,7 @@
   }
 
   function showContacts() {
+    if (typeof switchView === "function") switchView("contacts");
     contactsActive = true;
     $$v("[data-view-panel]").forEach((panel) => panel.classList.remove("active"));
     const panel = $v("#v254-contacts-view");

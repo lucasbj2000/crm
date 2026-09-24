@@ -26,7 +26,7 @@ assert.ok(index.includes('/v26-64-deal-drawer.css?v=26.64'),"index debe cargar V
 assert.ok(index.indexOf('/v26-64-deal-drawer.css?v=26.64')>index.indexOf('/v23-1.css'),"V26.64 debe cargar después del CSS legacy.");
 
 const sw=await readFile(path.join(appDir,"public","sw.js"),"utf8");
-assert.ok(sw.includes('const CACHE = "whatsbot-mobile-v26-64-formal-deal-drawer"'),"SW debe invalidar cache V26.64.");
+assert.match(sw, /const CACHE = "whatsbot-mobile-v26-(?:6[4-9]|[7-9][0-9]|[1-9][0-9]{2,})-/, "SW debe usar V26.64 o posterior.");
 assert.ok(sw.includes('"/v26-64-deal-drawer.css"'),"SW debe incluir CSS V26.64.");
 
 console.log("OK · V26.64 drawer formal desktop/mobile, layout de dos columnas y composer mobile limpio validados.");
