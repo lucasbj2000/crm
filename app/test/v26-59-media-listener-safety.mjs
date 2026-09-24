@@ -27,13 +27,13 @@ async function downloadIncomingAttachment(item, info, sourceSocket = null, attac
   const socket = sourceSocket;
   let workingItem = item;
   const options = {
-    reuploadRequest: async (message) => {
-      if (!socket?.updateMediaMessage) return message;
-      const refreshed = await socket.updateMediaMessage(message);
-      const usable = refreshed?.message ? refreshed : message;
-      workingItem = usable;
-      return usable;
-    },
+        reuploadRequest: async (message) => {
+          if (!socket?.updateMediaMessage) return message;
+          const refreshed = await socket.updateMediaMessage(message);
+          const usable = refreshed?.message ? refreshed : message;
+          workingItem = usable;
+          return usable;
+        },
   };
   return { options, workingItem, info, attachmentId };
 }
