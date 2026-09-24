@@ -17,6 +17,7 @@ import { applyV263QrRecoveryPatches } from "./lib/v26-3-qr-recovery-patches.mjs"
 import { applyV264PlatformReliabilityCatalogPatches } from "./lib/v26-4-platform-reliability-catalog-patches.mjs";
 import { applyV265MediaReliabilityPatches } from "./lib/v26-5-media-reliability-patches.mjs";
 import { applyV266MediaRetryPatches } from "./lib/v26-6-media-retry-patches.mjs";
+import { applyV2659MediaListenerSafetyPatches } from "./lib/v26-59-media-listener-safety-patches.mjs";
 import { applyV268WhatsappEditPatches } from "./lib/v26-8-whatsapp-edit-patches.mjs";
 import { applyV269AccessControlStable } from "./lib/v26-9-access-control-wrapper.mjs";
 import { applyV2610LiveSupportBotLinePatches } from "./lib/v26-10-live-support-bot-lines-patches.mjs";
@@ -125,6 +126,7 @@ patched = applyV263QrRecoveryPatches(patched);
 patched = applyV264PlatformReliabilityCatalogPatches(patched);
 patched = applyV265MediaReliabilityPatches(patched);
 patched = applyV266MediaRetryPatches(patched);
+patched = applyV2659MediaListenerSafetyPatches(patched);
 patched = applyV268WhatsappEditPatches(patched);
 patched = applyV269AccessControlStable(patched);
 patched = applyV2610LiveSupportBotLinePatches(patched);
