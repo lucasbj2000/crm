@@ -2750,3 +2750,54 @@ input:focus, textarea:focus, select:focus {
     margin: 0 !important;
   }
 }
+
+
+/* V26.62 MOBILE DEFINITIVE CLEAN COMPOSER
+   Fallback CSS de alta especificidad. El runtime V26.62 aplica además estilos
+   inline !important para impedir que capas anteriores vuelvan a mostrar estas herramientas. */
+@media (max-width: 900px) {
+  html body #deal-drawer .chat-only-section.v2645-deal-chat > .v2645-ai-row,
+  html body.v2654-mobile-detail-open #deal-drawer .chat-only-section.v2645-deal-chat > .v2645-ai-row,
+  html body #deal-drawer.v2654-isolated .chat-only-section.v2645-deal-chat > .v2645-ai-row,
+  html body #deal-drawer .chat-only-section.v2645-deal-chat .v2645-composer > .quick-reply-bar,
+  html body.v2654-mobile-detail-open #deal-drawer .chat-only-section.v2645-deal-chat .v2645-composer > .quick-reply-bar,
+  html body #deal-drawer.v2654-isolated .chat-only-section.v2645-deal-chat .v2645-composer > .quick-reply-bar,
+  html body #deal-drawer .chat-only-section.v2645-deal-chat .v2645-composer > .message-tools,
+  html body.v2654-mobile-detail-open #deal-drawer .chat-only-section.v2645-deal-chat .v2645-composer > .message-tools,
+  html body #deal-drawer.v2654-isolated .chat-only-section.v2645-deal-chat .v2645-composer > .message-tools {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+
+  html body #deal-drawer .chat-only-section.v2645-deal-chat {
+    grid-template-rows: minmax(0, 1fr) auto !important;
+  }
+
+  html body #deal-drawer .chat-only-section.v2645-deal-chat #drawer-messages.v2645-messages {
+    grid-row: 1 !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+  }
+
+  html body #deal-drawer .chat-only-section.v2645-deal-chat .v2645-composer {
+    grid-row: 2 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 92px !important;
+    margin: 0 !important;
+    padding: 6px 8px calc(7px + env(safe-area-inset-bottom)) !important;
+    overflow: visible !important;
+  }
+}
