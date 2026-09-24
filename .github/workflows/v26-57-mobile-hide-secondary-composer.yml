@@ -1,0 +1,64 @@
+name: V26.57 hide secondary mobile composer
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - "fix/v26-57-hide-secondary-mobile-composer"
+
+permissions:
+  contents: read
+
+jobs:
+  hide-secondary-mobile-composer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install
+        working-directory: app
+        run: npm ci
+      - name: Contracts
+        run: |
+          node --check app/lib/v26-57-mobile-hide-secondary-composer-patches.mjs
+          node --check app/server.mjs
+          node --check app/public/sw.js
+          node app/test/v26-56-mobile-conversation-priority.mjs
+          node app/test/v26-57-mobile-hide-secondary-composer.mjs
+          bash -n scripts/deploy-vps.sh
+          grep -F 'v26-57-mobile-hide-secondary-composer-patches.mjs' scripts/deploy-vps.sh
+          grep -F 'v26-57-mobile-hide-secondary-composer.mjs' scripts/deploy-vps.sh
+      - name: Real runtime
+        env:
+          WHATSAPP_MOCK: "1"
+          PORT: "3072"
+          WHATSBOT_HOST: "127.0.0.1"
+          WHATSBOT_DATA_DIR: ${{ runner.temp }}/v2657-data
+        run: |
+          node app/server.mjs >/tmp/v2657.log 2>&1 &
+          echo $! >/tmp/v2657.pid
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:3072/api/health >/dev/null; then break; fi
+            sleep .25
+          done
+          curl -fsS http://127.0.0.1:3072/app.js -o /tmp/v2657-app.js
+          node --check /tmp/v2657-app.js
+          grep -F 'V26.57 MOBILE_HIDE_SECONDARY_COMPOSER' /tmp/v2657-app.js
+          grep -F 'v2657-mobile-hide-secondary-composer-style' /tmp/v2657-app.js
+          grep -F 'grid-template-rows:minmax(0,1fr) auto!important' /tmp/v2657-app.js
+          grep -F 'quick-reply-bar{display:none!important' /tmp/v2657-app.js
+          curl -fsS http://127.0.0.1:3072/ -o /tmp/v2657-index.html
+          grep -F '/app.js?v=26.57-hide-secondary-mobile-composer' /tmp/v2657-index.html
+          curl -fsS http://127.0.0.1:3072/sw.js -o /tmp/v2657-sw.js
+          grep -F 'whatsbot-mobile-v26-57-hide-secondary-mobile-composer' /tmp/v2657-sw.js
+      - name: Cleanup
+        if: always()
+        run: |
+          test ! -f /tmp/v2657.pid || kill $(cat /tmp/v2657.pid) 2>/dev/null || true
+          tail -160 /tmp/v2657.log 2>/dev/null || true
