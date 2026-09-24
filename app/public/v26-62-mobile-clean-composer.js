@@ -118,7 +118,7 @@
       subtree: true,
       childList: true,
       attributes: true,
-      attributeFilter: ["class", "hidden", "style"]
+      attributeFilter: ["class", "hidden"]
     });
 
     const media = window.matchMedia?.(MOBILE_QUERY);
