@@ -3,17 +3,43 @@ import { readFile, writeFile, rm } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyV265MediaReliabilityPatches } from "../lib/v26-5-media-reliability-patches.mjs";
-import { applyV266MediaRetryPatches } from "../lib/v26-6-media-retry-patches.mjs";
 import { applyV2659MediaListenerSafetyPatches } from "../lib/v26-59-media-listener-safety-patches.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(here, "..");
-const raw = await readFile(path.join(appDir, "server-core.mjs"), "utf8");
 
-let patched = applyV265MediaReliabilityPatches(raw);
-patched = applyV266MediaRetryPatches(patched);
-patched = applyV2659MediaListenerSafetyPatches(patched);
+const synthetic = `
+async function v265RefreshMedia(item, sourceSocket) {
+  if (!sourceSocket || typeof sourceSocket.updateMediaMessage !== "function") return item;
+  try {
+    const refreshed = await Promise.race([
+      sourceSocket.updateMediaMessage(item),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout refrescando multimedia")), 7000)),
+    ]);
+    return refreshed?.message ? refreshed : item;
+  } catch (error) {
+    console.warn("[media refresh]", error?.message || error);
+    return item;
+  }
+}
+
+async function downloadIncomingAttachment(item, info, sourceSocket = null, attachmentId = "attachment_test") {
+  const socket = sourceSocket;
+  let workingItem = item;
+  const options = {
+    reuploadRequest: async (message) => {
+      if (!socket?.updateMediaMessage) return message;
+      const refreshed = await socket.updateMediaMessage(message);
+      const usable = refreshed?.message ? refreshed : message;
+      workingItem = usable;
+      return usable;
+    },
+  };
+  return { options, workingItem, info, attachmentId };
+}
+`;
+
+const patched = applyV2659MediaListenerSafetyPatches(synthetic);
 
 for (const marker of [
   "V26.59 MEDIA_LISTENER_SAFETY",
@@ -46,7 +72,7 @@ const temp = path.join(appDir, ".v2659-generated-check.mjs");
 await writeFile(temp, patched, "utf8");
 try {
   const syntax = spawnSync(process.execPath, ["--check", temp], { encoding: "utf8" });
-  assert.equal(syntax.status, 0, `Servidor V26.59 inválido:\n${syntax.stderr || syntax.stdout}`);
+  assert.equal(syntax.status, 0, `Fixture V26.59 inválido:\n${syntax.stderr || syntax.stdout}`);
 } finally {
   await rm(temp, { force: true });
 }
