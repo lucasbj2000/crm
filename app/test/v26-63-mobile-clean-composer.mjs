@@ -26,7 +26,10 @@ assert.ok(index.includes("/v26-62-mobile-clean-composer.js?v=26.63"), "index deb
 assert.ok(index.includes("v2662-mobile-conversation-only-critical"), "Debe existir fallback crítico antes de los bundles.");
 
 const sw = await readFile(path.join(appDir, "public", "sw.js"), "utf8");
-assert.ok(sw.includes('const CACHE = "whatsbot-mobile-v26-63-mobile-clean-composer"'), "Service Worker debe invalidar el cache previo.");
+const cacheMatch = sw.match(/const CACHE = "([^"]+)"/);
+assert.ok(cacheMatch?.[1]?.startsWith("whatsbot-mobile-v26-"), "Service Worker debe usar una caché versionada V26.");
+assert.notEqual(cacheMatch?.[1], "whatsbot-mobile-v26-60-mobile-static-hide-secondary-tools", "Service Worker debe invalidar la caché anterior a V26.63.");
+assert.ok(sw.includes("Compatibilidad V26.63"), "Debe conservarse la compatibilidad V26.63 aunque la caché avance de versión.");
 assert.ok(sw.includes('"/styles.css",'), "styles.css debe ser network-first.");
 assert.ok(sw.includes('"/v26-62-mobile-clean-composer.js",'), "El runtime mobile debe estar precacheado/network-first.");
 
