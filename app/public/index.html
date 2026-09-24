@@ -29,9 +29,6 @@
   html body #deal-drawer .chat-only-section.v2645-deal-chat .v2645-composer{grid-row:2!important;max-height:none!important;overflow:hidden!important}
 }
 </style>
-<script>
-(()=>{const q="#deal-drawer .v2645-ai-row,#deal-drawer .quick-reply-bar,#deal-drawer .message-tools";const mq=matchMedia("(max-width: 900px)");const apply=()=>{document.querySelectorAll(q).forEach(el=>{if(mq.matches){el.dataset.v2662MobileHidden="1";el.style.setProperty("display","none","important");el.style.setProperty("visibility","hidden","important");el.style.setProperty("height","0","important");el.style.setProperty("min-height","0","important");el.style.setProperty("max-height","0","important");el.style.setProperty("margin","0","important");el.style.setProperty("padding","0","important");el.style.setProperty("overflow","hidden","important");el.style.setProperty("pointer-events","none","important")}else if(el.dataset.v2662MobileHidden==="1"){delete el.dataset.v2662MobileHidden;["display","visibility","height","min-height","max-height","margin","padding","overflow","pointer-events"].forEach(p=>el.style.removeProperty(p))}})};const start=()=>{apply();new MutationObserver(apply).observe(document.body,{subtree:true,childList:true});mq.addEventListener?.("change",apply);addEventListener("orientationchange",()=>setTimeout(apply,50),{passive:true})};document.readyState==="loading"?document.addEventListener("DOMContentLoaded",start,{once:true}):start()})();
-</script>
 <!-- compat V26.46: /styles.css?v=26.46 -->
 <!-- compat V26.52: /styles.css?v=26.52-mobile-inbox-cards -->
 <!-- compat V26.54: /styles.css?v=26.54-mobile-detail-isolation -->
@@ -40,7 +37,8 @@
 <!-- compat V26.57: /styles.css?v=26.57-hide-secondary-mobile-composer -->
 <!-- compat V26.60: /styles.css?v=26.60-mobile-static-hide-secondary-tools -->
 <!-- compat V26.61: mobile remove secondary tools -->
-<link href="/styles.css?v=26.62-mobile-conversation-only" rel="stylesheet"/>
+<!-- V26.63: mobile clean composer authoritative runtime -->
+<link href="/styles.css?v=26.63-mobile-clean-composer" rel="stylesheet"/>
 <link href="/v20.css" rel="stylesheet"/>
 <link href="/v20-1.css" rel="stylesheet"/>
 <link href="/v20-2.css" rel="stylesheet"/>
@@ -59,7 +57,9 @@
 <!-- compat V26.54: /app.js?v=26.54-mobile-detail-isolation -->
 <!-- compat V26.55: /app.js?v=26.55-keyboard-stable-mobile -->
 <!-- compat V26.56: /app.js?v=26.56-mobile-conversation-priority -->
-<script defer="" src="/app.js?v=26.62-mobile-clean-composer"></script>\n<script defer src="/v26-62-mobile-clean-composer.js?v=26.62"></script>
+<!-- compat V26.57: /app.js?v=26.57-hide-secondary-mobile-composer -->
+<script defer="" src="/app.js?v=26.63-mobile-clean-composer"></script>
+<script defer src="/v26-62-mobile-clean-composer.js?v=26.63"></script>
 <script defer="" src="/v20.js"></script>
 <script defer="" src="/v20-1.js"></script>
 <script defer="" src="/v20-2.js"></script>
