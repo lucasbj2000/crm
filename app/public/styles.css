@@ -2648,3 +2648,65 @@ input:focus, textarea:focus, select:focus {
     max-height: 118px !important;
   }
 }
+
+
+/* V26.61 MOBILE REMOVE SECONDARY MESSAGE TOOLS
+   En mobile se ocultan los controles secundarios del compositor para liberar
+   altura real a la conversación. El textarea y el botón Enviar permanecen. */
+@media (max-width: 900px) {
+  #deal-drawer .chat-only-section .drawer-section-title,
+  #deal-drawer .chat-only-section .quick-reply-bar,
+  #deal-drawer .chat-only-section .message-tools,
+  #deal-drawer .chat-only-section .v2645-ai-row {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+
+  #deal-drawer .chat-only-section,
+  #deal-drawer .chat-only-section.v2645-deal-chat {
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) auto !important;
+    gap: 0 !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  #deal-drawer .chat-only-section #drawer-messages,
+  #deal-drawer .chat-only-section #drawer-messages.v2645-messages {
+    grid-row: 1 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: none !important;
+    margin: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: contain !important;
+  }
+
+  #deal-drawer .chat-only-section #message-form,
+  #deal-drawer .chat-only-section .modern-composer,
+  #deal-drawer .chat-only-section .v2645-composer {
+    grid-row: 2 !important;
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+    max-height: none !important;
+    position: relative !important;
+    z-index: 10 !important;
+  }
+
+  #deal-drawer .chat-only-section .media-composer[hidden] {
+    display: none !important;
+  }
+}
