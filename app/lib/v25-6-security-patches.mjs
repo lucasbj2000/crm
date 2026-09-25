@@ -94,7 +94,7 @@ export function applyV256SecurityPatches(source) {
     'CSP endurecida');
 
   const parserAnchor='const jsonParser = express.json({ limit: "128kb" });';
-  const fetchGuard=`app.use((request,response,next)=>{\n  if(!request.path.startsWith('/api/'))return next();\n  const site=String(request.headers['sec-fetch-site']||'').toLowerCase();\n  const publicAllowed=request.path.startsWith('/api/public/')||request.path.startsWith('/api/v22/public/')||request.path==='/api/whatsapp/webhook';\n  if(!publicAllowed&&site==='cross-site')return response.status(403).json({error:'Solicitud bloqueada por seguridad.'});\n  next();\n});\n`;
+  const fetchGuard=`app.use((request,response,next)=>{\n  if(!request.path.startsWith('/api/'))return next();\n  const site=String(request.headers['sec-fetch-site']||'').toLowerCase();\n  const publicAllowed=request.path.startsWith('/api/public/')||request.path.startsWith('/api/v22/public/')||request.path==='/api/whatsapp/webhook'||request.path==='/api/social/oauth/meta/callback'||request.path==='/api/social/oauth/tiktok/callback'||request.path==='/api/social/meta/webhook';\n  if(!publicAllowed&&site==='cross-site')return response.status(403).json({error:'Solicitud bloqueada por seguridad.'});\n  next();\n});\n`;
   patched = replaceOnce(patched, parserAnchor, fetchGuard + parserAnchor, 'Fetch Metadata guard');
 
   patched = replaceOnce(patched,
